@@ -1,0 +1,52 @@
+begin;
+insert into auth.users(id,raw_user_meta_data) values('11111111-1111-4111-8111-111111111111','{"display_name":"Alice","role":"owner"}'),('22222222-2222-4222-8222-222222222222','{"display_name":"Bob","role":"owner"}');
+select set_config('test.alice',(select id::text from public.workspaces where personal_owner_id='11111111-1111-4111-8111-111111111111'),true);
+select set_config('test.bob',(select id::text from public.workspaces where personal_owner_id='22222222-2222-4222-8222-222222222222'),true);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+do $$begin if (select count(*) from public.workspaces)<>1 or (select count(*) from public.workspace_memberships)<>1 or (select count(*) from public.profiles)<>1 then raise exception 'bootstrap/isolation failed';end if;end$$;
+insert into public.land_parcels(id,workspace_id,title) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.alice')::uuid,'Alice');
+insert into public.field_observations(id,workspace_id,title,latitude,longitude,linked_parcel_id) values('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',current_setting('test.alice')::uuid,'Visit',-37,144,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+insert into public.field_observation_media(id,workspace_id,observation_id,mime_type,original_filename,size_bytes,storage_path) values('cccccccc-cccc-4ccc-8ccc-cccccccccccc',current_setting('test.alice')::uuid,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','image/png','test.png',40,current_setting('test.alice')||'/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/cccccccc-cccc-4ccc-8ccc-cccccccccccc.png');
+insert into storage.objects(bucket_id,name) select 'field-media',storage_path from public.field_observation_media;
+insert into public.spatial_layers(workspace_id,name) values(current_setting('test.alice')::uuid,'Layer');
+insert into public.saved_views(workspace_id,name,view) values(current_setting('test.alice')::uuid,'View','{}');
+insert into public.share_links(workspace_id,token_hash,resource_type,expires_at) values(current_setting('test.alice')::uuid,repeat('a',64),'parcel',now()+interval '1 day');
+do $$declare failed boolean;begin
+ failed:=false;begin update public.share_links set resource_ids=array['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid];exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'share scope mutable';end if;
+ failed:=false;begin update public.share_links set token_hash=repeat('b',64);exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'share token mutable';end if;
+ update public.share_links set revoked_at=now();
+ if not exists(select 1 from public.share_links where revoked_at is not null) then raise exception 'share revoke failed';end if;
+end$$;
+reset role;
+do $$declare failed boolean;begin
+ failed:=false;begin update public.land_parcels set workspace_id=current_setting('test.bob')::uuid where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';exception when raise_exception then if sqlerrm='workspace_id is immutable' then failed:=true;else raise;end if;end;
+ if not failed then raise exception 'workspace mutable';end if;
+end$$;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
+do $$declare failed boolean;begin
+ if (select count(*) from public.land_parcels)<>0 or (select count(*) from public.field_observations)<>0 or (select count(*) from public.field_observation_media)<>0 or (select count(*) from public.spatial_layers)<>0 or (select count(*) from public.saved_views)<>0 or (select count(*) from public.share_links)<>0 or (select count(*) from storage.objects)<>0 then raise exception 'cross tenant read leak';end if;
+ failed:=false;begin insert into public.land_parcels(workspace_id,title) values(current_setting('test.alice')::uuid,'Attack');exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'cross tenant insert';end if;
+ failed:=false;begin insert into public.field_observations(workspace_id,title,latitude,longitude,linked_parcel_id) values(current_setting('test.bob')::uuid,'Bad link',0,0,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');exception when foreign_key_violation then failed:=true;end;if not failed then raise exception 'cross workspace FK';end if;
+ failed:=false;begin insert into public.workspace_memberships values(current_setting('test.alice')::uuid,'22222222-2222-4222-8222-222222222222','owner','active',now());exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'role escalation';end if;
+ failed:=false;begin insert into storage.objects(bucket_id,name) values('field-media',current_setting('test.alice')||'/attack.png');exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'storage leak';end if;
+end$$;
+reset role;
+insert into public.workspace_memberships(workspace_id,user_id,role) values(current_setting('test.alice')::uuid,'22222222-2222-4222-8222-222222222222','viewer');
+set local role authenticated;
+do $$declare failed boolean;begin
+ if (select count(*) from public.land_parcels)<>1 then raise exception 'viewer read failed';end if;
+ failed:=false;begin insert into public.land_parcels(workspace_id,title) values(current_setting('test.alice')::uuid,'Viewer');exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'viewer write';end if;
+ if (select count(*) from public.share_links)<>0 then raise exception 'viewer share leak';end if;
+end$$;
+reset role;
+update public.workspace_memberships set status='suspended' where user_id='22222222-2222-4222-8222-222222222222' and workspace_id=current_setting('test.alice')::uuid;
+set local role authenticated;
+do $$begin if (select count(*) from public.land_parcels)<>0 then raise exception 'suspended read';end if;end$$;
+reset role;
+set local role anon;
+do $$declare failed boolean;begin failed:=false;begin perform * from public.land_parcels;exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'anonymous leak';end if;end$$;
+reset role;
+select 'RLS signup, isolation, viewer, suspended, anonymous, FK, storage escalation, immutable workspace/share scope and revoke tests passed' as result;
+rollback;
