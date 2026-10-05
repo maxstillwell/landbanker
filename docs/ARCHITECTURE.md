@@ -8,6 +8,7 @@ Land Banker is an independent multi-tenant product. It is not a MaxQI wrapper. *
 - Independent Next.js 16 / React 19 / TypeScript web app. Leaflet client map loaded dynamically.
 - Independent Supabase Auth, Postgres, private Storage and migration history.
 - SwiftUI app loads the configured Land Banker URL using persistent WKWebView, never MaxQI.
+- Web, iPhone and iPad share the same Leaflet basemap and layers. CoreLocation supplies coordinates to this map; no separate MapKit renderer. Tile origin identification/privacy details are in BASEMAP.md.
 - All authenticated queries use the user's Supabase credential so database RLS remains authoritative. No service-role bypass for application CRUD.
 - Optional server-only privileged share resolver reads token hashes and explicit safe projections; it cannot expose arbitrary tables or queries.
 - MaxQI remains on its old backend. `/api/published/[token]` is a future consumer seam only. No production integration or flag changes made.
