@@ -1,0 +1,15 @@
+node_modules/
+next-env.d.ts
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
+artifacts/
+private-imports/
+ios/*.xcodeproj/
+ios/Build/
+.vercel/
+playwright-report/
+test-results/

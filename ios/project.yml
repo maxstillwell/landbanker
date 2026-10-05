@@ -1,0 +1,47 @@
+name: LandBanker
+options:
+  bundleIdPrefix: com.landbanker
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGNING_ALLOWED: NO
+    LAND_BANKER_WEB_URL: "https://configure-preview.invalid/app/map"
+targets:
+  LandBanker:
+    type: application
+    platform: iOS
+    sources:
+      - LandBanker
+    info:
+      path: LandBanker/Info.plist
+      properties:
+        CFBundleDisplayName: Land Banker
+        UILaunchScreen: {}
+        LAND_BANKER_WEB_URL: "$(LAND_BANKER_WEB_URL)"
+        NSLocationWhenInUseUsageDescription: Land Banker uses your location to place field observations and show where you are on the map.
+        NSCameraUsageDescription: Take photos to attach to your field observations.
+        NSPhotoLibraryUsageDescription: Choose photos for field observations and preserve their capture information.
+        UISupportedInterfaceOrientations:
+          [
+            UIInterfaceOrientationPortrait,
+            UIInterfaceOrientationLandscapeLeft,
+            UIInterfaceOrientationLandscapeRight,
+          ]
+        UISupportedInterfaceOrientations~ipad:
+          [
+            UIInterfaceOrientationPortrait,
+            UIInterfaceOrientationPortraitUpsideDown,
+            UIInterfaceOrientationLandscapeLeft,
+            UIInterfaceOrientationLandscapeRight,
+          ]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.landbanker.app
+schemes:
+  LandBanker:
+    build:
+      targets:
+        LandBanker: all
