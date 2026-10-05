@@ -8,7 +8,7 @@ settings:
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGNING_ALLOWED: NO
-    LAND_BANKER_WEB_URL: "https://configure-preview.invalid/app/map"
+    LAND_BANKER_WEB_URL: "https://landbanker.vercel.app/app/map"
 targets:
   LandBanker:
     type: application

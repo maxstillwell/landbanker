@@ -51,7 +51,9 @@ jobs:
           LAND_BANKER_WEB_URL: ${{ vars.LAND_BANKER_WEB_URL }}
         run: |
           DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys,os; d=json.load(sys.stdin); print(next(x["udid"] for devices in d["devices"].values() for x in devices if x["name"].startswith(os.environ["DEVICE_KIND"])))')
-          xcodebuild -project ios/LandBanker.xcodeproj -scheme LandBanker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath ios/Build CODE_SIGNING_ALLOWED=NO LAND_BANKER_WEB_URL="${LAND_BANKER_WEB_URL:-https://configure-preview.invalid/app/map}" build
+          URL_SETTING=()
+          if [[ -n "$LAND_BANKER_WEB_URL" ]]; then URL_SETTING+=("LAND_BANKER_WEB_URL=$LAND_BANKER_WEB_URL"); fi
+          xcodebuild -project ios/LandBanker.xcodeproj -scheme LandBanker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath ios/Build CODE_SIGNING_ALLOWED=NO "${URL_SETTING[@]}" build
       - uses: actions/upload-artifact@v4
         with:
           name: land-banker-${{ matrix.device }}-simulator

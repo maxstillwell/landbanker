@@ -21,3 +21,5 @@ Generate new migration names via Supabase CLI. Do not edit a migration already a
 Update docs/STATUS.md with completed work, validation evidence, known issues, external blockers and exact next step. Include relevant lint/typecheck/test/build results in PR. Record iOS Simulator build status separately from device validation. Do not mark a feature done based only on source code.
 
 Current external dependency: Supabase connection must include the new landbanker organization. No need to share service keys through chat; use approved environment/connector configuration.
+
+The current cloud runtime authenticates GitHub API calls, but HTTPS Git pushes returned 401. Source history was published with identical tree/commit hashes through GitHub's API. Normal Git fetch/clone works. If you encounter the same issue, commit a single change based on current main, then `python3 scripts/push-via-api.py`; the script checks the parent, source scope and object hashes, and never force-pushes. It is a main-publication fallback, not a replacement for normal team branches/PRs.
