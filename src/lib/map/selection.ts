@@ -4,5 +4,5 @@ export type MapSelection =
   | { kind: "observation"; record: Observation }
   | { kind: "parcel"; record: Parcel }
   | { kind: "official-parcel"; record: OfficialParcel }
-  | { kind: "drawing"; record: SpatialLayer }
+  | { kind: "drawing"; record: SpatialLayer; featureId: string }
   | null;

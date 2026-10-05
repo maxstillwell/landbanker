@@ -4,6 +4,7 @@ export type LocalLayerDraft = {
   id: string;
   name: string;
   geojson: FeatureCollection;
+  targetLayerId?: string;
 };
 async function database() {
   return openDB("land-banker-layer-draft-v1", 1, {

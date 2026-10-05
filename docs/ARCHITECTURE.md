@@ -20,7 +20,7 @@ Register → Auth trigger creates profile + Personal Workspace + owner membershi
 ## Web modules
 
 `src/lib/supabase`: SSR and browser auth adapters; future native Auth can replace session transport without changing the domain.
-`src/lib/workspace`: current active membership resolution; future workspace selector can use `lb_workspace` cookie but must always validate membership.
+`src/lib/workspace`: current active membership resolution; workspace selector uses `lb_workspace` cookie and always validates membership.
 `src/lib/field-queue`: IndexedDB Blob/draft persistence keyed by user and workspace; pending/uploading/uploaded/failed state. No offline tiles.
 `src/lib/native-bridge`: versioned message contract and location validation.
 `src/lib/map`: generic geometry and copied ArcGIS adapter.
@@ -34,3 +34,7 @@ Existing MaxQI and PROS Supabase refs are hard-blocked in runtime and migration 
 ## Future extension
 
 Membership roles and normalized workspace records support teams without one database per user. Projects/tags/comments/custom fields/documents/billing/audit/webhooks remain future work. No billing now. Additional workspaces and role management should use a carefully audited manager service/RPC; client membership escalation is blocked in v1.
+
+## Spatial workspace milestone
+
+Primary selection union coordinates Property, Observation and Drawing inspectors. Official parcel preview is separate from saved Workspace Property. Government address/boundary queries are authenticated, bounded server reads; save re-verifies the source. My Layers use atomic invoker RPC to preserve tenant RLS and normalized features. Official reference catalog is server-owned; per-user active-layer preference is tenant scoped. Web/iOS share all of these components. Map ResizeObserver handles sheet/orientation changes. Phone peek/half/full uses stable internal state names; iPad landscape map/inspector is 70/30.

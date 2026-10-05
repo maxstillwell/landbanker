@@ -28,7 +28,22 @@ import { geojsonFeatures } from "@/lib/map/geometry";
 import { ParcelSearch } from "./parcel-search";
 import type { MapSelection } from "@/lib/map/selection";
 import type { OfficialParcel } from "@/lib/map/parcel-types";
-import { formatArea } from "@/lib/map/measurement";
+import { WorkspaceSelector } from "./workspace-selector";
+import { LayerLibrary } from "./layer-library";
+import { createArcGisExportLayer } from "@/lib/map/arcgis-export-layer";
+import type { CatalogLayer, ActiveLayer } from "@/lib/map/catalog-types";
+import { ShapeDraft } from "./shape-draft";
+import {
+  drawingGeometry,
+  editablePoints,
+  type DrawingKind,
+} from "@/lib/map/drawing";
+import type { Feature } from "geojson";
+import {
+  formatArea,
+  formatDistance,
+  geometryMeasurement,
+} from "@/lib/map/measurement";
 const emptyData: MapData = {
   parcels: [],
   observations: [],
@@ -73,6 +88,8 @@ export default function MapWorkspace({
   const importInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
+  const [catalog, setCatalog] = useState<CatalogLayer[]>([]);
+  const [activeLayers, setActiveLayers] = useState<ActiveLayer[]>([]);
   const [data, setData] = useState<MapData>(emptyData);
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
@@ -135,6 +152,12 @@ export default function MapWorkspace({
   const [drawMode, setDrawMode] = useState(false);
   const [drawPoints, setDrawPoints] = useState<L.LatLng[]>([]);
   const drawing = useRef(false);
+  const drawKind = useRef<DrawingKind>("Polygon");
+  const [kind, setKind] = useState<DrawingKind>("Polygon");
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const editFeature = useRef<Feature | null>(null);
+  const editingLayerId = useRef<string | undefined>(undefined);
+  const drawingVertices = useRef<L.LayerGroup | null>(null);
   const polygonDraft = useRef<L.Polyline | null>(null);
   const canWrite = ["owner", "admin", "editor"].includes(role);
   const reload = useCallback(async () => {
@@ -149,6 +172,79 @@ export default function MapWorkspace({
       setNotice(e instanceof Error ? e.message : "Unable to refresh");
     }
   }, []);
+  const reloadLibrary = useCallback(async () => {
+    try {
+      const response = await fetch("/api/layer-library", { cache: "no-store" });
+      if (!response.ok) throw new Error("Layer Library unavailable");
+      const result = await response.json();
+      setCatalog(result.catalog);
+      setActiveLayers(result.active);
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Layer Library unavailable");
+    }
+  }, []);
+  useEffect(() => {
+    void reloadLibrary();
+  }, [reloadLibrary]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const layers: L.TileLayer[] = [];
+    for (const item of activeLayers) {
+      const source = catalog.find((l) => l.id === item.catalog_id && l.enabled);
+      if (!source || !item.visible) continue;
+      const layer =
+        source.renderer === "arcgis_export"
+          ? createArcGisExportLayer(
+              source.service_url,
+              source.layer_ids || "0",
+              {
+                minZoom: source.min_zoom,
+                opacity: Number(item.opacity),
+                attribution: source.attribution,
+                zIndex: 200 + item.position,
+                referrerPolicy: "strict-origin-when-cross-origin",
+              },
+            )
+          : L.tileLayer(source.service_url, {
+              attribution: source.attribution,
+              opacity: Number(item.opacity),
+              zIndex: 200 + item.position,
+            });
+      layer.on("tileerror", () =>
+        setNotice(
+          `${source.name}: source unavailable or outside coverage. Try again later.`,
+        ),
+      );
+      layer.addTo(m);
+      layers.push(layer);
+    }
+    return () => layers.forEach((l) => l.remove());
+  }, [catalog, activeLayers]);
+  async function changeOfficialLayer(item: ActiveLayer, remove = false) {
+    const previous = activeLayers;
+    setActiveLayers((current) =>
+      remove
+        ? current.filter((l) => l.catalog_id !== item.catalog_id)
+        : [
+            ...current.filter((l) => l.catalog_id !== item.catalog_id),
+            item,
+          ].sort((a, b) => a.position - b.position),
+    );
+    try {
+      await apiRequest("/api/layer-library", {
+        id: item.catalog_id,
+        action: remove ? "remove" : "save",
+        visible: item.visible,
+        opacity: Number(item.opacity),
+        position: item.position,
+      });
+      await reloadLibrary();
+    } catch (e) {
+      setActiveLayers(previous);
+      setNotice(e instanceof Error ? e.message : "Layer change failed");
+    }
+  }
   const reloadQueue = useCallback(async () => {
     try {
       setQueue(await listDrafts(userId, workspaceId));
@@ -202,7 +298,13 @@ export default function MapWorkspace({
     gps.current = L.layerGroup().addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => {
       if (drawing.current) {
-        setDrawPoints((points) => [...points, e.latlng]);
+        setDrawPoints((points) =>
+          drawKind.current === "Point"
+            ? [e.latlng]
+            : drawKind.current === "Rectangle" && points.length >= 2
+              ? [e.latlng]
+              : [...points, e.latlng],
+        );
         return;
       }
       const current = draftRef.current;
@@ -335,6 +437,20 @@ export default function MapWorkspace({
         if (layer.geojson)
           L.geoJSON(layer.geojson, {
             style: { color: "#86bccc", weight: 2, fillOpacity: 0.13 },
+            pointToLayer: (_f, latlng) =>
+              L.circleMarker(latlng, { radius: 7, color: "#86bccc" }),
+            onEachFeature: (feature, shape) =>
+              shape.on("click", (event) => {
+                if (drawing.current) return;
+                L.DomEvent.stopPropagation(event);
+                setSelection({
+                  kind: "drawing",
+                  record: layer,
+                  featureId: String(feature.id),
+                });
+                setTab("layers");
+                setSheet("medium");
+              }),
           }).addTo(group);
         else if (layer.layer_kind === "radius") {
           const centre = layer.layer_data.centre as number[];
@@ -395,15 +511,60 @@ export default function MapWorkspace({
   }, [fix]);
   useEffect(() => {
     polygonDraft.current?.remove();
-    if (map.current && drawPoints.length)
-      polygonDraft.current = L.polyline(drawPoints, {
-        color: "#ffa65a",
-        dashArray: "5 4",
-      }).addTo(map.current);
+    drawingVertices.current?.remove();
+    const m = map.current;
+    if (!m || !drawMode) return;
+    const geometry = drawingGeometry(
+      kind,
+      drawPoints.map((p) => [p.lng, p.lat]),
+    );
+    if (geometry) {
+      const group = L.geoJSON(geometry, {
+        style: { color: "#ffa65a", dashArray: "5 4" },
+        pointToLayer: (_f, p) =>
+          L.circleMarker(p, { radius: 7, color: "#ffa65a" }),
+      }).addTo(m);
+      drawingVertices.current = group;
+    }
+    const vertices = L.layerGroup().addTo(m);
+    drawPoints.forEach((point, index) =>
+      L.marker(point, {
+        draggable: true,
+        icon: L.divIcon({
+          className: "drawing-vertex",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        }),
+      })
+        .on("dragend", (event) => {
+          const p = event.target.getLatLng();
+          setDrawPoints((points) =>
+            points.map((v, i) => (i === index ? p : v)),
+          );
+        })
+        .addTo(vertices),
+    );
     return () => {
-      polygonDraft.current?.remove();
+      vertices.remove();
+      drawingVertices.current?.remove();
     };
-  }, [drawPoints]);
+  }, [drawPoints, drawMode, kind]);
+  useEffect(() => {
+    const node = mapNode.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() =>
+      map.current?.invalidateSize({ pan: false }),
+    );
+    observer.observe(node);
+    const timer = window.setTimeout(
+      () => map.current?.invalidateSize({ pan: false }),
+      250,
+    );
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [sheet]);
   function locate(keepFollowing = false) {
     locateRequested.current = true;
     setFollow(keepFollowing);
@@ -623,29 +784,64 @@ export default function MapWorkspace({
       setNotice(e instanceof Error ? e.message : "Import failed");
     }
   }
-  function finishDrawing() {
-    if (drawPoints.length < 3) {
-      setNotice("Choose at least three points.");
+  function startDrawing(
+    nextKind: DrawingKind,
+    feature?: Feature,
+    layerId?: string,
+  ) {
+    if (localLayer) {
+      setNotice("Save or discard your existing local draft first.");
       return;
     }
+    const points = feature ? editablePoints(feature.geometry) : [];
+    if (!points) {
+      setNotice(
+        "Multipart shapes and shapes with holes can be viewed, but are not editable yet.",
+      );
+      return;
+    }
+    editFeature.current = feature || null;
+    editingLayerId.current = layerId;
+    drawKind.current = nextKind;
+    setKind(nextKind);
+    drawing.current = true;
+    setDrawMode(true);
+    setDrawPoints(points.map((p) => L.latLng(p[1], p[0])));
+    setToolsOpen(false);
+    setSelection(null);
+    setTab("layers");
+    setSheet("collapsed");
+    setNotice("");
+  }
+  function finishDrawing() {
+    const geometry = drawingGeometry(
+      kind,
+      drawPoints.map((p) => [p.lng, p.lat]),
+    );
+    if (!geometry) {
+      setNotice("Add more points to complete this shape.");
+      return;
+    }
+    const existing = editFeature.current;
     void updateLocalLayer({
       id: crypto.randomUUID(),
-      name: "Field polygon",
+      name: "My analysis",
+      targetLayerId: editingLayerId.current,
       geojson: {
         type: "FeatureCollection",
         features: [
           {
             type: "Feature",
-            properties: { name: "Field polygon" },
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  ...drawPoints.map((p) => [p.lng, p.lat]),
-                  [drawPoints[0].lng, drawPoints[0].lat],
-                ],
-              ],
+            id: existing?.id || crypto.randomUUID(),
+            properties: existing?.properties || {
+              name:
+                kind === "Point"
+                  ? "Field point"
+                  : kind === "LineString"
+                    ? "Field line"
+                    : "Field area",
             },
+            geometry,
           },
         ],
       },
@@ -653,8 +849,51 @@ export default function MapWorkspace({
     drawing.current = false;
     setDrawMode(false);
     setDrawPoints([]);
+    setSheet("expanded");
     setNotice("Local Draft · Only on this device. Save to Workspace to sync.");
   }
+  async function saveShape() {
+    if (!localLayer) return;
+    try {
+      const target = data.layers.find((l) => l.id === localLayer.targetLayerId);
+      const ids = new Set(localLayer.geojson.features.map((f) => f.id));
+      const geojson = target?.geojson
+        ? {
+            type: "FeatureCollection" as const,
+            features: [
+              ...target.geojson.features.filter((f) => !ids.has(f.id)),
+              ...localLayer.geojson.features,
+            ],
+          }
+        : localLayer.geojson;
+      await apiRequest("/api/layers", {
+        id: target?.id || localLayer.id,
+        name: target?.name || localLayer.name,
+        geojson,
+      });
+      await updateLocalLayer(null);
+      await reload();
+      setSelection(null);
+      setNotice("Shape saved to Workspace.");
+    } catch (e) {
+      setNotice(
+        e instanceof Error ? e.message : "Save failed. Local draft preserved.",
+      );
+    }
+  }
+  const drawnGeometry = drawingGeometry(
+    kind,
+    drawPoints.map((p) => [p.lng, p.lat]),
+  );
+  const drawnMeasurement = drawnGeometry
+    ? geometryMeasurement(drawnGeometry)
+    : null;
+  const selectedDrawing =
+    selection?.kind === "drawing"
+      ? selection.record.geojson?.features.find(
+          (f) => String(f.id) === selection.featureId,
+        )
+      : null;
   return (
     <main className={`map-app sheet-${sheet}`}>
       <div
@@ -662,11 +901,37 @@ export default function MapWorkspace({
         className="map-canvas"
         aria-label="Land workspace map"
       />
+      {drawMode ? (
+        <div className="map-drawing-bar" aria-label="Drawing controls">
+          <strong>
+            {drawnMeasurement?.areaM2
+              ? formatArea(drawnMeasurement.areaM2)
+              : drawnMeasurement?.distanceM
+                ? formatDistance(drawnMeasurement.distanceM)
+                : `${drawPoints.length} points`}
+          </strong>
+          <button onClick={finishDrawing}>
+            {kind === "Polygon" ? "Finish polygon" : "Finish shape"}
+          </button>
+          <button onClick={() => setDrawPoints((p) => p.slice(0, -1))}>
+            Undo
+          </button>
+          <button
+            onClick={() => {
+              drawing.current = false;
+              setDrawMode(false);
+              setDrawPoints([]);
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
       <header className="map-header">
         <Link href="/app/map" className="wordmark">
           LandOS
         </Link>
-        <div className="workspace-pill">● {workspaceName}</div>
+        <WorkspaceSelector name={workspaceName} />
         <Link
           className="icon-button"
           href="/app/settings"
@@ -689,14 +954,14 @@ export default function MapWorkspace({
       ) : null}
       <div className="map-controls">
         <button onClick={() => locate()} aria-label="Locate Me">
-          ◎
+          Locate
         </button>
         <button
           className={follow ? "active" : ""}
           onClick={() => (follow ? stopFollow() : locate(true))}
           aria-label={follow ? "Stop following" : "Follow Me"}
         >
-          ↟
+          {follow ? "Following" : "Follow"}
         </button>
       </div>
       {fix ? (
@@ -706,9 +971,11 @@ export default function MapWorkspace({
       ) : null}
       <div className="field-action">
         {canWrite ? (
-          <button className="primary" onClick={beginObservation}>
-            ＋ Add observation
-          </button>
+          !drawMode ? (
+            <button className="primary" onClick={beginObservation}>
+              ＋ Add observation
+            </button>
+          ) : null
         ) : (
           <span>Read-only workspace</span>
         )}
@@ -734,6 +1001,7 @@ export default function MapWorkspace({
               )
             }
             aria-label="Resize inspector"
+            title={`Sheet: ${sheet === "collapsed" ? "peek" : sheet === "medium" ? "half" : "full"}`}
           >
             <span />
           </button>
@@ -741,15 +1009,17 @@ export default function MapWorkspace({
         <div className="inspector-heading">
           <div>
             <h2>
-              {draft
-                ? "New observation"
-                : selected
-                  ? selected.title
-                  : selectedParcel || officialParcel
-                    ? "Property"
-                    : tab === "layers"
-                      ? "Layers"
-                      : "Workspace"}
+              {drawMode
+                ? "Edit shape"
+                : draft
+                  ? "New observation"
+                  : selected
+                    ? selected.title
+                    : selectedParcel || officialParcel
+                      ? "Property"
+                      : tab === "layers"
+                        ? "Layers"
+                        : "Workspace"}
             </h2>
           </div>
           <button
@@ -773,6 +1043,7 @@ export default function MapWorkspace({
               className={tab === t ? "active" : ""}
               onClick={() => {
                 setTab(t);
+                setSelection(null);
                 setSheet("medium");
               }}
             >
@@ -1094,17 +1365,56 @@ export default function MapWorkspace({
           ) : null}
           {!draft && tab === "layers" ? (
             <>
+              <LayerLibrary
+                catalog={catalog}
+                active={activeLayers}
+                onChange={changeOfficialLayer}
+              />
               <div className="section-label">
-                SPATIAL LAYERS <span>{data.layers.length}</span>
+                MY LAYERS <span>{data.layers.length}</span>
               </div>
               {data.layers.map((l) => (
-                <div className="record-row" key={l.id}>
-                  <span className="record-icon">▱</span>
-                  <span>
-                    <strong>{l.name}</strong>
+                <details
+                  className="saved-layer"
+                  key={l.id}
+                  open={
+                    selection?.kind === "drawing" &&
+                    selection.record.id === l.id
+                  }
+                >
+                  <summary>
+                    {l.name}
                     <small>Saved to Workspace</small>
-                  </span>
-                </div>
+                  </summary>
+                  {l.geojson?.features.slice(0, 50).map((f, index) => (
+                    <button
+                      className="record-row"
+                      key={String(f.id || index)}
+                      onClick={() => {
+                        setSelection({
+                          kind: "drawing",
+                          record: l,
+                          featureId: String(f.id),
+                        });
+                        const bounds = L.geoJSON(f).getBounds();
+                        if (bounds.isValid())
+                          map.current?.fitBounds(bounds, {
+                            maxZoom: 17,
+                            padding: [30, 30],
+                          });
+                      }}
+                    >
+                      {String(
+                        f.properties?.name ||
+                          f.properties?.label ||
+                          `Shape ${index + 1}`,
+                      )}
+                    </button>
+                  ))}
+                  {(l.geojson?.features.length || 0) > 50 ? (
+                    <small>First 50 shapes shown.</small>
+                  ) : null}
+                </details>
               ))}
               {canWrite ? (
                 <>
@@ -1112,23 +1422,53 @@ export default function MapWorkspace({
                     <button onClick={() => importInput.current?.click()}>
                       Import GeoJSON
                     </button>
-                    <button
-                      onClick={() => {
-                        drawing.current = !drawing.current;
-                        setDrawMode(drawing.current);
-                        setDrawPoints([]);
-                        setNotice(
-                          drawing.current
-                            ? "Tap the map to draw your boundary."
-                            : "",
-                        );
-                      }}
-                    >
-                      {drawMode ? "Cancel drawing" : "Draw polygon"}
+                    <button onClick={() => setToolsOpen((v) => !v)}>
+                      Draw
                     </button>
                   </div>
+                  {toolsOpen ? (
+                    <div className="drawing-tools">
+                      {(
+                        [
+                          ["Point", "Add point"],
+                          ["LineString", "Draw line"],
+                          ["Polygon", "Draw polygon"],
+                          ["Rectangle", "Draw rectangle"],
+                        ] as [DrawingKind, string][]
+                      ).map(([k, label]) => (
+                        <button key={k} onClick={() => startDrawing(k)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                   {drawMode ? (
-                    <button onClick={finishDrawing}>Finish polygon</button>
+                    <div className="drawing-actions">
+                      <strong>
+                        {drawnMeasurement?.areaM2
+                          ? formatArea(drawnMeasurement.areaM2)
+                          : drawnMeasurement?.distanceM
+                            ? formatDistance(drawnMeasurement.distanceM)
+                            : `${drawPoints.length} points`}
+                      </strong>
+                      <button onClick={finishDrawing}>
+                        {kind === "Polygon" ? "Finish polygon" : "Finish shape"}
+                      </button>
+                      <button
+                        onClick={() => setDrawPoints((p) => p.slice(0, -1))}
+                      >
+                        Undo point
+                      </button>
+                      <button
+                        onClick={() => {
+                          drawing.current = false;
+                          setDrawMode(false);
+                          setDrawPoints([]);
+                        }}
+                      >
+                        Cancel drawing
+                      </button>
+                    </div>
                   ) : null}
                   <input
                     ref={importInput}
@@ -1142,28 +1482,78 @@ export default function MapWorkspace({
                     }}
                   />
                   {localLayer ? (
-                    <div className="local-layer">
-                      <strong>{localLayer.name}</strong>
-                      <p>Local Draft · Only on this device</p>
+                    <ShapeDraft
+                      key={localLayer.id}
+                      draft={localLayer}
+                      layers={data.layers}
+                      onChange={(value) => void updateLocalLayer(value)}
+                      onSave={saveShape}
+                      onDiscard={() => void updateLocalLayer(null)}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+              {selectedDrawing && selection?.kind === "drawing" ? (
+                <div className="property-details">
+                  <strong>
+                    {String(selectedDrawing.properties?.name || "Shape")}
+                  </strong>
+                  <p>{String(selectedDrawing.properties?.note || "")}</p>
+                  <p>
+                    {geometryMeasurement(selectedDrawing.geometry).areaM2
+                      ? formatArea(
+                          geometryMeasurement(selectedDrawing.geometry).areaM2,
+                        )
+                      : formatDistance(
+                          geometryMeasurement(selectedDrawing.geometry)
+                            .distanceM,
+                        )}
+                  </p>
+                  {canWrite ? (
+                    <div className="actions">
                       <button
-                        className="primary"
+                        onClick={() =>
+                          startDrawing(
+                            selectedDrawing.geometry.type === "Point"
+                              ? "Point"
+                              : selectedDrawing.geometry.type === "LineString"
+                                ? "LineString"
+                                : "Polygon",
+                            selectedDrawing,
+                            selection.record.id,
+                          )
+                        }
+                      >
+                        Edit shape
+                      </button>
+                      <button
                         onClick={async () => {
                           try {
-                            await apiRequest("/api/layers", localLayer);
-                            await updateLocalLayer(null);
+                            await apiRequest("/api/layers", {
+                              id: selection.record.id,
+                              name: selection.record.name,
+                              geojson: {
+                                type: "FeatureCollection",
+                                features:
+                                  selection.record.geojson?.features.filter(
+                                    (f) => f.id !== selectedDrawing.id,
+                                  ),
+                              },
+                            });
+                            setSelection(null);
                             await reload();
                           } catch (e) {
                             setNotice(
-                              e instanceof Error ? e.message : "Save failed",
+                              e instanceof Error ? e.message : "Delete failed",
                             );
                           }
                         }}
                       >
-                        Save to Workspace
+                        Delete shape
                       </button>
                     </div>
                   ) : null}
-                </>
+                </div>
               ) : null}
               <div className="section-label">SAVED VIEWS</div>
               {data.savedViews.map((v) => (

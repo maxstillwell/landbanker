@@ -6,8 +6,8 @@ export function SetupNeeded() {
         <p className="eyebrow">LandOS</p>
         <h1>Independent by design.</h1>
         <p>
-          The new backend is awaiting setup. LandOS will never fall back to
-          the MaxQI database.
+          The new backend is awaiting setup. LandOS will never fall back to the
+          MaxQI database.
         </p>
         <Link className="primary" href="/">
           Back home

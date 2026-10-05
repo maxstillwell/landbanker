@@ -24,6 +24,9 @@ do $$declare failed boolean;begin
  if not failed then raise exception 'workspace mutable';end if;
 end$$;
 set local role authenticated;
+insert into public.active_map_layers(workspace_id,user_id,catalog_id) values(current_setting('test.alice')::uuid,'11111111-1111-4111-8111-111111111111','vic-zoning');
+select public.save_layer_features(current_setting('test.alice')::uuid,'dddddddd-dddd-4ddd-8ddd-dddddddddddd','Drawing','{"type":"FeatureCollection","features":[{"type":"Feature","id":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","properties":{},"geometry":{"type":"Point","coordinates":[144,-37]}}]}');
+do $$begin if (select count(*) from public.spatial_features)<>1 then raise exception 'feature persistence';end if;end$$;
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
 do $$declare failed boolean;begin
  if (select count(*) from public.land_parcels)<>0 or (select count(*) from public.field_observations)<>0 or (select count(*) from public.field_observation_media)<>0 or (select count(*) from public.spatial_layers)<>0 or (select count(*) from public.saved_views)<>0 or (select count(*) from public.share_links)<>0 or (select count(*) from storage.objects)<>0 then raise exception 'cross tenant read leak';end if;
@@ -31,6 +34,12 @@ do $$declare failed boolean;begin
  failed:=false;begin insert into public.field_observations(workspace_id,title,latitude,longitude,linked_parcel_id) values(current_setting('test.bob')::uuid,'Bad link',0,0,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');exception when foreign_key_violation then failed:=true;end;if not failed then raise exception 'cross workspace FK';end if;
  failed:=false;begin insert into public.workspace_memberships values(current_setting('test.alice')::uuid,'22222222-2222-4222-8222-222222222222','owner','active',now());exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'role escalation';end if;
  failed:=false;begin insert into storage.objects(bucket_id,name) values('field-media',current_setting('test.alice')||'/attack.png');exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'storage leak';end if;
+end$$;
+do $$declare failed boolean:=false;begin
+ if (select count(*) from public.spatial_features)<>0 then raise exception 'feature isolation';end if;
+ if (select count(*) from public.active_map_layers)<>0 then raise exception 'preference isolation';end if;
+ begin perform public.save_layer_features(current_setting('test.alice')::uuid,'dddddddd-dddd-4ddd-8ddd-dddddddddddd','Attack','{"type":"FeatureCollection","features":[]}');exception when insufficient_privilege then failed:=true;end;
+ if not failed then raise exception 'cross tenant RPC';end if;
 end$$;
 reset role;
 insert into public.workspace_memberships(workspace_id,user_id,role) values(current_setting('test.alice')::uuid,'22222222-2222-4222-8222-222222222222','viewer');

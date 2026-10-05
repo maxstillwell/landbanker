@@ -14,3 +14,9 @@ Latest Supabase changelog and Auth/SSR/RLS/Storage documentation checked before 
 - `.env*`, source exports, reports and storage-copy credentials excluded from Git. Independent backend guard rejects MaxQI and PROS projects.
 
 Validation: real PostgreSQL 17 tests cover bootstrap, different users, viewer/suspended memberships, anonymous access, role escalation, cross-workspace FK, and storage writes. More tests include workspace immutability and share scope. Full hosted security/advisors and iOS permission tests remain pending independent cloud backend/macOS CI.
+
+## LandOS spatial security verification
+
+Additive drawing RPC uses SECURITY INVOKER, fixed search_path, explicit active editor membership and all original Workspace RLS/FKs. PUBLIC/anon execution revoked. Two-user DB tests now cover normalized feature reads and cross-tenant RPC calls. Editor deletion applies only to their Workspace Features; layer delete remains manager-only. API rejects invalid coordinates/unclosed rings and duplicate identities. Reference catalog read policy is intentionally global for authenticated users; it contains public government-service metadata, not Workspace data. Preference rows require auth.uid plus active membership; catalog/entitlement client writes denied. Workspace cookie selection validates active membership.
+
+Hosted security advisor currently reports existing leaked-password protection disabled; enabling depends on supported Supabase Auth plan/configuration. See https://supabase.com/docs/guides/auth/password-security. No missing-RLS warning. Real device/private Storage workflow remains separate from compile-only acceptance.

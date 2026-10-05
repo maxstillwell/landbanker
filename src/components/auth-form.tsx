@@ -81,8 +81,8 @@ export function AuthForm({
         <h1>{titles[mode]}</h1>
         {!enabled ? (
           <p role="status" className="notice">
-            The independent LandOS backend is awaiting infrastructure
-            setup. Account creation will open once it is connected.
+            The independent LandOS backend is awaiting infrastructure setup.
+            Account creation will open once it is connected.
           </p>
         ) : null}
         <form onSubmit={submit}>

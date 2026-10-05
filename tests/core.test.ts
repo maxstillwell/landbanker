@@ -341,3 +341,54 @@ test("official ESRI rings preserve parcel holes and multiple disjoint parts", as
     ]),
   );
 });
+
+import {
+  drawingGeometry,
+  validGeometry,
+  editablePoints,
+} from "../src/lib/map/drawing";
+test("drawing tools validate closed geometry without discarding imported holes", () => {
+  const rectangle = drawingGeometry("Rectangle", [
+    [144, -37],
+    [144.01, -37.01],
+  ]);
+  assert.ok(rectangle && validGeometry(rectangle));
+  assert.equal(drawingGeometry("LineString", [[144, -37]]), null);
+  assert.equal(
+    validGeometry({ type: "Point", coordinates: [181, -37] }),
+    false,
+  );
+  assert.equal(
+    validGeometry({
+      type: "Polygon",
+      coordinates: [
+        [
+          [144, -37],
+          [145, -37],
+          [145, -38],
+        ],
+      ],
+    }),
+    false,
+  );
+  assert.equal(
+    editablePoints({
+      type: "Polygon",
+      coordinates: [
+        [
+          [144, -37],
+          [145, -37],
+          [145, -38],
+          [144, -37],
+        ],
+        [
+          [144.1, -37.1],
+          [144.2, -37.1],
+          [144.2, -37.2],
+          [144.1, -37.1],
+        ],
+      ],
+    }),
+    null,
+  );
+});

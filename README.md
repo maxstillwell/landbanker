@@ -10,3 +10,5 @@ Copy `.env.example` to `.env.local` with credentials for a **new** Supabase proj
 Independent repository directory; no runtime dependency on MaxQI source. iOS code is in `ios/`. Private exports must stay outside Git.
 
 For isolated cloud-workspace testing: `npm run local:start`, `npm run build`, `npm run start`, then `npm run test:e2e`. Real local Auth/Storage are used; no MaxQI production connection. Database security checks: `npm run db:test`. See [docs/VERIFICATION.md](docs/VERIFICATION.md) for results and limits.
+
+Current spatial milestone: official VIC/NSW address + parcel search and Save to Workspace; Point/Line/Polygon/Rectangle drawing, metric measurement and My Layer persistence; searchable official Layer Library with saved visibility/opacity. Web and iOS use the same Leaflet workspace. See [docs/PRODUCT.md](docs/PRODUCT.md), [docs/PARCELS.md](docs/PARCELS.md), [docs/LAYERS.md](docs/LAYERS.md) and [docs/BASEMAP_STRATEGY.md](docs/BASEMAP_STRATEGY.md). Real-device iOS testing requires signing; cloud unsigned Simulator CI continues independently.

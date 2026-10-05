@@ -1,4 +1,4 @@
-name: Land Banker CI
+name: LandOS CI
 on:
   push:
   pull_request:

@@ -14,7 +14,7 @@ compose=(docker compose --parallel 1 --env-file infra/local/.env -f infra/local/
 # Pull sequentially with bounded retries: public registries occasionally throttle CI runners.
 for service in db auth rest storage mail gateway; do
   for attempt in 1 2 3; do
-    if "${compose[@]}" pull "$service"; then break; fi
+    if "${compose[@]}" pull --policy missing "$service"; then break; fi
     if [[ $attempt == 3 ]]; then echo "Unable to pull local test image: $service"; exit 1; fi
     sleep "$((attempt * 5))"
   done
