@@ -2,14 +2,14 @@
 
 Current actor: maxstillwell on GitHub, Max Qi organization on Supabase, current Vercel team `team_uz00skMNo5QcnakBUYe8ZuVl`. Linux files created by agent:agent. No additional accounts created.
 
-## Confirmed blockers
+## Historical setup blockers (resolved by user creation)
 
-- Both GitHub GraphQL and REST createRepository attempts rejected: Resource not accessible by integration, HTTP 403. Existing repository access does not grant account-level creation. Create private `maxstillwell/land-banker` or authorize repository creation. Do not use maxqi.com as a fallback remote.
+- Both GitHub GraphQL and REST createRepository attempts rejected: Resource not accessible by integration, HTTP 403. Existing repository access does not grant account-level creation. Create private `maxstillwell/landbanker` or authorize repository creation. Do not use maxqi.com as a fallback remote.
 - Supabase project create in Max Qi organization: rejected because maxstillwell has reached 2 active free projects. Quote was $0/month, but creation still denied. Do not pause/delete/upgrade MaxQI or PROS automatically. Supply free capacity or explicitly authorize paid independent infrastructure later.
 
 ## After repository creation
 
-`git remote add origin https://github.com/maxstillwell/land-banker.git`; push main. Remote must be independent. Configure GitHub App repository access as needed. CI builds Web + unsigned iPhone/iPad Simulator app.
+`git remote add origin https://github.com/maxstillwell/landbanker.git`; push main. Remote must be independent. Configure GitHub App repository access as needed. CI builds Web + unsigned iPhone/iPad Simulator app.
 Create Vercel project `land-banker`, linked only to this new repo under current Vercel team; initial deploy should be Preview. Configure separate Development/Preview/Production env credentials, no imported MaxQI variables. Use connected Vercel create_git_project or CLI. No real domain required.
 
 ## After new Supabase project
@@ -25,3 +25,9 @@ Local Auth email auto-confirm is enabled ONLY for tests; Mailpit receives recove
 Standard Supabase CLI stack was attempted but failed extracting large Postgres image due environment disk limit; stopped, no production interaction.
 
 Preview/iOS URL must be Land Banker, set NEXT_PUBLIC_APP_URL/LAND_BANKER_APP_URL and GitHub repository variable LAND_BANKER_WEB_URL. Do not purchase or bind a domain yet.
+
+## User-created infrastructure — 2026-10-05
+
+GitHub: maxstillwell/landbanker, currently Public, empty; current integration has push/admin permission. Full source push was blocked by automatic approval review because public publication of source/docs was not explicit. User choice is pending: private repository or explicit public source/documentation approval. Credentials and private data are excluded regardless.
+
+Supabase: screenshot URL https://gksyipjxhrolsgztfyer.supabase.co, Landbanker, Tokyo, new landbanker organization. Current connector lists only old Max Qi projects; get_project on new ref returns permission error. Reauthorize Supabase connection for new organization. Do not move the new backend into MaxQI or change old production resources.

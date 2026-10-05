@@ -4,7 +4,7 @@ Land Banker is an independent multi-tenant product. It is not a MaxQI wrapper. *
 
 ## Boundaries
 
-- Separate repository directory and Git history, intended remote `maxstillwell/land-banker` (private).
+- Separate repository directory and Git history, remote `maxstillwell/landbanker` (currently public, created by the user).
 - Independent Next.js 16 / React 19 / TypeScript web app. Leaflet client map loaded dynamically.
 - Independent Supabase Auth, Postgres, private Storage and migration history.
 - SwiftUI app loads the configured Land Banker URL using persistent WKWebView, never MaxQI.

@@ -1,10 +1,10 @@
 # Land Banker status
 
-Updated: 2026-10-04. Resume by reading this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
+Updated: 2026-10-05 (Australia/Sydney). Resume by reading this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
 
 ## Completed
 
-- Independent `/workspace/land-banker` git repository, current `agent:agent` ownership; source and release independent of MaxQI. Local commit/bundle provided; remote permission blocked.
+- Independent `/workspace/land-banker` git repository, current `agent:agent` ownership; source and release independent of MaxQI. Local commit/bundle provided. User created maxstillwell/landbanker; GitHub API confirms push/admin access, but the repository is Public. Publication/private-visibility choice is pending after automatic approval review rejected the public push.
 - MaxQI source/schema/reuse audit; only generic map utilities copied/extracted. Excluded legacy auth/admin/passwords/layout/Obsidian. No MaxQI production modifications.
 - Supabase email/password signup/login/logout/PKCE recovery/session; Personal Workspace trigger; multi-tenant schema, memberships and RLS; private Storage + user-authorized signed upload.
 - Responsive full-map Web: iPhone three-state sheet, iPad portrait inspector/landscape 70:30 layout, desktop; GPS locate/follow/accuracy, observations/text/photos and durable account-scoped IndexedDB queue/retry.
@@ -16,7 +16,7 @@ Updated: 2026-10-04. Resume by reading this file + ARCHITECTURE.md. **NEVER BREA
 
 ## In Progress
 
-Cloud provisioning/remote push and iOS execution are blocked externally. Web Field MVP verified locally; first milestone is not yet a deployed/device-validated release. Milestone 2 foundations (retry, durable layers, saved views, secure sharing/tests, CI) implemented within available infrastructure.
+Remote push is pending explicit public-source approval or a private-repository choice. New Supabase project was created by the user in a separate landbanker organization; current connector is not authorized to access it. Cloud setup and iOS CI execution remain pending. Web Field MVP verified locally; first milestone is not yet a deployed/device-validated release. Milestone 2 foundations (retry, durable layers, saved views, secure sharing/tests, CI) implemented within available infrastructure.
 
 ## Build status
 
@@ -24,11 +24,11 @@ Web lint/typecheck/unit/RLS/production build passed. Browser full flow passes ag
 
 ## Deployment
 
-No public Preview URL. Independent GitHub creation rejected HTTP 403; Vercel project cannot yet link new remote. No MaxQI deployments/domains/integration changed.
+No Preview URL yet. User-created independent repo maxstillwell/landbanker is empty and Public; source push awaits publication scope confirmation. Vercel will link only this independent repo. No MaxQI deployments/domains/integration changed.
 
 ## Database status
 
-Independent cloud Supabase creation under current Max Qi org rejected: two active free projects limit. Existing MaxQI/PROS not paused/deleted/upgraded. Complete migration/config/setup and real isolated local stack provided. Only local synthetic/test accounts created. Max must register his own actual Land Banker account after cloud backend becomes available; import targets its owner Workspace.
+User-created Landbanker project URL: https://gksyipjxhrolsgztfyer.supabase.co; screenshot indicates Tokyo ap-northeast-1 and separate landbanker organization. Current Supabase connection only lists old Max Qi projects and rejects access to the new ref. Project identity/schema status not yet remotely verified. No cloud migration applied by this agent. Existing MaxQI/PROS not paused/deleted/upgraded. Complete migration/config/setup and real isolated local stack provided. Only local synthetic/test accounts created. Max must register his own actual Land Banker account after cloud backend becomes available; import targets its owner Workspace.
 
 ## Known issues
 
@@ -42,12 +42,12 @@ Independent cloud Supabase creation under current Max Qi org rejected: two activ
 
 ## External blockers
 
-1. GitHub integration lacks independent private repo creation permission (GraphQL + REST 403). Create `maxstillwell/land-banker` or expand repository-creation access.
-2. Independent Supabase project capacity. Existing free projects must remain intact; provide capacity/approved independent paid infrastructure.
+1. Public-source authorization: auto-review rejected pushing the full source tree to the Public maxstillwell/landbanker repository without explicit publication approval. Await user choice to change it to Private or authorize source/documentation publication.
+2. Supabase connector access to new landbanker organization/project. Reauthorize that organization; project creation/capacity blocker is now resolved by the user.
 3. Apple signing/TestFlight credentials later; unsigned macOS CI only requires new remote to run.
 
 ## Exact next step
 
-When remote access is available: connect **only** `maxstillwell/land-banker`, push local main, run CI including unsigned iPhone/iPad builds. Create separate Vercel project under current team and Preview deployment. When independent Supabase capacity is available: create Sydney project, apply guarded migrations, configure separate environment/Auth email URLs, run hosted security checks, deploy Preview with credentials configured at build time. Max signs up; verify owner Personal Workspace; dry-run → copy → verify private existing snapshot → later checksum-copy media. Validate iOS with Preview URL and continue remaining milestone 2 work. Keep MaxQI reading legacy backend.
+After repository publication scope is confirmed: connect **only** `maxstillwell/landbanker`, push local main, run CI including unsigned iPhone/iPad builds. Create separate Vercel project under current team and Preview deployment. After Supabase connection authorizes the user-created Tokyo project: verify identity/empty schema, apply guarded migrations, configure separate environment/Auth email URLs, run hosted security checks, deploy Preview with credentials configured at build time. Max signs up; verify owner Personal Workspace; dry-run → copy → verify private existing snapshot → later checksum-copy media. Validate iOS with Preview URL and continue remaining milestone 2 work. Keep MaxQI reading legacy backend.
 
-Current handoff: independent local git history and `/workspace/land-banker-source.zip` + `/workspace/land-banker.bundle`, excluding credentials/private snapshot/build caches. Remote push cannot proceed without creation permission. Do not fall back to the MaxQI repository.
+Current handoff: independent local git history and `/workspace/land-banker-source.zip` + `/workspace/land-banker.bundle`, excluding credentials/private snapshot/build caches. Remote push awaits publication scope confirmation; no push was executed after the automatic approval rejection. Do not fall back to the MaxQI repository.
