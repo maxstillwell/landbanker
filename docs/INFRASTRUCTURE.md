@@ -18,13 +18,13 @@ Use Australia/Sydney region if suitable. Apply guarded schema to new project onl
 
 ## Local cloud testing
 
-`npm run local:start`; then `npm run build` and `npm run start` (or `npm run dev`). The startup script bootstraps isolated database roles, real GoTrue Auth/Storage migrations, Land Banker schema, managed-style local Storage grants and gateway config. It is repeatable and never contacts an existing project. Local generated secrets stay in ignored `.env` files; use this only in a disposable development workspace. Do not run `local-config.mjs` over a configured cloud `.env.local`.
+`npm run local:start`; then `npm run build` and `npm run start` (or `npm run dev`). The startup script bootstraps isolated database roles, real GoTrue Auth/Storage migrations, LandOS schema, managed-style local Storage grants and gateway config. It is repeatable and never contacts an existing project. Local generated secrets stay in ignored `.env` files; use this only in a disposable development workspace. Do not run `local-config.mjs` over a configured cloud `.env.local`.
 
 Local Auth email auto-confirm is enabled ONLY for tests; Mailpit receives recovery emails. API binds to 127.0.0.1:54321 and mail UI to 127.0.0.1:54324. Containers currently keep data in their container filesystems; removing them discards only local test data. Private MaxQI snapshot remains separately ignored. CI uses this same stack, builds with its local environment configured first, and runs browser tests against the production build. `npm run test:e2e` is localhost-only, creates synthetic test accounts, exercises real Auth/Storage and a repeatable synthetic importer. No local setup is a production Supabase replacement.
 
 Standard Supabase CLI stack was attempted but failed extracting large Postgres image due environment disk limit; stopped, no production interaction.
 
-Preview/iOS URL must be Land Banker, set NEXT_PUBLIC_APP_URL/LAND_BANKER_APP_URL and GitHub repository variable LAND_BANKER_WEB_URL. Do not purchase or bind a domain yet.
+Preview/iOS URL must be LandOS, set NEXT_PUBLIC_APP_URL/LAND_BANKER_APP_URL and GitHub repository variable LAND_BANKER_WEB_URL. Do not purchase or bind a domain yet.
 
 ## User-created infrastructure — 2026-10-05
 

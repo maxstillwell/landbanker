@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { resolveShare } from "@/lib/share-resolver";
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Shared land intelligence · Land Banker",
+  title: "Shared land intelligence · LandOS",
   robots: { index: false, follow: false },
 };
 export default async function Page({
@@ -16,7 +16,7 @@ export default async function Page({
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <p className="eyebrow">LAND BANKER · READ ONLY</p>
+        <p className="eyebrow">LandOS · READ ONLY</p>
         <h1>Shared intelligence.</h1>
         <p>
           Only explicitly selected records are included. Private notes and

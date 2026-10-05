@@ -1,4 +1,4 @@
-# Land Banker
+# LandOS
 
 Independent multi-tenant land intelligence web and iOS product. **NEVER BREAK MAXQI.**
 

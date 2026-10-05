@@ -10,10 +10,10 @@ struct FieldWebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> UIView {
         guard let configuration = WebConfiguration() else {
-            let label = UILabel(); label.text = "Land Banker preview URL is not configured.\nSet LAND_BANKER_WEB_URL when building."; label.numberOfLines = 0; label.textAlignment = .center; return label
+            let label = UILabel(); label.text = "LandOS preview URL is not configured.\nSet LAND_BANKER_WEB_URL when building."; label.numberOfLines = 0; label.textAlignment = .center; return label
         }
         let preferences = WKWebViewConfiguration()
-        preferences.applicationNameForUserAgent = "LandBanker/0.1"
+        preferences.applicationNameForUserAgent = "LandOS/0.1"
         preferences.websiteDataStore = .default() // Persistent cookies/IndexedDB across relaunch.
         preferences.userContentController.add(context.coordinator, name: "landBanker")
         let web = WKWebView(frame: .zero, configuration: preferences)

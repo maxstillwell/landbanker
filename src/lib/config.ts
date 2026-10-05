@@ -3,7 +3,7 @@ export function assertIndependentBackend(url: string) {
   const parsed = new URL(url);
   if (blocked.some((ref) => parsed.hostname.includes(ref)))
     throw new Error(
-      "Land Banker must use its own Supabase project. Existing projects are blocked.",
+      "LandOS must use its own Supabase project. Existing projects are blocked.",
     );
   if (!["https:", "http:"].includes(parsed.protocol))
     throw new Error("Invalid backend protocol");
@@ -24,7 +24,7 @@ export function supabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key)
-    throw new Error("Independent Land Banker backend is not configured.");
+    throw new Error("Independent LandOS backend is not configured.");
   assertIndependentBackend(url);
   if (key.startsWith("sb_secret_"))
     throw new Error("Secret keys cannot be used in the client");

@@ -3,14 +3,14 @@ export default function Home() {
   return (
     <main className="landing">
       <div className="wordmark">
-        LAND BANKER <span>FIELD INTELLIGENCE</span>
+        LandOS <span>MAP. ANALYSE. MANAGE LAND.</span>
       </div>
       <div className="landing-copy">
         <p className="eyebrow">GROUND YOUR NEXT MOVE</p>
         <h1>
-          A clearer view.
+          The operating system
           <br />
-          From the field.
+          for land.
         </h1>
         <p>
           Your parcels, observations and spatial layers.

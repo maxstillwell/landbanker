@@ -1,13 +1,13 @@
-# Land Banker architecture
+# LandOS architecture
 
-Land Banker is an independent multi-tenant product. It is not a MaxQI wrapper. **NEVER BREAK MAXQI. COPY FIRST → VERIFY → CUT OVER LATER.**
+LandOS is an independent multi-tenant product. It is not a MaxQI wrapper. **NEVER BREAK MAXQI. COPY FIRST → VERIFY → CUT OVER LATER.**
 
 ## Boundaries
 
 - Separate repository directory and Git history, remote `maxstillwell/landbanker` (currently public, created by the user).
 - Independent Next.js 16 / React 19 / TypeScript web app. Leaflet client map loaded dynamically.
 - Independent Supabase Auth, Postgres, private Storage and migration history.
-- SwiftUI app loads the configured Land Banker URL using persistent WKWebView, never MaxQI.
+- SwiftUI app loads the configured LandOS URL using persistent WKWebView, never MaxQI.
 - Web, iPhone and iPad share the same Leaflet basemap and layers. CoreLocation supplies coordinates to this map; no separate MapKit renderer. Tile origin identification/privacy details are in BASEMAP.md.
 - All authenticated queries use the user's Supabase credential so database RLS remains authoritative. No service-role bypass for application CRUD.
 - Optional server-only privileged share resolver reads token hashes and explicit safe projections; it cannot expose arbitrary tables or queries.

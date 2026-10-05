@@ -10,11 +10,11 @@ Read-only snapshot: 62 parcels, 1 observation, 2 media metadata rows, 12 spatial
 
 ## Repeatable procedure
 
-1. Register your Land Banker account against the independent backend; verify Personal Workspace and owner membership.
+1. Register your LandOS account against the independent backend; verify Personal Workspace and owner membership.
 2. Export with `node --import tsx scripts/export-maxqi.ts` using a server-only read-only source credential. All fetches paginated and ordered. Or produce the same snapshot using read-only SQL. Never pass source keys into the web app.
 3. `npm run import:maxqi -- --snapshot private-imports/maxqi.json --workspace <UUID>` performs dry run without any database connection.
 4. Configure independent destination URL, matching `LAND_BANKER_PROJECT_REF`, `LAND_BANKER_IMPORT_SECRET_KEY`. A registered owner membership must already exist.
-5. Add `--apply`: deterministic workspace-scoped UUIDs, insert-only records and unique mappings; repeat runs skip existing imported records. Existing source hashes changing are reported, not blindly updated. Crash recovery recognizes existing legacy lineage before adding a missing mapping. Never overwrite edited Land Banker rows.
+5. Add `--apply`: deterministic workspace-scoped UUIDs, insert-only records and unique mappings; repeat runs skip existing imported records. Existing source hashes changing are reported, not blindly updated. Crash recovery recognizes existing legacy lineage before adding a missing mapping. Never overwrite edited LandOS rows.
 6. Add `--verify`: verify destination identity/workspace and persisted migration mapping; composite foreign keys enforce workspace consistency; source missing relationships abort before apply. Archive reports in ignored private-imports. Compare counts/hashes/mapping and sample geometry/location/date values.
 7. Media phase 1 copies metadata only. `legacy_pending` with original bucket/path mapping explicitly communicates missing files. Subsequent file-copy tool must read original → checksum → new Storage → checksum → set status, preserve originals and fail safely. It is not yet implemented.
 

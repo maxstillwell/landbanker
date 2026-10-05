@@ -27,7 +27,7 @@ These observations establish an access blocker. They do not establish whether th
 1. Open the target project link above. Confirm the signed-in Supabase account can open it and the organization is `landbanker`.
 2. In ChatGPT settings, find the connected Supabase app/plugin. Use its reconnect/reauthorize option if available; otherwise disconnect that ChatGPT connection and connect it again. This changes the connection, not the Supabase project or data.
 3. During authorization, use the account from step 1. If organization selection is offered, explicitly select `landbanker`. If it is absent, stop and check the signed-in account and its organization membership; do not create another project as a workaround.
-4. Reload ChatGPT and retry access. If this chat retains the old connection, open a new Codex task with the Land Banker repository and the instruction below. Opening a new chat is a diagnostic step, not a guarantee that access is fixed.
+4. Reload ChatGPT and retry access. If this chat retains the old connection, open a new Codex task with the LandOS repository and the instruction below. Opening a new chat is a diagnostic step, not a guarantee that access is fixed.
 
 No password, access token, database password, service-role key, or secret key needs to be posted in chat.
 

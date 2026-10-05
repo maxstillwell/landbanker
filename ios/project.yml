@@ -18,10 +18,10 @@ targets:
     info:
       path: LandBanker/Info.plist
       properties:
-        CFBundleDisplayName: Land Banker
+        CFBundleDisplayName: LandOS
         UILaunchScreen: {}
         LAND_BANKER_WEB_URL: "$(LAND_BANKER_WEB_URL)"
-        NSLocationWhenInUseUsageDescription: Land Banker uses your location to place field observations and show where you are on the map.
+        NSLocationWhenInUseUsageDescription: LandOS uses your location to place field observations and show where you are on the map.
         NSCameraUsageDescription: Take photos to attach to your field observations.
         NSPhotoLibraryUsageDescription: Choose photos for field observations and preserve their capture information.
         UISupportedInterfaceOrientations:

@@ -625,7 +625,7 @@ export default function MapWorkspace({
       />
       <header className="map-header">
         <Link href="/app/map" className="wordmark">
-          LAND BANKER <span>FIELD INTELLIGENCE</span>
+          LandOS
         </Link>
         <div className="workspace-pill">● {workspaceName}</div>
         <Link
@@ -636,15 +636,18 @@ export default function MapWorkspace({
           ⚙
         </Link>
       </header>
-      <div className="map-topline">
-        <span className={online ? "status-online" : "status-offline"}>
-          {online ? "CONNECTED" : "WEAK / NO CONNECTION"}
-        </span>
-        <span>
-          {data.parcels.length} parcels · {data.observations.length}{" "}
-          observations
-        </span>
-      </div>
+      {!online || queue.some((q) => q.status !== "draft") ? (
+        <div className="map-topline" role="status">
+          {!online
+            ? "Offline · "
+            : queue.some((q) => q.status === "failed")
+              ? "Upload failed · "
+              : queue.some((q) => q.status === "uploading")
+                ? "Syncing · "
+                : ""}
+          {queue.filter((q) => q.status !== "draft").length} items pending
+        </div>
+      ) : null}
       <div className="map-controls">
         <button onClick={() => locate()} aria-label="Locate Me">
           ◎
@@ -698,13 +701,14 @@ export default function MapWorkspace({
         </div>
         <div className="inspector-heading">
           <div>
-            <p className="eyebrow">YOUR WORKSPACE</p>
             <h2>
               {draft
-                ? "Field observation"
+                ? "New observation"
                 : selected
                   ? selected.title
-                  : "Land intelligence"}
+                  : tab === "layers"
+                    ? "Layers"
+                    : "Workspace"}
             </h2>
           </div>
           <button

@@ -1,8 +1,8 @@
-# Collaborating on Land Banker
+# Collaborating on LandOS
 
 Repository: https://github.com/maxstillwell/landbanker
 
-Read AGENTS.md, STATUS.md, ARCHITECTURE.md and SECURITY.md before work. **NEVER BREAK MAXQI**. Land Banker is independent; all migration/import work is copy-only. No MaxQI production auth/schema/policies/integration changes.
+Read AGENTS.md, STATUS.md, ARCHITECTURE.md and SECURITY.md before work. **NEVER BREAK MAXQI**. LandOS is independent; all migration/import work is copy-only. No MaxQI production auth/schema/policies/integration changes.
 
 ## Parallel development
 

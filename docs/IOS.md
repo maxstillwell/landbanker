@@ -1,6 +1,6 @@
 # iOS
 
-Swift / SwiftUI / WKWebView / CoreLocation / PhotosUI / Network.framework. iOS 17+, iPhone and iPad. No MaxQI URLs or cookies. Web authentication uses Land Banker Supabase Auth; default WKWebsiteDataStore persists cookies and IndexedDB across relaunch. Future native Supabase Auth is supported at the domain boundary, not implemented yet.
+Swift / SwiftUI / WKWebView / CoreLocation / PhotosUI / Network.framework. iOS 17+, iPhone and iPad. No MaxQI URLs or cookies. Web authentication uses LandOS Supabase Auth; default WKWebsiteDataStore persists cookies and IndexedDB across relaunch. Future native Supabase Auth is supported at the domain boundary, not implemented yet.
 
 `brew install xcodegen`; `xcodegen generate --spec ios/project.yml --project ios`; `xcodebuild -project ios/LandBanker.xcodeproj -scheme LandBanker -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO LAND_BANKER_WEB_URL=https://<preview>/app/map build`.
 

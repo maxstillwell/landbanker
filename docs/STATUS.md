@@ -1,4 +1,4 @@
-# Land Banker status
+# LandOS status
 
 Updated: 2026-10-06 (Australia/Sydney). Resume with this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
 
@@ -54,3 +54,11 @@ Access blocker resolved (2026-10-05): explicit Landbanker link_id now routes too
 ## Exact next step
 
 Web/Simulator CI passes; hosted access/schema/nonmember isolation confirmed. Reconcile the two already-applied hosted migrations with repository SQL before adding DDL. Check existing Vercel env and Auth site/redirect/email configuration without overwriting another developer's setup. Verify real login/recovery/photo/desktop flow, then identify Max's actual owner Workspace for dry-run → copy → verify existing private snapshot → later checksum-copy media. Continue iOS/backend and milestone 2. MaxQI continues reading its legacy backend.
+
+## LandOS milestone — active 2026-10-06
+
+Visible product renamed LandOS; stable repo/domain/schema/bridge/device queue identifiers retained. PRODUCT.md defines the spatial-workspace direction and required P0→P6 order. P0: API requests bounded to 45 seconds, Supabase browser operations/upload bounded to 120 seconds, local queue preserved with visible failure/retry. Timeout/caller cancellation unit tests added; eight tests, lint, types and production build pass. Existing real-browser Field/tenant-isolation test remains in cloud CI. Online connection banner hidden when healthy; contextual sheet titles started.
+
+Manual/device gaps: native HEIC/camera/large-photo/background/phone-lock/expired-session/relaunch remain real-device acceptance items, not inferred from Simulator compilation. Existing EXIF metadata preserves capture/location without changing observation position. No full offline map.
+
+Next: P1 verify VIC Vicmap Address + VicPlan Parcel and NSW Spatial Services Address/Cadastre endpoints; implement bounded official search/read-only preview/idempotent Workspace save with source provenance. Then drawing/measurement and official catalog; reconcile hosted migration history before additive schema. This milestone permits only 5–10 representative MaxQI records, never full import/cutover.

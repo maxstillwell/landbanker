@@ -1,6 +1,6 @@
 # Shared Leaflet basemap
 
-Web, iPhone and iPad use the same Leaflet map in the Land Banker Web App. iOS embeds it through WKWebView; CoreLocation supplies GPS, not an Apple Maps replacement.
+Web, iPhone and iPad use the same Leaflet map in the LandOS Web App. iOS embeds it through WKWebView; CoreLocation supplies GPS, not an Apple Maps replacement.
 
 ## 403 fix — 2026-10-06
 

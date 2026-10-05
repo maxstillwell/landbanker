@@ -12,4 +12,4 @@ Read before implementing:
 
 Applied explicit Data API GRANTs plus RLS, private security-definer membership helper with qualified names/search_path/revoked PUBLIC execution, trigger-only signup, SSR cookie refresh, getUser validation, private Storage and signed uploads. No reliance on user-editable metadata for authorization. Dependencies pinned with lockfile.
 
-Confirm production Auth Site URL/redirect allowlist after new project creation; for mobile recovery links use token-hash email template `/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` to avoid requiring the original browser's PKCE verifier. PKCE callback remains supported for same-device links. Add only exact configured Land Banker origins, no broad wildcards for production.
+Confirm production Auth Site URL/redirect allowlist after new project creation; for mobile recovery links use token-hash email template `/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` to avoid requiring the original browser's PKCE verifier. PKCE callback remains supported for same-device links. Add only exact configured LandOS origins, no broad wildcards for production.

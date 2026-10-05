@@ -11,7 +11,7 @@ export function sameOrigin(request: NextRequest) {
 }
 export function apiError(error: unknown) {
   console.error(
-    "Land Banker API:",
+    "LandOS API:",
     error instanceof Error ? error.message : "request failed",
   );
   return NextResponse.json(

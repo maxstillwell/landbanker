@@ -74,14 +74,14 @@ export function AuthForm({
   return (
     <main className="auth-page">
       <Link className="wordmark" href="/">
-        LAND BANKER
+        LandOS
       </Link>
       <section className="auth-card">
         <p className="eyebrow">YOUR PRIVATE FIELD WORKSPACE</p>
         <h1>{titles[mode]}</h1>
         {!enabled ? (
           <p role="status" className="notice">
-            The independent Land Banker backend is awaiting infrastructure
+            The independent LandOS backend is awaiting infrastructure
             setup. Account creation will open once it is connected.
           </p>
         ) : null}

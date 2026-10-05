@@ -1,6 +1,7 @@
 import { openDB, type DBSchema } from "idb";
 import type { z } from "zod";
 import type { observationInput, mediaInput } from "./validation";
+import { timeoutFetch } from "./network";
 export type QueuePhoto = {
   input: z.infer<typeof mediaInput>;
   blob: Blob;
@@ -53,7 +54,7 @@ export async function removeDraft(id: string) {
   }
 }
 export async function apiRequest(path: string, body: unknown, method = "POST") {
-  const r = await fetch(path, {
+  const r = await timeoutFetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

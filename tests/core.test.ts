@@ -245,3 +245,29 @@ test("local layer draft survives storage reads and remains scoped to user/worksp
   await writeLayerDraft("owner", w, null);
   assert.equal(await readLayerDraft("owner", w), null);
 });
+
+test("network timeout preserves retry semantics and propagates cancellation", async () => {
+  const { timeoutFetch } = await import("../src/lib/network");
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_input, init) =>
+    new Promise((_resolve, reject) => {
+      const signal = init?.signal;
+      const abort = () => reject(signal?.reason || new Error("aborted"));
+      if (signal?.aborted) abort();
+      else signal?.addEventListener("abort", abort, { once: true });
+    });
+  try {
+    await assert.rejects(
+      timeoutFetch("https://test.invalid", {}, 5),
+      /timed out.*draft is preserved/,
+    );
+    const controller = new AbortController();
+    controller.abort(new Error("caller cancelled"));
+    await assert.rejects(
+      timeoutFetch("https://test.invalid", { signal: controller.signal }, 500),
+      /caller cancelled/,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
