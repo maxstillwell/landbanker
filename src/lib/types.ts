@@ -9,6 +9,12 @@ export type Parcel = {
   notes: string | null;
   status: string;
   metadata: Record<string, unknown>;
+  address?: string | null;
+  state?: "VIC" | "NSW" | null;
+  hectares?: number | null;
+  source?: string | null;
+  source_parcel_id?: string | null;
+  saved_at?: string;
 };
 export type Observation = {
   id: string;

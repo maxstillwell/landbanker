@@ -271,3 +271,73 @@ test("network timeout preserves retry semantics and propagates cancellation", as
     globalThis.fetch = original;
   }
 });
+
+test("Australian area and line measurements use metric units", async () => {
+  const { geometryMeasurement, formatArea, formatDistance } =
+    await import("../src/lib/map/measurement");
+  const line = geometryMeasurement({
+    type: "LineString",
+    coordinates: [
+      [144, -37],
+      [144.01, -37],
+    ],
+  });
+  assert.ok(line.distanceM > 800 && line.distanceM < 1000);
+  const polygon = geometryMeasurement({
+    type: "Polygon",
+    coordinates: [
+      [
+        [144, -37],
+        [144.01, -37],
+        [144.01, -37.01],
+        [144, -37.01],
+        [144, -37],
+      ],
+    ],
+  });
+  assert.ok(polygon.areaM2 > 900000 && polygon.areaM2 < 1100000);
+  assert.equal(formatArea(1842), "1,842 m²");
+  assert.equal(formatArea(426800), "42.68 ha");
+  assert.equal(formatDistance(1840), "1.84 km");
+});
+
+test("official ESRI rings preserve parcel holes and multiple disjoint parts", async () => {
+  const { esriRingsGeometry } = await import("../src/lib/map/esri-rings");
+  const outer = [
+      [0, 0],
+      [0, 4],
+      [4, 4],
+      [4, 0],
+      [0, 0],
+    ],
+    hole = [
+      [1, 1],
+      [2, 1],
+      [2, 2],
+      [1, 2],
+      [1, 1],
+    ],
+    island = [
+      [6, 0],
+      [6, 1],
+      [7, 1],
+      [7, 0],
+      [6, 0],
+    ];
+  const single = esriRingsGeometry([outer, hole]);
+  assert.equal(single.type, "Polygon");
+  assert.equal(single.coordinates.length, 2);
+  const multi = esriRingsGeometry([hole, island, outer]);
+  assert.equal(multi.type, "MultiPolygon");
+  assert.equal(multi.coordinates.length, 2);
+  assert.ok(multi.coordinates.some((p) => p.length === 2));
+  assert.throws(() =>
+    esriRingsGeometry([
+      [
+        [0, 0],
+        [1, 1],
+        [2, 0],
+      ],
+    ]),
+  );
+});

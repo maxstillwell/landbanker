@@ -25,6 +25,10 @@ import {
   type LocalLayerDraft,
 } from "@/lib/layer-draft";
 import { geojsonFeatures } from "@/lib/map/geometry";
+import { ParcelSearch } from "./parcel-search";
+import type { MapSelection } from "@/lib/map/selection";
+import type { OfficialParcel } from "@/lib/map/parcel-types";
+import { formatArea } from "@/lib/map/measurement";
 const emptyData: MapData = {
   parcels: [],
   observations: [],
@@ -83,7 +87,26 @@ export default function MapWorkspace({
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
-  const [selected, setSelected] = useState<Observation | null>(null);
+  const [selection, setSelection] = useState<MapSelection>(null);
+  const selected = selection?.kind === "observation" ? selection.record : null;
+  const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
+  const officialParcel =
+    selection?.kind === "official-parcel" ? selection.record : null;
+  function setSelected(record: Observation | null) {
+    setSelection(record ? { kind: "observation", record } : null);
+  }
+  function selectOfficialParcel(record: OfficialParcel) {
+    setSelection({ kind: "official-parcel", record });
+    setTab("parcels");
+    setSheet("medium");
+    if (map.current) {
+      const boundary = L.geoJSON(record.geometry);
+      map.current.fitBounds(boundary.getBounds(), {
+        padding: [30, 30],
+        maxZoom: 18,
+      });
+    }
+  }
   const [localLayer, setLocalLayer] = useState<LocalLayerDraft | null>(null);
   const updateLocalLayer = useCallback(
     async (value: LocalLayerDraft | null) => {
@@ -270,7 +293,13 @@ export default function MapWorkspace({
       if (parcel.geometry) {
         L.geoJSON(parcel.geometry, {
           style: { color: "#bed86a", weight: 2, fillOpacity: 0.12 },
-        }).addTo(group);
+        })
+          .on("click", () => {
+            setSelection({ kind: "parcel", record: parcel });
+            setTab("parcels");
+            setSheet("medium");
+          })
+          .addTo(group);
       }
       if (parcel.latitude !== null && parcel.longitude !== null) {
         const node = document.createElement("div");
@@ -337,6 +366,15 @@ export default function MapWorkspace({
         dashArray: "3",
       }).addTo(group);
   }, [data, draft, localLayer]);
+  useEffect(() => {
+    if (!map.current || !officialParcel) return;
+    const layer = L.geoJSON(officialParcel.geometry, {
+      style: { color: "#e3a049", weight: 3, fillOpacity: 0.15 },
+    }).addTo(map.current);
+    return () => {
+      layer.remove();
+    };
+  }, [officialParcel]);
   useEffect(() => {
     const group = gps.current;
     if (!group || !fix) return;
@@ -431,6 +469,7 @@ export default function MapWorkspace({
         latitude: fix?.latitude ?? p?.lat ?? -37.56,
         longitude: fix?.longitude ?? p?.lng ?? 143.85,
         observed_at: new Date().toISOString(),
+        observed_at_source: "device",
         metadata: fix
           ? {
               location_source: "gps",
@@ -706,9 +745,11 @@ export default function MapWorkspace({
                 ? "New observation"
                 : selected
                   ? selected.title
-                  : tab === "layers"
-                    ? "Layers"
-                    : "Workspace"}
+                  : selectedParcel || officialParcel
+                    ? "Property"
+                    : tab === "layers"
+                      ? "Layers"
+                      : "Workspace"}
             </h2>
           </div>
           <button
@@ -910,6 +951,116 @@ export default function MapWorkspace({
           ) : null}
           {!draft && tab === "parcels" ? (
             <>
+              <ParcelSearch
+                onSelect={selectOfficialParcel}
+                onAddress={(p) =>
+                  map.current?.setView([p.latitude, p.longitude], 17)
+                }
+              />
+              {officialParcel || selectedParcel ? (
+                <section className="property-details">
+                  <h3>
+                    {officialParcel?.address ||
+                      selectedParcel?.address ||
+                      selectedParcel?.title ||
+                      "Official parcel"}
+                  </h3>
+                  <dl>
+                    <dt>State</dt>
+                    <dd>
+                      {officialParcel?.state ||
+                        selectedParcel?.state ||
+                        "Legacy record"}
+                    </dd>
+                    <dt>Parcel / Lot / Plan</dt>
+                    <dd>
+                      {officialParcel
+                        ? [
+                            officialParcel.sourceId,
+                            officialParcel.lot,
+                            officialParcel.plan,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : selectedParcel?.source_parcel_id ||
+                          "Legacy identifier"}
+                    </dd>
+                    <dt>Calculated area</dt>
+                    <dd>
+                      {formatArea(
+                        officialParcel?.areaM2 ??
+                          Number(selectedParcel?.hectares || 0) * 10000,
+                      )}
+                    </dd>
+                    <dt>Source</dt>
+                    <dd>
+                      {officialParcel?.source ||
+                        selectedParcel?.source ||
+                        "Imported workspace data"}
+                    </dd>
+                    <dt>Location</dt>
+                    <dd>
+                      {(
+                        officialParcel?.latitude ?? selectedParcel?.latitude
+                      )?.toFixed(6)}
+                      ,{" "}
+                      {(
+                        officialParcel?.longitude ?? selectedParcel?.longitude
+                      )?.toFixed(6)}
+                    </dd>
+                  </dl>
+                  {officialParcel ? (
+                    <>
+                      <p>
+                        <a
+                          href={officialParcel.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Official source
+                        </a>{" "}
+                        ·{" "}
+                        {officialParcel.sourceUpdatedAt
+                          ? `Source date ${new Date(officialParcel.sourceUpdatedAt).toLocaleDateString()}`
+                          : "Source update date not supplied"}
+                      </p>
+                      <p>
+                        Boundary-derived area; not a title search or surveyed
+                        legal area.
+                      </p>
+                      {canWrite ? (
+                        <button
+                          className="primary full"
+                          onClick={async () => {
+                            try {
+                              const result = await apiRequest(
+                                "/api/parcels",
+                                officialParcel,
+                              );
+                              setSelection({
+                                kind: "parcel",
+                                record: result.parcel,
+                              });
+                              await reload();
+                              setNotice("Property saved to Workspace.");
+                            } catch (e) {
+                              setNotice(
+                                e instanceof Error
+                                  ? e.message
+                                  : "Property save failed",
+                              );
+                            }
+                          }}
+                        >
+                          Save to Workspace
+                        </button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p>Saved to Workspace</p>
+                  )}
+                </section>
+              ) : null}
               <div className="section-label">
                 PARCEL REGISTER <span>{data.parcels.length}</span>
               </div>
@@ -919,6 +1070,7 @@ export default function MapWorkspace({
                     className="record-row"
                     key={p.id}
                     onClick={() => {
+                      setSelection({ kind: "parcel", record: p });
                       if (p.latitude !== null && p.longitude !== null)
                         map.current?.setView([p.latitude, p.longitude], 15);
                       setNotice(

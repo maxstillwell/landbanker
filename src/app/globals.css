@@ -789,3 +789,50 @@ fieldset {
   margin: 0;
   min-width: 0;
 }
+
+/* LandOS property search and contextual inspector. */
+.parcel-search form {
+  display: grid;
+  gap: 12px;
+}
+.parcel-search label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.parcel-search select,
+.parcel-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.parcel-search > small {
+  display: block;
+  margin: 12px 0;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.property-details {
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.property-details dl {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+  font-size: 12px;
+}
+.property-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.property-details p {
+  font-size: 12px;
+  line-height: 1.6;
+}

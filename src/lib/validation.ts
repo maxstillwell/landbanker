@@ -7,6 +7,7 @@ export const observationInput = z.object({
   title: z.string().trim().min(1).max(160),
   notes: z.string().max(20000).default(""),
   observed_at: z.iso.datetime(),
+  observed_at_source: z.enum(["device", "user", "photo", "legacy"]).optional(),
   linked_parcel_id: z.uuid().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),
 });

@@ -10,7 +10,15 @@ if (url !== 'http://127.0.0.1:54321') throw new Error('Local test stack requires
 JS
 fi
 if [[ ! -f infra/local/.env || ! -f .env.local ]]; then node scripts/local-config.mjs; fi
-compose=(docker compose --env-file infra/local/.env -f infra/local/compose.yml)
+compose=(docker compose --parallel 1 --env-file infra/local/.env -f infra/local/compose.yml)
+# Pull sequentially with bounded retries: public registries occasionally throttle CI runners.
+for service in db auth rest storage mail gateway; do
+  for attempt in 1 2 3; do
+    if "${compose[@]}" pull "$service"; then break; fi
+    if [[ $attempt == 3 ]]; then echo "Unable to pull local test image: $service"; exit 1; fi
+    sleep "$((attempt * 5))"
+  done
+done
 "${compose[@]}" up -d db
 for attempt in {1..30}; do
   if "${compose[@]}" exec -T db pg_isready -h 127.0.0.1 -U postgres -d landbanker >/dev/null 2>&1; then break; fi
@@ -29,6 +37,16 @@ done
 if [[ $("${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -Atc "select to_regclass('public.land_parcels') is null") == t ]]; then
   "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 < supabase/migrations/20261004045401_land_banker_foundation.sql
 fi
+"${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 -c "create table if not exists private.local_migrations(version text primary key)"
+for migration in supabase/migrations/*.sql; do
+  version=$(basename "$migration" .sql)
+  [[ $version == 20261004045401_land_banker_foundation ]] && continue
+  applied=$("${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -Atc "select count(*) from private.local_migrations where version='$version'")
+  if [[ $applied == 0 ]]; then
+    "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 < "$migration"
+    "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 -c "insert into private.local_migrations values('$version')"
+  fi
+done
 "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 < infra/local/storage-grants.sql
 "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -c "notify pgrst, 'reload schema'"
 "${compose[@]}" create gateway
