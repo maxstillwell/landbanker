@@ -4,6 +4,8 @@ Repository https://github.com/maxstillwell/landbanker and Vercel project landban
 
 Backend from user: https://gksyipjxhrolsgztfyer.supabase.co, new landbanker organization, Tokyo. Current session tools cannot access it; user reports reauthorization complete. Refresh the connection/session and verify organizations/project before writing anything. MaxQI and PROS remain forbidden destinations.
 
+For verified connection diagnostics and the account authorization step, see [SUPABASE_ACCESS.md](SUPABASE_ACCESS.md).
+
 ## After connector access succeeds
 
 1. Confirm project identity/status and inspect existing public tables/migration history/storage buckets. If another developer or Git integration already applied schema, verify rather than duplicate it.

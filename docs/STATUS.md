@@ -44,6 +44,8 @@ Only old projects were inspected read-only; existing MaxQI/PROS not paused/delet
 
 ## External blockers
 
+Latest access diagnosis (2026-10-05): plugin is enabled; connector still exposes only Max Qi and directly denies the new reference. Cloud CLI also returns AccessTokenRequiredError, so there is no configured CLI alternative. Available tools cannot refresh OAuth grants. Account/organization verification and reconnection steps are in [SUPABASE_ACCESS.md](SUPABASE_ACCESS.md). New-project database health remains unverified; no hosted writes were attempted.
+
 1. New Supabase organization access is not present in CURRENT session tools despite completed user reauthorization. Refresh/reload connection/session and verify list_organizations includes landbanker, then get_project succeeds. No key/password needs to be posted in chat.
 2. Apple signing/TestFlight later. Independent Simulator CI works without it.
    GitHub admin-settings/variables mutations are denied by integration (403); source content API publication works. HTTPS Git push returned 401, so API fallback preserved source history and hashes. Normal fetch/clone works; scripts/push-via-api.py handles committed main updates without force-pushing or overwriting concurrent changes.
