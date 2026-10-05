@@ -19,7 +19,12 @@ Browser screenshots are ignored artifacts (synthetic test data only): iPhone, de
 ## Not verified / unavailable
 
 - Independent hosted Supabase: creation rejected by active free-project capacity. Local tests do not replace cloud migration/advisor/confirmation/SMTP checks.
-- Independent GitHub remote: repository creation denied by integration permissions. CI configuration exists but has not run on GitHub.
-- Vercel Preview: no deployment yet. New repository or scoped CLI credential required.
-- iOS compilation, Simulator execution, real GPS/camera/Photos/session relaunch: no Xcode on Linux and no remote macOS workflow run. Swift source and unsigned iPhone/iPad workflow provided; build result remains unverified.
+- Independent GitHub remote/CI initially unavailable on 2026-10-04; resolved by user-created repo and source publication on 2026-10-05. Current hosted results below supersede the initial limitation.
+- Vercel Preview originally unavailable on 2026-10-04; main and Preview deployments are now READY. Current hosted results below.
+- iOS compilation originally unverified on 2026-10-04; macOS iPhone/iPad unsigned Simulator builds passed on 2026-10-05. Simulator launch and real GPS/camera/Photos/session relaunch behavior still need validation.
 - No cloud copy into Max's actual Workspace. No actual legacy media file copying. No MaxQI cutover.
+
+## Hosted results — 2026-10-05
+
+Independent source/history published to user-approved Public maxstillwell/landbanker; all recreated tree/commit hashes matched local originals. Vercel main and preview deployments READY; landing/signup HTTP 200 and backend-unconfigured message verified. Hosted signup/database/Storage end-to-end checks are pending connector access, not counted as passed.
+GitHub run 37247783731: iPhone and iPad unsigned Simulator builds passed; Web lint/types/unit passed, then database readiness race failed. Fixed final TCP readiness in 20f33ca; local PostgreSQL RLS recheck passed, cloud run 37248285240 passed Web (including real local Auth/Storage/browser field tests), iPhone and iPad builds after the readiness fix. GitHub .app artifacts do not verify real-device behavior.

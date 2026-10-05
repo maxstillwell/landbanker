@@ -1,53 +1,53 @@
 # Land Banker status
 
-Updated: 2026-10-05 (Australia/Sydney). Resume by reading this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
+Updated: 2026-10-05 (Australia/Sydney). Resume with this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
 
 ## Completed
 
-- Independent `/workspace/land-banker` git repository, current `agent:agent` ownership; source and release independent of MaxQI. Local commit/bundle provided. User created maxstillwell/landbanker; GitHub API confirms push/admin access, but the repository is Public. User initially chose Private before push; visibility API returned 403, then user said leave visibility unchanged for now. User explicitly authorized public source and technical documentation push to maxstillwell/landbanker. Credentials/photos/MaxQI snapshot are excluded. Initial push/CI/Preview are now in progress.
-- MaxQI source/schema/reuse audit; only generic map utilities copied/extracted. Excluded legacy auth/admin/passwords/layout/Obsidian. No MaxQI production modifications.
-- Supabase email/password signup/login/logout/PKCE recovery/session; Personal Workspace trigger; multi-tenant schema, memberships and RLS; private Storage + user-authorized signed upload.
-- Responsive full-map Web: iPhone three-state sheet, iPad portrait inspector/landscape 70:30 layout, desktop; GPS locate/follow/accuracy, observations/text/photos and durable account-scoped IndexedDB queue/retry.
-- GeoJSON/local polygon draft editing, durable Local Draft + Save to Workspace, saved views; imported parcels/layers.
-- Secure hash-based share foundation, selected parcel/layer create/revoke APIs and narrow anonymous read seam. Local scope/revoke tests pass. Full sharing UI/subset manifests pending.
-- SwiftUI persistent WKWebView shell, formal native bridge, CoreLocation When In Use, camera/PhotosUI/network/share sheet/navigation. Unsigned iPhone/iPad macOS CI configured; compilation not yet executed.
-- Copy-only safe/idempotent importer and private snapshot. All 103 transformed source records copied/re-applied/verified in LOCAL test Workspace. Source unchanged; legacy media metadata only. No cloud import into Max's account.
-- Seven unit/queue tests, real PostgreSQL RLS checks, local real Auth/Storage/browser end-to-end checks. Details: VERIFICATION.md.
+- Independent public repository: https://github.com/maxstillwell/landbanker. User explicitly authorized public source/technical docs. All initial local history published with identical commit/tree hashes. Credentials/photos/private MaxQI exports are excluded. Current files retain agent:agent ownership.
+- Independent Vercel project landbanker, id prj_afzfCidHE83CGne0ILQBJPKdBBi6, current Vercel team. Main deployment https://landbanker.vercel.app and separate preview branch https://landbanker-git-preview-maxstillwells-projects.vercel.app. Both build successfully; Preview may require Vercel authentication.
+- Supabase Auth/workspace/RLS/Storage migration and Web Field MVP verified against real independent LOCAL services: signup/login/recovery/logout, Personal Workspace, GPS, notes/photos/signed upload, desktop sync, durable failed-upload retry.
+- Responsive iPhone sheet/iPad inspector/desktop map; GeoJSON/local polygon drafts with durable device storage + Save to Workspace; saved views and secure scoped/revocable share foundation.
+- SwiftUI persistent WKWebView/native bridge/location/camera/PhotosUI/network/navigation shell. GitHub macos-15 unsigned iPhone AND iPad Simulator builds passed in run 37247783731; downloadable .app artifacts exist. CI URL defaults to configurable Vercel app URL. These are Simulator builds, not TestFlight/device-signed builds.
+- Seven unit/queue tests + real PostgreSQL 17 RLS/security tests passed. Actual private source snapshot copied/re-applied/verified in LOCAL test Workspace: 62 parcels, 1 observation, 2 media metadata, 12 layers, 26 features = 103. Source unchanged; files not copied. No import into Max's cloud Workspace.
+- Team branch/PR workflow and boundaries in TEAM.md; project rules in AGENTS.md.
 
 ## In Progress
 
-Latest user steering: keep current Public visibility for now. User explicitly approved public source/documentation push. No visibility changes; proceed with source-only publication, CI and independent Preview. New Supabase project was created by the user in a separate landbanker organization; current connector is not authorized to access it. Cloud setup and iOS CI execution remain pending. Web Field MVP verified locally; first milestone is not yet a deployed/device-validated release. Milestone 2 foundations (retry, durable layers, saved views, secure sharing/tests, CI) implemented within available infrastructure.
+Web cloud CI now passes after fixing PostgreSQL readiness race: use final TCP listener, not temporary bootstrap socket. Run 37248285240 passes Web real Auth/Storage/browser flow plus iPhone/iPad builds. Track https://github.com/maxstillwell/landbanker/actions.
+Hosted Supabase auth/database setup awaits tool access to the user's new organization. Landing/auth pages deploy, but signup is intentionally disabled until backend configuration is complete.
 
 ## Build status
 
-Web lint/typecheck/unit/RLS/production build passed. Browser full flow passes against local services; production-build verification results in VERIFICATION.md. GitHub CI and iOS Simulator builds unexecuted.
+Local lint/typecheck/unit/RLS/production build and full browser workflow passed. Vercel builds READY. Initial GitHub Web lint/types/unit passed, then DB startup race failed; corrected in 20f33ca. iPhone/iPad Simulator builds succeeded. Corrected cloud run 37248285240 passed all three jobs on commit 20f33ca.
 
 ## Deployment
 
-No Preview URL yet. User-created independent repo maxstillwell/landbanker is empty and Public; public source-only push now authorized; CI and independent Preview setup in progress. Vercel will link only this independent repo. No MaxQI deployments/domains/integration changed.
+- Repository: maxstillwell/landbanker (Public, explicitly approved).
+- Main: https://landbanker.vercel.app (new independent project only).
+- Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app.
+- App URL env configured separately for main/preview; backend URL points only to https://gksyipjxhrolsgztfyer.supabase.co. No publishable credential supplied yet; no secret keys configured.
+- create_git_project described its initial deploy as preview, but get_deployment reported production target. A separate preview branch/deployment was then established and verified. No MaxQI aliases/domains changed.
 
 ## Database status
 
-User-created Landbanker project URL: https://gksyipjxhrolsgztfyer.supabase.co; screenshot indicates Tokyo ap-northeast-1 and separate landbanker organization. Current Supabase connection only lists old Max Qi projects and rejects access to the new ref. Project identity/schema status not yet remotely verified. No cloud migration applied by this agent. Existing MaxQI/PROS not paused/deleted/upgraded. Complete migration/config/setup and real isolated local stack provided. Only local synthetic/test accounts created. Max must register his own actual Land Banker account after cloud backend becomes available; import targets its owner Workspace.
+User created Landbanker project, screenshot ref gksyipjxhrolsgztfyer, Tokyo ap-northeast-1, separate landbanker organization. User reports reauthorization completed; current session still lists ONLY Max Qi organization and rejects new ref with permission error. New project identity/schema/migrations not yet remotely verified; no hosted SQL/migration applied by this agent. Do not infer that GitHub/Supabase integration applied migrations.
+Only old projects were inspected read-only; existing MaxQI/PROS not paused/deleted/upgraded. Never substitute them for the new backend.
 
-## Known issues
+## Known issues / next
 
-- Real legacy media file copy/checksum tool remains future work; imported media clearly legacy_pending.
-- No full offline maps. Device queue explicit retry; automatic backoff/native background transfer/secure device cleanup remain follow-ups.
-- GeoJSON/polygon support first; broader planning/KML/KMZ/spatial analysis/editing needs expansion. Map list queries currently capped at 1,000 parcels/500 observations/100 layers/views; pagination needed for larger workspaces.
-- No complete share UI/map subset manifests; public read is bounded explicit parcel/layer scope. Add perimeter rate limiting before public launch.
-- Native recovery deep links/Simulator/device permission, expired-session and relaunch tests pending. iOS source build is unverified.
-- Cloud email confirmation/SMTP/advisors and hosted RLS/Storage verification still required.
-- No billing or MaxQI cutover.
+- Hosted auth/confirmation/recovery/SMTP/RLS/Storage security verification and Max's real signup/import remain pending new connector access.
+- Legacy media file copy/checksums not implemented; metadata is legacy_pending. No source deletion.
+- Explicit retry now; automatic backoff/native background transfer/device cleanup future work. No offline maps/billing/cutover.
+- Full share UI/subset manifests/perimeter rate limiting pending. GeoJSON/polygon first; KML/KMZ/broader spatial editing and query pagination need expansion.
+- iOS real-device permissions/camera/GPS/expired-session/relaunch/native recovery link testing remains. Unsigned Simulator builds do not establish these results.
 
 ## External blockers
 
-1. Publication scope resolved: user explicitly authorized public source/documentation publication after earlier automatic approval rejection. Never publish credentials/photos/private snapshots.
-2. Supabase connector access to new landbanker organization/project. Reauthorize that organization; project creation/capacity blocker is now resolved by the user.
-3. Apple signing/TestFlight credentials later; unsigned macOS CI only requires new remote to run.
+1. New Supabase organization access is not present in CURRENT session tools despite completed user reauthorization. Refresh/reload connection/session and verify list_organizations includes landbanker, then get_project succeeds. No key/password needs to be posted in chat.
+2. Apple signing/TestFlight later. Independent Simulator CI works without it.
+   GitHub admin-settings/variables mutations are denied by integration (403); source content API publication works. HTTPS Git push returned 401, so API fallback preserved source history and hashes. Normal fetch/clone works; scripts/push-via-api.py handles committed main updates without force-pushing or overwriting concurrent changes.
 
 ## Exact next step
 
-Public source/documentation publication is explicitly approved: connect **only** `maxstillwell/landbanker`, push local main, run CI including unsigned iPhone/iPad builds. Create separate Vercel project under current team and Preview deployment. After Supabase connection authorizes the user-created Tokyo project: verify identity/empty schema, apply guarded migrations, configure separate environment/Auth email URLs, run hosted security checks, deploy Preview with credentials configured at build time. Max signs up; verify owner Personal Workspace; dry-run → copy → verify private existing snapshot → later checksum-copy media. Validate iOS with Preview URL and continue remaining milestone 2 work. Keep MaxQI reading legacy backend.
-
-Current handoff: independent local git history and `/workspace/land-banker-source.zip` + `/workspace/land-banker.bundle`, excluding credentials/private snapshot/build caches. Public source push is authorized; no push was executed after the automatic approval rejection. Do not fall back to the MaxQI repository.
+Web/Simulator CI passes. Once the updated Supabase connector can see landbanker organization: verify project ref/empty schema, apply committed migrations ONLY to new project, run advisors/RLS/Storage checks, retrieve publishable key through authorized tooling, configure Vercel env, set new project's Auth site/redirect URLs, redeploy both environments. Max signs up and owns Personal Workspace; dry-run → copy → verify existing private snapshot → later checksum-copy media. Validate full cloud phone/desktop flow, then iOS with actual backend and continue milestone 2. MaxQI continues reading its legacy backend.
