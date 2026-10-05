@@ -2,7 +2,7 @@
 
 Repository https://github.com/maxstillwell/landbanker and Vercel project landbanker are established. The user explicitly authorized public source/docs; no credentials/private snapshots/photos are published.
 
-Backend from user: https://gksyipjxhrolsgztfyer.supabase.co, new landbanker organization, Tokyo. Current session tools cannot access it; user reports reauthorization complete. Refresh the connection/session and verify organizations/project before writing anything. MaxQI and PROS remain forbidden destinations.
+Backend: https://gksyipjxhrolsgztfyer.supabase.co, independent landbanker organization, Tokyo. Access restored 2026-10-05: select the **Landbanker** connection with the current tool's explicit link_id. Project is ACTIVE_HEALTHY. Two hosted migrations already exist; verify them rather than repeat foundation initialization. MaxQI and PROS remain forbidden destinations.
 
 For verified connection diagnostics and the account authorization step, see [SUPABASE_ACCESS.md](SUPABASE_ACCESS.md).
 

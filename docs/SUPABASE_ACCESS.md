@@ -2,6 +2,16 @@
 
 Target: [Landbanker project](https://supabase.com/dashboard/project/gksyipjxhrolsgztfyer), organization `landbanker`. Do not move this project or change MaxQI memberships, schema, policies, or data to resolve this connection issue.
 
+## Resolved — 2026-10-05
+
+Tools now expose an explicit account selector. Select the connection named **Landbanker** using its listed `link_id` on every Supabase call; do not use the old Supabase connection. Project lookup and SQL succeed. Verified organization `landbanker` (`zhpgbccgfasglutbekts`), project `gksyipjxhrolsgztfyer`, Tokyo, `ACTIVE_HEALTHY`, Postgres 17.11.
+
+Existing hosted migrations `20261005013641_land_banker_foundation` and `20261005013949_improve_rls_and_foreign_key_indexes` were discovered; do not repeat initialization. Eleven business tables have RLS, 32 public policies, private field-media bucket (25 MiB), one Auth user and one active owner Workspace. A read-only transaction verified an authenticated identity without membership sees no Workspace/business records. Anonymous roles have no public-table grants. Business/import counts are currently zero.
+
+Online /signup returns the enabled form without the backend-waiting message. Actual login/confirmation/recovery/photo workflow remains to be verified. Security advisor reports leaked-password protection disabled; performance advisor reports unused indexes only. Do not remove new indexes merely because the empty project has no usage.
+
+The sections below record the prior blocker and fallback procedure, not the current access state.
+
 ## Verified 2026-10-05
 
 - Supabase plugin is installed and enabled.
