@@ -1,9 +1,10 @@
 # Land Banker status
 
-Updated: 2026-10-05 (Australia/Sydney). Resume with this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
+Updated: 2026-10-06 (Australia/Sydney). Resume with this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
 
 ## Completed
 
+- User reports hosted login success. Fixed OSM tile identification: app-only origin Referrer-Policy plus explicit Leaflet image policy; share/auth privacy unchanged. Same Leaflet map across Web/WKWebView, native application identifier appended. Details in BASEMAP.md. Lint/types/unit/production build and full local Field browser regression passed, including tile Referer assertion and real map screenshot. Publication/deployment verification follows this commit.
 - Independent public repository: https://github.com/maxstillwell/landbanker. User explicitly authorized public source/technical docs. All initial local history published with identical commit/tree hashes. Credentials/photos/private MaxQI exports are excluded. Current files retain agent:agent ownership.
 - Independent Vercel project landbanker, id prj_afzfCidHE83CGne0ILQBJPKdBBi6, current Vercel team. Main deployment https://landbanker.vercel.app and separate preview branch https://landbanker-git-preview-maxstillwells-projects.vercel.app. Both build successfully; Preview may require Vercel authentication.
 - Supabase Auth/workspace/RLS/Storage migration and Web Field MVP verified against real independent LOCAL services: signup/login/recovery/logout, Personal Workspace, GPS, notes/photos/signed upload, desktop sync, durable failed-upload retry.

@@ -11,6 +11,13 @@ const config: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
         ],
       },
+      {
+        source: "/app/:path*",
+        headers: [
+          // Identify the map's origin to tile providers without leaking paths.
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
     ];
   },
 };

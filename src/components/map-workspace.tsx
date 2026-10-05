@@ -172,6 +172,7 @@ export default function MapWorkspace({
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
+      referrerPolicy: "strict-origin-when-cross-origin",
     }).addTo(m);
     L.control.zoom({ position: "bottomleft" }).addTo(m);
     features.current = L.featureGroup().addTo(m);

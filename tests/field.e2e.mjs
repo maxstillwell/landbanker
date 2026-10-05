@@ -25,6 +25,14 @@ const context = await browser.newContext({
   permissions: ["geolocation"],
 });
 const page = await context.newPage();
+let firstTileRequest;
+page.on("request", (request) => {
+  if (
+    !firstTileRequest &&
+    request.url().startsWith("https://tile.openstreetmap.org/")
+  )
+    firstTileRequest = request;
+});
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 const email = `field-${Date.now()}@landbanker.test`;
@@ -45,6 +53,14 @@ try {
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await page.waitForURL("**/app/map", { timeout: 60000 });
+  await page.locator(".leaflet-tile").first().waitFor();
+  assert.ok(firstTileRequest, "map requested its basemap tiles");
+  const tileHeaders = await firstTileRequest.allHeaders();
+  assert.equal(
+    tileHeaders.referer,
+    `${new URL(origin).origin}/`,
+    "tile requests identify only the app origin, without workspace paths",
+  );
   await page.getByRole("button", { name: "Locate Me", exact: true }).click();
   await page.getByText("Accuracy ±8 m", { exact: true }).waitFor();
   const bluePoint = page.locator('path[fill="#4b91f1"]').last();
