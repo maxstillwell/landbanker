@@ -31,3 +31,5 @@ Preview/iOS URL must be Land Banker, set NEXT_PUBLIC_APP_URL/LAND_BANKER_APP_URL
 GitHub: maxstillwell/landbanker, currently Public, empty; current integration has push/admin permission. Full source push was blocked by automatic approval review because public publication of source/docs was not explicit. User chose Private before push. Integration cannot change visibility (PATCH 403); manual GitHub Settings visibility change is required. No public source pushed. Credentials and private data are excluded regardless.
 
 Supabase: screenshot URL https://gksyipjxhrolsgztfyer.supabase.co, Landbanker, Tokyo, new landbanker organization. Current connector lists only old Max Qi projects; get_project on new ref returns permission error. Reauthorize Supabase connection for new organization. Do not move the new backend into MaxQI or change old production resources.
+
+Latest user steering: leave repository visibility unchanged for now. It remains Public; explicit source/documentation publication approval is pending. Do not change visibility. No source pushed.
