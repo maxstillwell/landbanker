@@ -33,3 +33,5 @@ GitHub: maxstillwell/landbanker, currently Public, empty; current integration ha
 Supabase: screenshot URL https://gksyipjxhrolsgztfyer.supabase.co, Landbanker, Tokyo, new landbanker organization. Current connector lists only old Max Qi projects; get_project on new ref returns permission error. Reauthorize Supabase connection for new organization. Do not move the new backend into MaxQI or change old production resources.
 
 Latest user steering: leave repository visibility unchanged for now. It remains Public; explicit source/documentation publication approval is pending. Do not change visibility. No source pushed.
+
+Publication scope resolved: user explicitly authorized public source/documentation push to maxstillwell/landbanker. Credentials, photos and private MaxQI snapshot are excluded.

@@ -12,7 +12,7 @@ Suggested first split: Backend/Web developer owns workspace RLS, observations, i
 
 ## Database and credentials
 
-New Supabase target from user: `gksyipjxhrolsgztfyer` (Landbanker, Tokyo). Verify actual project details and access before applying migrations. Existing MaxQI/PROS refs remain prohibited destinations. Never commit keys, .env files, MaxQI snapshots or reports. Latest user steering leaves the repository Public for now. It is empty; explicit public source/documentation approval remains pending. Never push this source publicly without that approval.
+New Supabase target from user: `gksyipjxhrolsgztfyer` (Landbanker, Tokyo). Verify actual project details and access before applying migrations. Existing MaxQI/PROS refs remain prohibited destinations. Never commit keys, .env files, MaxQI snapshots or reports. Latest user steering leaves the repository Public for now. User explicitly authorized public source and technical documentation publication. Credentials/photos/private MaxQI snapshot remain excluded from Git.
 
 Generate new migration names via Supabase CLI. Do not edit a migration already applied remotely. Review pending migrations on other branches before applying changes. Use local disposable Supabase for tests, never another developer's hosted Workspace. Never create a fake Max account or import private data into demo/test deployments.
 

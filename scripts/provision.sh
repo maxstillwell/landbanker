@@ -3,7 +3,8 @@ set -euo pipefail
 # Current user only. Does not mutate any MaxQI resource.
 cd "$(dirname "$0")/.."
 test "$(git remote get-url origin)" = "https://github.com/maxstillwell/landbanker.git" || { echo 'Independent origin required'; exit 1; }
-test "$(gh api repos/maxstillwell/landbanker --jq '.private')" = true || { echo 'User-approved PRIVATE repository required before pushing'; exit 1; }
+# User explicitly authorized public source/docs publication to this independent repo.
+# Credentials, photos, private snapshots and generated artifacts must stay excluded.
 npm ci
 npm run lint
 npm run typecheck
