@@ -22,14 +22,79 @@ export async function POST(request: NextRequest) {
     if (!["owner", "admin"].includes(c.role))
       throw new Error("Manager access required");
     const input = inputSchema.parse(await request.json());
-    if (["saved_view", "subset"].includes(input.resource_type))
+    if (input.resource_type === "subset")
       throw new Error(
         "Map subsets require an explicit resource manifest; not yet enabled",
       );
+    if (input.resource_type === "saved_view" && input.resource_ids.length !== 1)
+      throw new Error("Share one Saved View at a time");
+    let manifest: Record<string, unknown> = {};
+    if (input.resource_type === "saved_view") {
+      const { data: view, error } = await c.client
+        .from("saved_views")
+        .select("name,view")
+        .eq("workspace_id", c.workspaceId)
+        .eq("id", input.resource_ids[0])
+        .single();
+      if (error) throw error;
+      const scope = z
+        .object({
+          latitude: z.number().min(-90).max(90),
+          longitude: z.number().min(-180).max(180),
+          zoom: z.number().min(1).max(20),
+          parcel_ids: z.array(z.uuid()).max(100),
+          layer_ids: z.array(z.uuid()).max(100),
+          official_layers: z
+            .array(
+              z.object({
+                catalog_id: z.string().max(100),
+                visible: z.boolean(),
+                opacity: z.number().min(0).max(1),
+                position: z.number().int(),
+              }),
+            )
+            .max(30),
+        })
+        .parse(view.view);
+      const [parcels, layers] = await Promise.all([
+        c.client
+          .from("land_parcels")
+          .select("id")
+          .eq("workspace_id", c.workspaceId)
+          .in("id", scope.parcel_ids),
+        c.client
+          .from("spatial_layers")
+          .select("id,geojson")
+          .eq("workspace_id", c.workspaceId)
+          .in("id", scope.layer_ids),
+      ]);
+      if (
+        parcels.error ||
+        layers.error ||
+        parcels.data?.length !== new Set(scope.parcel_ids).size ||
+        layers.data?.length !== new Set(scope.layer_ids).size
+      )
+        throw new Error("Saved View contains unavailable resources");
+      manifest = {
+        ...scope,
+        name: view.name,
+        official_layers: scope.official_layers.filter((l) => l.visible),
+        feature_ids: Object.fromEntries(
+          (layers.data || []).map((l) => [
+            l.id,
+            (l.geojson?.features || [])
+              .map((f: { id?: string }) => f.id)
+              .filter(Boolean),
+          ]),
+        ),
+      };
+    }
     const table =
-      input.resource_type === "spatial_layer"
-        ? "spatial_layers"
-        : "land_parcels";
+      input.resource_type === "saved_view"
+        ? "saved_views"
+        : input.resource_type === "spatial_layer"
+          ? "spatial_layers"
+          : "land_parcels";
     const { data, error } = await c.client
       .from(table)
       .select("id")
@@ -46,6 +111,7 @@ export async function POST(request: NextRequest) {
         token_hash: tokenHash(token),
         resource_type: input.resource_type,
         resource_ids: input.resource_ids,
+        manifest,
         expires_at: new Date(Date.now() + input.days * 86400000).toISOString(),
       })
       .select("id,expires_at")

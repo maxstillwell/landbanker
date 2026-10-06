@@ -28,3 +28,11 @@ Browser screenshots are ignored artifacts (synthetic test data only): iPhone, de
 
 Independent source/history published to user-approved Public maxstillwell/landbanker; all recreated tree/commit hashes matched local originals. Vercel main and preview deployments READY; landing/signup HTTP 200 and backend-unconfigured message verified. Hosted signup/database/Storage end-to-end checks are pending connector access, not counted as passed.
 GitHub run 37247783731: iPhone and iPad unsigned Simulator builds passed; Web lint/types/unit passed, then database readiness race failed. Fixed final TCP readiness in 20f33ca; local PostgreSQL RLS recheck passed, cloud run 37248285240 passed Web (including real local Auth/Storage/browser field tests), iPhone and iPad builds after the readiness fix. GitHub .app artifacts do not verify real-device behavior.
+
+## LandOS spatial milestone — 2026-10-06
+
+Supersedes original infrastructure blockers above: independent backend is ACTIVE_HEALTHY; user reports login success. Main/Preview b0991fd READY, Web + unsigned iPhone/iPad CI runs 37389762173 and 37389823419 passed. All local checks pass for the spatial checkpoint. Live VIC/NSW parcel address→official geometry→area→idempotent save/reload tested, with representative flood/zoning PNG exports.
+
+Phone browser polygon/measurement/name/note/layer save/reopen and catalog add/toggle persistence passed; iPad 70/30 checked. New Saved View anonymous-map test passes exact scope, private-note exclusion, future-feature exclusion and revoke. PostgreSQL tests also cover token hash rejection, immutable Workspace, Feature RPC/preference isolation and no anon general reads. New bounded connector SQL adapter locally tested for safe literals, timestamps, registered-owner guard, repeat/edited-target preservation. Hosted copy limited to 10 source records / 17 target records; dry-run/copy/verify/repeat/source-unchanged checks pass. No actual media file copy, no NSW source parcel (none exists in inventory), no invented parcel relation, no full cloud import/cutover.
+
+Hardware caveat remains: real iPhone camera/HEIC/background/lock/session-expiry/relaunch is not established by browser mocks or unsigned compilation. Pending queue persistence is verified locally; no complete offline map.

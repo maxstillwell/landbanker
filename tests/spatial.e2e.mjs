@@ -146,11 +146,89 @@ try {
   assert.ok(Math.abs(rects.inspector / 1280 - 0.3) < 0.02);
   await page.screenshot({ path: "artifacts/landos-ipad-spatial.png" });
   await page.setViewportSize({ width: 390, height: 844 });
+  const viewId = crypto.randomUUID();
+  const savedView = await page.request.post(origin + "/api/views", {
+    headers: { Origin: origin },
+    data: {
+      id: viewId,
+      name: "Explicit spatial view",
+      view: {
+        latitude: -37.56,
+        longitude: 143.85,
+        zoom: 11,
+        parcel_ids: [],
+        layer_ids: [layer.id],
+        official_layers: [],
+      },
+    },
+  });
+  assert.equal(savedView.status(), 200);
+  const shared = await page.request.post(origin + "/api/shares", {
+    headers: { Origin: origin },
+    data: { resource_type: "saved_view", resource_ids: [viewId], days: 1 },
+  });
+  assert.equal(shared.status(), 200);
+  const share = await shared.json(),
+    token = new URL(share.url).pathname.split("/").at(-1);
+  const anon = await browser.newContext(),
+    publicPage = await anon.newPage();
+  let publicResult = await publicPage.request.get(
+    origin + "/api/published/" + token,
+  );
+  assert.equal(publicResult.status(), 200);
+  let projection = await publicResult.json();
+  assert.equal(projection.type, "view");
+  assert.equal(projection.resources.length, 1);
+  assert.ok(
+    !JSON.stringify(projection).includes("Synthetic local spatial test"),
+  );
+  const later = {
+    type: "Feature",
+    id: crypto.randomUUID(),
+    properties: { name: "Unshared future shape" },
+    geometry: { type: "Point", coordinates: [144, -37] },
+  };
+  await page.request.post(origin + "/api/layers", {
+    headers: { Origin: origin },
+    data: {
+      id: layer.id,
+      name: layer.name,
+      geojson: {
+        ...layer.geojson,
+        features: [...layer.geojson.features, later],
+      },
+    },
+  });
+  projection = await (
+    await publicPage.request.get(origin + "/api/published/" + token)
+  ).json();
+  assert.equal(projection.resources[0].geojson.features.length, 1);
+  assert.ok(!JSON.stringify(projection).includes("Unshared future shape"));
+  await publicPage.goto(share.url);
+  await publicPage
+    .getByRole("heading", { name: "Explicit spatial view" })
+    .waitFor();
+  await publicPage.getByLabel("Read-only shared land map").waitFor();
+  await publicPage.screenshot({ path: "artifacts/landos-public-view.png" });
+  assert.equal(
+    (
+      await page.request.delete(origin + "/api/shares", {
+        headers: { Origin: origin },
+        data: { id: share.id },
+      })
+    ).status(),
+    200,
+  );
+  assert.equal(
+    (await publicPage.request.get(origin + "/api/published/" + token)).status(),
+    404,
+  );
+  await anon.close();
   await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/landos-drawing-phone.png" });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: phone polygon draw, measurement, name/layer/note save, reopen, stable identity, invalid-coordinate rejection, catalog add/toggle persistence and iPad 70/30 layout.",
+    "PASS: phone polygon draw, measurement, name/layer/note save, reopen, stable identity, invalid-coordinate rejection, catalog add/toggle persistence, iPad 70/30, explicit shared view, private-note/future-feature exclusion and revoke.",
   );
 } finally {
   await browser.close();

@@ -10,7 +10,7 @@ LandOS is an independent multi-tenant product. It is not a MaxQI wrapper. **NEVE
 - SwiftUI app loads the configured LandOS URL using persistent WKWebView, never MaxQI.
 - Web, iPhone and iPad share the same Leaflet basemap and layers. CoreLocation supplies coordinates to this map; no separate MapKit renderer. Tile origin identification/privacy details are in BASEMAP.md.
 - All authenticated queries use the user's Supabase credential so database RLS remains authoritative. No service-role bypass for application CRUD.
-- Optional server-only privileged share resolver reads token hashes and explicit safe projections; it cannot expose arbitrary tables or queries.
+- Server share resolver uses a publishable key and narrow token-only PostgreSQL projection; no runtime service key or arbitrary table query.
 - MaxQI remains on its old backend. `/api/published/[token]` is a future consumer seam only. No production integration or flag changes made.
 
 ## Product flow
@@ -38,3 +38,5 @@ Membership roles and normalized workspace records support teams without one data
 ## Spatial workspace milestone
 
 Primary selection union coordinates Property, Observation and Drawing inspectors. Official parcel preview is separate from saved Workspace Property. Government address/boundary queries are authenticated, bounded server reads; save re-verifies the source. My Layers use atomic invoker RPC to preserve tenant RLS and normalized features. Official reference catalog is server-owned; per-user active-layer preference is tenant scoped. Web/iOS share all of these components. Map ResizeObserver handles sheet/orientation changes. Phone peek/half/full uses stable internal state names; iPad landscape map/inspector is 70/30.
+
+Saved Views persist explicit current-map parcel/layer IDs and active official layer settings. Restore applies map/visibility/layer preferences. Sharing freezes an explicit manifest including Feature UUIDs, expiry/revoke and minimal public projection. Anonymous shared map has no mutation controls; no observation/photo publishing in this milestone.

@@ -66,6 +66,14 @@ export function planImport(snapshot: Snapshot, workspace: string) {
       sourceHash: sourceHash(legacy),
       row: {
         ...row,
+        ...(table !== "spatial_features" && legacy.created_at
+          ? { created_at: legacy.created_at }
+          : {}),
+        ...(table !== "field_observation_media" &&
+        table !== "spatial_features" &&
+        legacy.updated_at
+          ? { updated_at: legacy.updated_at }
+          : {}),
         id: mappedId(workspace, sourceTable, legacy.id + suffix),
         workspace_id: workspace,
       },
@@ -74,6 +82,7 @@ export function planImport(snapshot: Snapshot, workspace: string) {
   for (const p of snapshot.parcels)
     add("land_parcels", "land_parcels", p, {
       title: String(p.title || p.address || "Imported parcel").slice(0, 160),
+      address: p.address ?? null,
       latitude: number(p.lat),
       longitude: number(p.lng),
       geometry: p.geojson ?? null,
@@ -93,6 +102,7 @@ export function planImport(snapshot: Snapshot, workspace: string) {
       latitude: number(o.latitude),
       longitude: number(o.longitude),
       observed_at: o.observed_at,
+      observed_at_source: "legacy",
       linked_parcel_id:
         linked && parcelIds.has(linked)
           ? mappedId(workspace, "land_parcels", linked)
@@ -161,6 +171,27 @@ export function planImport(snapshot: Snapshot, workspace: string) {
           ],
         };
     }
+    const sourceFeatures =
+      (geojson as { features?: unknown[] } | null)?.features || [];
+    if (
+      geojson &&
+      typeof geojson === "object" &&
+      Array.isArray((geojson as { features?: unknown[] }).features)
+    ) {
+      geojson = {
+        ...geojson,
+        features: (
+          geojson as { features: Record<string, unknown>[] }
+        ).features.map((feature, index) => ({
+          ...feature,
+          id: mappedId(
+            workspace,
+            "land_spatial_layer_features",
+            `${l.id}:${index}`,
+          ),
+        })),
+      };
+    }
     add("spatial_layers", "land_spatial_layers", l, {
       name: l.name,
       layer_kind: l.layer_kind,
@@ -173,8 +204,13 @@ export function planImport(snapshot: Snapshot, workspace: string) {
       add(
         "spatial_features",
         "land_spatial_layer_features",
-        { id: l.id, ...{ feature } },
-        { layer_id: mappedId(workspace, "land_spatial_layers", l.id), feature },
+        { id: l.id, feature: sourceFeatures[index] },
+        {
+          layer_id: mappedId(workspace, "land_spatial_layers", l.id),
+          feature,
+          ...(l.created_at ? { created_at: l.created_at } : {}),
+          ...(l.updated_at ? { updated_at: l.updated_at } : {}),
+        },
         `:${index}`,
       ),
     );

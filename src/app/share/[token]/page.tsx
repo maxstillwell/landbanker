@@ -1,3 +1,4 @@
+import SharedMap from "@/components/shared-map-loader";
 import { notFound } from "next/navigation";
 import { resolveShare } from "@/lib/share-resolver";
 export const dynamic = "force-dynamic";
@@ -14,16 +15,24 @@ export default async function Page({
   const share = await resolveShare(token);
   if (!share) notFound();
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <p className="eyebrow">LandOS · READ ONLY</p>
-        <h1>Shared intelligence.</h1>
-        <p>
-          Only explicitly selected records are included. Private notes and
-          contact information are excluded.
-        </p>
-        <pre>{JSON.stringify(share.resources, null, 2)}</pre>
-      </section>
+    <main className="shared-page">
+      <header>
+        <strong>LandOS</strong>
+        <span>Read-only shared view</span>
+      </header>
+      <h1>{share.view?.name || "Shared land intelligence"}</h1>
+      <SharedMap share={share} />
+      <p>
+        Only explicitly shared objects are visible. Private observations, photos
+        and notes are excluded.
+      </p>
+      <ul>
+        {share.resources.map((resource) => (
+          <li key={resource.id}>
+            {resource.title || resource.name || "Shared property"}
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }

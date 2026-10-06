@@ -88,11 +88,21 @@ export default function MapWorkspace({
   const importInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
+  const [visibleParcelIds, setVisibleParcelIds] = useState<Set<string> | null>(
+    null,
+  );
+  const [visibleUserLayerIds, setVisibleUserLayerIds] =
+    useState<Set<string> | null>(null);
   const [catalog, setCatalog] = useState<CatalogLayer[]>([]);
   const [activeLayers, setActiveLayers] = useState<ActiveLayer[]>([]);
   const [data, setData] = useState<MapData>(emptyData);
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
+  const [shareLink, setShareLink] = useState<{
+    id: string;
+    url: string;
+    expires_at: string;
+  } | null>(null);
   const [notice, setNotice] = useState("");
   const [draft, setDraft] = useState<FieldDraft | null>(null);
   const draftRef = useRef<FieldDraft | null>(null);
@@ -392,6 +402,7 @@ export default function MapWorkspace({
     if (!group) return;
     group.clearLayers();
     for (const parcel of data.parcels) {
+      if (visibleParcelIds && !visibleParcelIds.has(parcel.id)) continue;
       if (parcel.geometry) {
         L.geoJSON(parcel.geometry, {
           style: { color: "#bed86a", weight: 2, fillOpacity: 0.12 },
@@ -433,6 +444,7 @@ export default function MapWorkspace({
         .addTo(group);
     }
     for (const layer of data.layers) {
+      if (visibleUserLayerIds && !visibleUserLayerIds.has(layer.id)) continue;
       try {
         if (layer.geojson)
           L.geoJSON(layer.geojson, {
@@ -481,7 +493,7 @@ export default function MapWorkspace({
         color: "#eab268",
         dashArray: "3",
       }).addTo(group);
-  }, [data, draft, localLayer]);
+  }, [data, draft, localLayer, visibleParcelIds, visibleUserLayerIds]);
   useEffect(() => {
     if (!map.current || !officialParcel) return;
     const layer = L.geoJSON(officialParcel.geometry, {
@@ -874,6 +886,7 @@ export default function MapWorkspace({
       await updateLocalLayer(null);
       await reload();
       setSelection(null);
+      setVisibleUserLayerIds(null);
       setNotice("Shape saved to Workspace.");
     } catch (e) {
       setNotice(
@@ -1557,19 +1570,121 @@ export default function MapWorkspace({
               ) : null}
               <div className="section-label">SAVED VIEWS</div>
               {data.savedViews.map((v) => (
-                <button
-                  className="record-row"
-                  key={v.id}
-                  onClick={() =>
-                    map.current?.setView(
-                      [Number(v.view.latitude), Number(v.view.longitude)],
-                      Number(v.view.zoom),
-                    )
-                  }
-                >
-                  {v.name}
-                </button>
+                <div key={v.id} className="saved-view">
+                  <button
+                    className="record-row"
+                    onClick={async () => {
+                      map.current?.setView(
+                        [Number(v.view.latitude), Number(v.view.longitude)],
+                        Number(v.view.zoom),
+                      );
+                      setVisibleParcelIds(
+                        Array.isArray(v.view.parcel_ids)
+                          ? new Set(v.view.parcel_ids as string[])
+                          : null,
+                      );
+                      setVisibleUserLayerIds(
+                        Array.isArray(v.view.layer_ids)
+                          ? new Set(v.view.layer_ids as string[])
+                          : null,
+                      );
+                      const viewLayers = v.view.official_layers as
+                        ActiveLayer[] | undefined;
+                      if (viewLayers) {
+                        try {
+                          for (const current of activeLayers)
+                            if (
+                              !viewLayers.some(
+                                (l) => l.catalog_id === current.catalog_id,
+                              )
+                            )
+                              await apiRequest("/api/layer-library", {
+                                id: current.catalog_id,
+                                action: "remove",
+                              });
+                          for (const item of viewLayers)
+                            await apiRequest("/api/layer-library", {
+                              id: item.catalog_id,
+                              action: "save",
+                              ...item,
+                            });
+                          await reloadLibrary();
+                        } catch (e) {
+                          setNotice(
+                            e instanceof Error
+                              ? e.message
+                              : "View layers unavailable",
+                          );
+                        }
+                      }
+                    }}
+                  >
+                    {v.name}
+                  </button>
+                  {["owner", "admin"].includes(role) ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const result = await apiRequest("/api/shares", {
+                            resource_type: "saved_view",
+                            resource_ids: [v.id],
+                            days: 7,
+                          });
+                          setShareLink(
+                            result as {
+                              id: string;
+                              url: string;
+                              expires_at: string;
+                            },
+                          );
+                        } catch (e) {
+                          setNotice(
+                            e instanceof Error
+                              ? e.message
+                              : "Unable to share view",
+                          );
+                        }
+                      }}
+                    >
+                      Share view
+                    </button>
+                  ) : null}
+                </div>
               ))}
+              {shareLink ? (
+                <div className="share-result">
+                  <strong>
+                    Read-only link · expires{" "}
+                    {new Date(shareLink.expires_at).toLocaleDateString()}
+                  </strong>
+                  <p>
+                    Selected properties and shapes only. Private observations,
+                    photos and notes are excluded.
+                  </p>
+                  <a href={shareLink.url} target="_blank" rel="noreferrer">
+                    {shareLink.url}
+                  </a>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await apiRequest(
+                          "/api/shares",
+                          { id: shareLink.id },
+                          "DELETE",
+                        );
+                        setShareLink(null);
+                        setNotice("Share link revoked.");
+                      } catch (e) {
+                        setNotice(
+                          e instanceof Error ? e.message : "Revoke failed",
+                        );
+                      }
+                    }}
+                  >
+                    Revoke link
+                  </button>
+                </div>
+              ) : null}
               {canWrite ? (
                 <button
                   onClick={async () => {
@@ -1585,6 +1700,51 @@ export default function MapWorkspace({
                           latitude: m.getCenter().lat,
                           longitude: m.getCenter().lng,
                           zoom: m.getZoom(),
+                          parcel_ids: data.parcels
+                            .filter((p) => {
+                              if (
+                                visibleParcelIds &&
+                                !visibleParcelIds.has(p.id)
+                              )
+                                return false;
+                              if (p.geometry) {
+                                try {
+                                  return m
+                                    .getBounds()
+                                    .intersects(
+                                      L.geoJSON(p.geometry).getBounds(),
+                                    );
+                                } catch {
+                                  return false;
+                                }
+                              }
+                              return (
+                                p.latitude != null &&
+                                p.longitude != null &&
+                                m
+                                  .getBounds()
+                                  .contains([p.latitude, p.longitude])
+                              );
+                            })
+                            .map((p) => p.id),
+                          layer_ids: data.layers
+                            .filter((l) => {
+                              if (
+                                visibleUserLayerIds &&
+                                !visibleUserLayerIds.has(l.id)
+                              )
+                                return false;
+                              if (!l.geojson) return false;
+                              try {
+                                return m
+                                  .getBounds()
+                                  .intersects(L.geoJSON(l.geojson).getBounds());
+                              } catch {
+                                return false;
+                              }
+                            })
+                            .map((l) => l.id),
+                          official_layers: activeLayers,
                         },
                       });
                       await reload();

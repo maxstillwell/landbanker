@@ -25,8 +25,11 @@ do $$declare failed boolean;begin
 end$$;
 set local role authenticated;
 insert into public.active_map_layers(workspace_id,user_id,catalog_id) values(current_setting('test.alice')::uuid,'11111111-1111-4111-8111-111111111111','vic-zoning');
-select public.save_layer_features(current_setting('test.alice')::uuid,'dddddddd-dddd-4ddd-8ddd-dddddddddddd','Drawing','{"type":"FeatureCollection","features":[{"type":"Feature","id":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","properties":{},"geometry":{"type":"Point","coordinates":[144,-37]}}]}');
+select public.save_layer_features(current_setting('test.alice')::uuid,'dddddddd-dddd-4ddd-8ddd-dddddddddddd','Drawing','{"type":"FeatureCollection","features":[{"type":"Feature","id":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","properties":{"name":"Public drawing","note":"PRIVATE NOTE"},"geometry":{"type":"Point","coordinates":[144,-37],"secret":"PRIVATE GEOMETRY"}}]}');
 do $$begin if (select count(*) from public.spatial_features)<>1 then raise exception 'feature persistence';end if;end$$;
+insert into public.share_links(workspace_id,token_hash,resource_type,resource_ids,expires_at,manifest) values
+(current_setting('test.alice')::uuid,encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex'),'saved_view',array['ffffffff-ffff-4fff-8fff-ffffffffffff'::uuid],now()+interval '1 day',jsonb_build_object('name','Explicit test view','latitude',-37,'longitude',144,'zoom',12,'parcel_ids',jsonb_build_array('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),'layer_ids',jsonb_build_array('dddddddd-dddd-4ddd-8ddd-dddddddddddd'),'official_layers','[]'::jsonb,'feature_ids',jsonb_build_object('dddddddd-dddd-4ddd-8ddd-dddddddddddd',jsonb_build_array('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'))));
+update public.spatial_layers set geojson=jsonb_set(geojson,'{features}',(geojson->'features')||'{"type":"Feature","id":"99999999-9999-4999-8999-999999999999","properties":{"name":"Future unshared feature"},"geometry":{"type":"Point","coordinates":[145,-38]}}'::jsonb) where id='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
 do $$declare failed boolean;begin
  if (select count(*) from public.land_parcels)<>0 or (select count(*) from public.field_observations)<>0 or (select count(*) from public.field_observation_media)<>0 or (select count(*) from public.spatial_layers)<>0 or (select count(*) from public.saved_views)<>0 or (select count(*) from public.share_links)<>0 or (select count(*) from storage.objects)<>0 then raise exception 'cross tenant read leak';end if;
@@ -56,6 +59,18 @@ do $$begin if (select count(*) from public.land_parcels)<>0 then raise exception
 reset role;
 set local role anon;
 do $$declare failed boolean;begin failed:=false;begin perform * from public.land_parcels;exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'anonymous leak';end if;end$$;
+do $$declare projection jsonb;begin
+ projection:=public.resolve_landos_share(repeat('Q',43));
+ if projection is null or projection->>'type'<>'view' or jsonb_array_length(projection->'resources')<>2 then raise exception 'explicit projection';end if;
+ if projection::text like '%PRIVATE%' or projection::text like '%Future unshared%' then raise exception 'share projection leak';end if;
+ if public.resolve_landos_share(repeat('Z',43)) is not null or public.resolve_landos_share(encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex')) is not null then raise exception 'invalid token/hash credential';end if;
+end$$;
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+update public.share_links set revoked_at=now() where token_hash=encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex');
+set local role anon;
+do $$begin if public.resolve_landos_share(repeat('Q',43)) is not null then raise exception 'revoked token';end if;end$$;
 reset role;
 select 'RLS signup, isolation, viewer, suspended, anonymous, FK, storage escalation, immutable workspace/share scope and revoke tests passed' as result;
 rollback;

@@ -14,7 +14,7 @@ Create Vercel project `land-banker`, linked only to this new repo under current 
 
 ## After new Supabase project
 
-Use Australia/Sydney region if suitable. Apply guarded schema to new project only, configure public URL/publishable key, optional server-only share resolver secret, Auth URLs and email templates. Run `npm run infra:check`. Trigger signup creates user's Workspace. Never manufacture a Max user account or import into somebody else's workspace.
+Use Australia/Sydney region if suitable. Apply guarded schema to new project only, configure public URL/publishable key, token-scoped share projection migration, Auth URLs and email templates. Run `npm run infra:check`. Trigger signup creates user's Workspace. Never manufacture a Max user account or import into somebody else's workspace.
 
 ## Local cloud testing
 

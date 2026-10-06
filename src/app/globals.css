@@ -1005,3 +1005,6 @@ fieldset {
     right: calc(30vw + 20px);
   }
 }
+.saved-view { display:flex; align-items:center; gap:8px; }.saved-view .record-row { flex:1; }
+.share-result { padding:14px; background:#edf0df; border-radius:10px; }.share-result a { overflow-wrap:anywhere; font-size:12px; display:block; padding:10px 0; }
+.shared-page { padding:16px; max-width:1300px; margin:auto; }.shared-page header { display:flex; gap:20px; align-items:center; }.shared-page header span { font-size:12px; color:var(--muted); }.shared-page h1 { font-size:24px; }.shared-map { height:70dvh; min-height:320px; border-radius:12px; }.shared-page>p { font-size:12px; }
