@@ -822,12 +822,40 @@ export default function MapWorkspace({
     files: File[],
     metadata: Record<string, unknown> = {},
   ) {
+    if (!files.length) return;
     const observationId = draftRef.current?.id;
     photoProcessing.current += 1;
     setProcessingPhotos(photoProcessing.current);
     const task = photoTasks.current.then(async () => {
-      if (draftRef.current?.id !== observationId) return;
-      await ingestPhotos(files, metadata);
+      const current = draftRef.current;
+      if (!current || current.id !== observationId) return;
+      const webBatch = !metadata.base64;
+      if (webBatch)
+        await saveDraft({
+          ...current,
+          photoSelection: {
+            expected: files.length,
+            received: 0,
+            finished: false,
+            failed: 0,
+          },
+        });
+      try {
+        await ingestPhotos(files, metadata);
+      } finally {
+        const latest = draftRef.current;
+        if (webBatch && latest?.id === observationId && latest.photoSelection) {
+          const progress = {
+            ...latest.photoSelection,
+            finished: true,
+            failed: Math.max(0, files.length - latest.photoSelection.received),
+          };
+          await saveDraft({
+            ...latest,
+            photoSelection: progress.failed === 0 ? undefined : progress,
+          });
+        }
+      }
     });
     photoTasks.current = task.catch(() => {});
     try {

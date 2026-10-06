@@ -20,7 +20,7 @@ Reliability/performance checkpoint completed: prevent early Save while photos im
 
 ## Build status
 
-Published checkpoint `2407323`: GitHub main run **37394863501** passed Web and unsigned iPhone/iPad Simulator builds; Main and Preview Vercel deployments READY.
+Published core checkpoint `2407323`: GitHub main run **37394863501** passed Web and unsigned iPhone/iPad Simulator builds; Main and Preview Vercel deployments READY.
 Current checkpoint: lint/types/11 unit tests/production build passed. Full local Field/spatial/sharing/import/native-batch/500-record browser regression passed. 500 parcels/polygons + 500 observations return five deduplicated 100-row pages, reduced legacy payloads, local page response 101–209 ms. Native photo-batch Swift changes also compiled successfully for both iPhone and iPad in cloud CI. Catalog expansion: local DB/RLS tests and 500-record/10-active-layer regression passed; live metadata/PNG verified.
 Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator builds and bridge simulation do not prove physical iOS camera/HEIC/lock/background acceptance.
 
@@ -28,7 +28,7 @@ Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator
 
 - Main: https://landbanker.vercel.app
 - Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app (may require Vercel access).
-- Main and Preview currently 2407323. Catalog-only follow-up ready for publication; no MaxQI deployment/domain changes.
+- Main and Preview currently 33de6a5; catalog expansion cloud run 37395240685 passes all three jobs. Final Web file-picker batch progress safeguard is locally verified and ready for publication; no MaxQI deployment/domain changes.
 - Auth/App URLs configured through environment. HTTPS git push is unavailable; scripts/push-via-api.py preserves commit hashes, rejects concurrent remote changes and never force-pushes.
 
 ## Database status
@@ -57,3 +57,5 @@ Publish the verified catalog follow-up, fast-forward Preview and confirm CI/READ
 ## Latest continuation
 
 Catalog expanded with Victoria All Overlays and NSW EPI Lot Size through additive independent migration 20261006003749 (hosted/local applied). Ten active layer preference + 500 polygon/parcel + 500 observation browser test passed (local pages 89–104 ms). No new frontend/source credentials, no MaxQI writes. Next safe unit after publication: persist unfinished geometry editing/drawing state using scoped local abstraction, enlarge touch handles and add safe object translation/vertex insertion; then expand official-source coverage and viewport feature loading.
+
+Final Web file-picker continuation: expected/received progress is saved before EXIF reading, rejected or interrupted files require explicit recovery and cannot silently yield a partial successful Save. Local lint/types/production build/full Field+spatial+sharing+imports+Web/native photo-batch+ten-layer scale regression PASS. Current code publication/cloud verification next. MaxQI homepage and protected /land/subdomain routes checked read-only: HTTP 200, correct access redirects. This is endpoint health evidence, not a claim to have exercised every legacy function.

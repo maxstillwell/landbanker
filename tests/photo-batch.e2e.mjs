@@ -103,10 +103,26 @@ try {
   await page
     .getByRole("button", { name: "Continue with imported photos" })
     .click();
+  await page
+    .locator("input[type=file][multiple]")
+    .setInputFiles(
+      ["three.png", "four.png"].map((name) => ({
+        name,
+        mimeType: "image/png",
+        buffer: Buffer.from(base64, "base64"),
+      })),
+    );
+  await page.getByText("pending · four.png").waitFor();
   await save.click();
   await page
     .getByText("Saved to Workspace. Available on your other devices.")
     .waitFor({ timeout: 45000 });
+  const webData = await (await page.request.get(origin + "/api/map")).json();
+  assert.equal(
+    webData.observations.find((o) => o.title === "Interrupted selection")
+      .field_observation_media.length,
+    2,
+  );
   console.log(
     "PASS: native batch blocks early save, both photos persist/upload, interrupted selection requires explicit recovery after reload.",
   );
