@@ -82,6 +82,39 @@ try {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("**/app/map");
+  const library = await (
+    await page.request.get(origin + "/api/layer-library")
+  ).json();
+  const sources = library.catalog.filter((l) => l.enabled);
+  assert.ok(sources.some((l) => l.id === "vic-planning-overlays"));
+  assert.ok(sources.some((l) => l.id === "nsw-minimum-lot-size"));
+  assert.ok(sources.length >= 10);
+  for (const [position, source] of sources.slice(0, 10).entries()) {
+    assert.equal(
+      (
+        await page.request.post(origin + "/api/layer-library", {
+          headers: { Origin: origin },
+          data: {
+            id: source.id,
+            action: "save",
+            visible: true,
+            opacity: 0.5,
+            position,
+          },
+        })
+      ).status(),
+      200,
+    );
+  }
+  await page.reload();
+  await page.getByRole("button", { name: "layers", exact: true }).click();
+  await page.locator(".active-layer").last().waitFor();
+  assert.equal(await page.locator(".active-layer").count(), 10);
+  assert.equal(
+    (await (await page.request.get(origin + "/api/layer-library")).json())
+      .active.length,
+    10,
+  );
   const parcelIds = new Set(),
     observationIds = new Set(),
     timings = [];
@@ -132,7 +165,7 @@ try {
     .getByRole("button", { name: "Load more Workspace data", exact: true })
     .waitFor({ state: "hidden" });
   console.log(
-    "PASS: 500 parcels/polygons and 500 observations; stable 100-row pages, deduplication, bounded payloads, point bbox filter, validation and browser load-more. Local page response ms: " +
+    "PASS: 500 parcels/polygons and 500 observations and 10 persisted active official layers; stable 100-row pages, deduplication, bounded payloads, point bbox filter, validation and browser load-more. Local page response ms: " +
       timings.join(", "),
   );
 } finally {
