@@ -19,3 +19,8 @@ LandOS display name and user-visible branding now configured; Swift project/brid
 ## Photo batch reliability
 
 Camera/PhotosPicker commands are correlated to the current observation UUID. Batch start/finish counts are persisted in Web IndexedDB. Save is disabled during native selection and Web EXIF/Blob ingestion. Relaunch with an incomplete selection requires explicit recovery; originals not yet transferred must be reselected. PHPicker decoding is sequential to bound concurrent large-image memory. Browser bridge simulation tests batch save blocking, both photos/private uploads and interrupted recovery; these do not replace physical device Camera/HEIC/background tests.
+
+
+## Alpha 2 release readiness
+
+See TESTFLIGHT.md for configurable bundle/team settings, Release archive preparation and physical-device blockers. CI builds Debug and Release on both iPhone and iPad Simulators without signing. ACCEPTANCE.md records physical checks as pending, including rotation during edit/upload. Native photo normalization stays JPEG; unsupported raw Web HEIC previews display a retained-photo fallback.

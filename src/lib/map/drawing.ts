@@ -1,9 +1,11 @@
 import type { Geometry, Position, FeatureCollection } from "geojson";
+import { safeSimple } from "./drawing-edit";
 export type DrawingKind = "Point" | "LineString" | "Polygon" | "Rectangle";
 export function drawingGeometry(
   kind: DrawingKind,
   points: Position[],
 ): Geometry | null {
+  if (!safeSimple(kind, points)) return null;
   if (kind === "Point")
     return points.length ? { type: "Point", coordinates: points[0] } : null;
   if (kind === "LineString")

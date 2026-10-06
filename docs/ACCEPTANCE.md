@@ -24,3 +24,23 @@ Expected interruption result: completed blobs stay in the account-scoped device 
 `npm run test:e2e` against isolated local services covers Field/Auth/private Storage/desktop sync/retry, two-user isolation, Draw/My Layers/reopen, official catalog preferences, iPad layout, Saved View public scope/revoke, bounded import adapter and 500 parcels/polygons + 500 observations with ten active layer preferences. Government source availability is verified separately, not a mandatory CI external dependency.
 
 Private imported legacy media is intentionally marked legacy_pending: metadata copied, source files untouched. Limited hosted copy is ten source records only; no full import/cutover. Use STATUS.md for current verified checkpoint and remaining work.
+
+## Alpha 2 signed-device result matrix (not executed yet)
+
+Record a result for every row on both iPhone and iPad, with device model, iOS version, build number, environment, date and evidence. Leave Pending until actually exercised.
+
+| Check | iPhone | iPad |
+| --- | --- | --- |
+| Login / session persistence / logout / expired session | Pending | Pending |
+| GPS denied / granted / accuracy / Follow | Pending | Pending |
+| Camera / PhotosPicker multi-select | Pending | Pending |
+| JPEG / PNG / HEIC / large photo / capture time | Pending | Pending |
+| Photo GPS does not overwrite observation position | Pending | Pending |
+| Lock / background / foreground / app close-reopen | Pending | Pending |
+| Network interruption / timeout / retry / desktop sync | Pending | Pending |
+| Unfinished drawing refresh / close / kill / Continue-Discard | Pending | Pending |
+| Move / insert / delete / Undo / save-reopen geometry | Pending | Pending |
+| Portrait / landscape / sheet-inspector usability | Pending | Pending |
+| Rotate during active edit and upload | Pending | Pending |
+
+Native HEIC remains normalized to JPEG. Raw Web HEIC failure displays a clear preserved-photo fallback and original-file link; no conversion service introduced. TestFlight signing/configuration steps are in TESTFLIGHT.md.

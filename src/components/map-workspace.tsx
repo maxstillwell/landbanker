@@ -1,7 +1,7 @@
 "use client";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
@@ -34,6 +34,14 @@ import { WorkspaceSelector } from "./workspace-selector";
 import { LayerLibrary } from "./layer-library";
 import { createArcGisExportLayer } from "@/lib/map/arcgis-export-layer";
 import type { CatalogLayer, ActiveLayer } from "@/lib/map/catalog-types";
+import {
+  safeSimple,
+  translatePoints,
+  insertVertex,
+  deleteVertex,
+} from "@/lib/map/drawing-edit";
+import { useDrawingSession } from "@/lib/hooks/use-drawing-session";
+import { PhotoPreview } from "./photo-preview";
 import { ShapeDraft } from "./shape-draft";
 import {
   drawingGeometry,
@@ -154,10 +162,12 @@ export default function MapWorkspace({
       setLocalLayer(value);
       try {
         await writeLayerDraft(userId, workspaceId, value);
+        return true;
       } catch {
         setNotice(
           "Unable to preserve layer draft. Keep this screen open until saved to Workspace.",
         );
+        return false;
       }
     },
     [userId, workspaceId],
@@ -173,14 +183,46 @@ export default function MapWorkspace({
       active = false;
     };
   }, [userId, workspaceId]);
-  const [drawMode, setDrawMode] = useState(false);
-  const [drawPoints, setDrawPoints] = useState<L.LatLng[]>([]);
+  const session = useDrawingSession(userId, workspaceId);
+  const drawMode = Boolean(session.active);
+  const kind: DrawingKind = session.active?.kind || "Polygon";
+  const drawPoints = useMemo(
+    () => session.active?.points.map((p) => L.latLng(p[1], p[0])) || [],
+    [session.active?.points],
+  );
+  const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
+  const changeSession = session.change;
+  const sessionRef = session.ref;
+  const setDrawPoints = useCallback(
+    (value: L.LatLng[] | ((points: L.LatLng[]) => L.LatLng[])) => {
+      const current = sessionRef.current;
+      if (!current) return;
+      const points =
+        typeof value === "function"
+          ? value(current.points.map((p) => L.latLng(p[1], p[0])))
+          : value;
+      if (points.length > 200) {
+        setNotice(
+          "Up to 200 editable vertices. Dense imported geometry remains view-only.",
+        );
+        return;
+      }
+      const xy: [number, number][] = points.map((p) => [p.lng, p.lat]);
+      const min =
+        current.kind === "Polygon" ? 3 : current.kind === "Point" ? 1 : 2;
+      if (xy.length >= min && !safeSimple(current.kind, xy)) {
+        setNotice(
+          "This edit would make the shape invalid. Try another position.",
+        );
+        return;
+      }
+      changeSession({ points: xy }, true);
+    },
+    [changeSession, sessionRef],
+  );
   const drawing = useRef(false);
   const drawKind = useRef<DrawingKind>("Polygon");
-  const [kind, setKind] = useState<DrawingKind>("Polygon");
   const [toolsOpen, setToolsOpen] = useState(false);
-  const editFeature = useRef<Feature | null>(null);
-  const editingLayerId = useRef<string | undefined>(undefined);
   const drawingVertices = useRef<L.LayerGroup | null>(null);
   const polygonDraft = useRef<L.Polyline | null>(null);
   const canWrite = ["owner", "admin", "editor"].includes(role);
@@ -376,7 +418,7 @@ export default function MapWorkspace({
       m.remove();
       map.current = null;
     };
-  }, [saveDraft]);
+  }, [saveDraft, setDrawPoints]);
   useEffect(() => {
     void reloadQueue();
     const active = () => {
@@ -626,23 +668,101 @@ export default function MapWorkspace({
         draggable: true,
         icon: L.divIcon({
           className: "drawing-vertex",
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
+          html: `<span role="img" aria-label="Vertex ${index + 1}"></span>`,
         }),
       })
+        .on("click", (event) => {
+          L.DomEvent.stopPropagation(event.originalEvent);
+          setSelectedVertex(index);
+        })
         .on("dragend", (event) => {
           const p = event.target.getLatLng();
+          const current = session.ref.current;
+          if (!current) return;
+          const next = current.points.map((v, i) =>
+            i === index ? [p.lng, p.lat] : v,
+          );
+          const min =
+            current.kind === "Polygon" ? 3 : current.kind === "Point" ? 1 : 2;
+          if (next.length >= min && !safeSimple(current.kind, next)) {
+            event.target.setLatLng(point);
+            setNotice("This vertex move would make the shape invalid.");
+            return;
+          }
           setDrawPoints((points) =>
             points.map((v, i) => (i === index ? p : v)),
           );
         })
         .addTo(vertices),
     );
+    const points = session.ref.current?.points || [];
+    if (safeSimple(kind, points)) {
+      if (kind === "LineString" || kind === "Polygon") {
+        const count = kind === "Polygon" ? points.length : points.length - 1;
+        for (let i = 0; i < count; i++) {
+          const a = points[i],
+            b = points[(i + 1) % points.length];
+          L.marker([(a[1] + b[1]) / 2, (a[0] + b[0]) / 2], {
+            icon: L.divIcon({
+              className: "drawing-midpoint",
+              iconSize: [44, 44],
+              iconAnchor: [22, 22],
+              html: `<span role="img" aria-label="Add vertex after ${i + 1}">+</span>`,
+            }),
+          })
+            .on("click", (event) => {
+              L.DomEvent.stopPropagation(event.originalEvent);
+              const current = session.ref.current;
+              if (!current) return;
+              const next = insertVertex(current.kind, current.points, i);
+              if (next) {
+                changeSession({ points: next }, true);
+                setSelectedVertex(i + 1);
+              } else setNotice("Cannot safely insert a vertex here.");
+            })
+            .addTo(vertices);
+        }
+      }
+      if (kind !== "Point") {
+        const anchor = points.reduce(
+          (a, p) => [a[0] + p[0] / points.length, a[1] + p[1] / points.length],
+          [0, 0],
+        );
+        L.marker([anchor[1], anchor[0]], {
+          draggable: true,
+          icon: L.divIcon({
+            className: "drawing-move",
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
+            html: '<span role="img" aria-label="Move entire shape">✥</span>',
+          }),
+        })
+          .on("dragend", (event) => {
+            const current = session.ref.current,
+              position = event.target.getLatLng();
+            if (!current) return;
+            const next = translatePoints(current.kind, current.points, [
+              position.lng - anchor[0],
+              position.lat - anchor[1],
+            ]);
+            if (next) changeSession({ points: next }, true);
+            else {
+              setNotice(
+                "Cannot move this shape outside valid map coordinates.",
+              );
+              event.target.setLatLng([anchor[1], anchor[0]]);
+            }
+          })
+          .addTo(vertices);
+      }
+    }
     return () => {
       vertices.remove();
       drawingVertices.current?.remove();
     };
-  }, [drawPoints, drawMode, kind]);
+  }, [drawPoints, drawMode, kind, session.ref, changeSession, setDrawPoints]);
   useEffect(() => {
     const node = mapNode.current;
     if (!node) return;
@@ -947,31 +1067,51 @@ export default function MapWorkspace({
     feature?: Feature,
     layerId?: string,
   ) {
+    if (!session.ready || session.found || session.active) {
+      setNotice("Continue or discard the unfinished drawing first.");
+      return;
+    }
     if (localLayer) {
       setNotice("Save or discard your existing local draft first.");
       return;
     }
-    const points = feature ? editablePoints(feature.geometry) : [];
-    if (!points) {
+    let points = feature ? editablePoints(feature.geometry) : [];
+    if (nextKind === "Rectangle" && points?.length === 4)
+      points = [points[0], points[2]];
+    if (!points || points.length > 200 || points.some((p) => p.length !== 2)) {
       setNotice(
         "Multipart shapes and shapes with holes can be viewed, but are not editable yet.",
       );
       return;
     }
-    editFeature.current = feature || null;
-    editingLayerId.current = layerId;
+    if (feature && !safeSimple(nextKind, points)) {
+      setNotice("This imported geometry is view-only in the simple editor.");
+      return;
+    }
+    setSelectedVertex(null);
     drawKind.current = nextKind;
-    setKind(nextKind);
     drawing.current = true;
-    setDrawMode(true);
-    setDrawPoints(points.map((p) => L.latLng(p[1], p[0])));
+    void session.start({
+      version: 1,
+      id: crypto.randomUUID(),
+      userId,
+      workspaceId,
+      kind: nextKind,
+      points: points.map((p) => [p[0], p[1]]),
+      name: String(feature?.properties?.name || ""),
+      layerName: "My analysis",
+      targetLayerId: layerId,
+      originalFeature: feature,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
     setToolsOpen(false);
     setSelection(null);
     setTab("layers");
     setSheet("collapsed");
     setNotice("");
   }
-  function finishDrawing() {
+  async function finishDrawing() {
     const geometry = drawingGeometry(
       kind,
       drawPoints.map((p) => [p.lng, p.lat]),
@@ -980,33 +1120,38 @@ export default function MapWorkspace({
       setNotice("Add more points to complete this shape.");
       return;
     }
-    const existing = editFeature.current;
-    void updateLocalLayer({
-      id: crypto.randomUUID(),
-      name: "My analysis",
-      targetLayerId: editingLayerId.current,
+    const current = session.ref.current;
+    if (!current) return;
+    const existing = current.originalFeature;
+    const preserved = await updateLocalLayer({
+      id: current.id,
+      name: current.layerName,
+      targetLayerId: current.targetLayerId,
       geojson: {
         type: "FeatureCollection",
         features: [
           {
             type: "Feature",
             id: existing?.id || crypto.randomUUID(),
-            properties: existing?.properties || {
+            properties: {
+              ...existing?.properties,
               name:
-                kind === "Point"
+                current.name ||
+                (kind === "Point"
                   ? "Field point"
                   : kind === "LineString"
                     ? "Field line"
-                    : "Field area",
+                    : "Field area"),
+              drawing_kind: kind,
             },
             geometry,
           },
         ],
       },
     });
+    if (!preserved) return;
     drawing.current = false;
-    setDrawMode(false);
-    setDrawPoints([]);
+    await session.discard();
     setSheet("expanded");
     setNotice("Local Draft · Only on this device. Save to Workspace to sync.");
   }
@@ -1060,6 +1205,37 @@ export default function MapWorkspace({
         className="map-canvas"
         aria-label="Land workspace map"
       />
+      {session.found && !drawMode ? (
+        <div className="drawing-recovery" role="status">
+          <strong>Unfinished drawing found</strong>
+          <span>Local Draft · Only on this device</span>
+          <button
+            onClick={() => {
+              drawing.current = true;
+              drawKind.current = session.found!.kind;
+              session.resume();
+              setTab("layers");
+              setSheet("collapsed");
+            }}
+          >
+            Continue
+          </button>
+          <button
+            onClick={() =>
+              void session
+                .discard()
+                .catch(() => setNotice("Unable to discard local drawing."))
+            }
+          >
+            Discard
+          </button>
+        </div>
+      ) : null}
+      {session.error ? (
+        <div className="drawing-storage-error" role="alert">
+          {session.error}
+        </div>
+      ) : null}
       {drawMode ? (
         <div className="map-drawing-bar" aria-label="Drawing controls">
           <strong>
@@ -1069,17 +1245,47 @@ export default function MapWorkspace({
                 ? formatDistance(drawnMeasurement.distanceM)
                 : `${drawPoints.length} points`}
           </strong>
-          <button onClick={finishDrawing}>
+          <button
+            onClick={() =>
+              void finishDrawing().catch(() =>
+                setNotice(
+                  "Unable to complete local drawing. Device draft is retained.",
+                ),
+              )
+            }
+          >
             {kind === "Polygon" ? "Finish polygon" : "Finish shape"}
           </button>
-          <button onClick={() => setDrawPoints((p) => p.slice(0, -1))}>
+          <button
+            disabled={selectedVertex === null}
+            onClick={() => {
+              const current = session.ref.current;
+              if (!current || selectedVertex === null) return;
+              const next = deleteVertex(
+                current.kind,
+                current.points,
+                selectedVertex,
+              );
+              if (next) {
+                changeSession({ points: next }, true);
+                setSelectedVertex(null);
+              } else
+                setNotice(
+                  "Keep at least 2 line points or 3 unique polygon vertices. This deletion is not safe.",
+                );
+            }}
+          >
+            Delete vertex
+          </button>
+          <button disabled={!session.active?.undo} onClick={session.undo}>
             Undo
           </button>
           <button
             onClick={() => {
               drawing.current = false;
-              setDrawMode(false);
-              setDrawPoints([]);
+              void session
+                .discard()
+                .catch(() => setNotice("Unable to discard local drawing."));
             }}
           >
             Cancel
@@ -1356,7 +1562,12 @@ export default function MapWorkspace({
                 {selected.field_observation_media.map((m) => (
                   <figure key={m.id}>
                     {m.url ? (
-                      <img src={m.url} alt={m.original_filename} />
+                      <PhotoPreview
+                        key={m.url}
+                        url={m.url}
+                        filename={m.original_filename}
+                        mime={m.mime_type}
+                      />
                     ) : (
                       <div className="photo-pending">
                         {m.upload_status === "legacy_pending"
@@ -1642,32 +1853,81 @@ export default function MapWorkspace({
                     </div>
                   ) : null}
                   {drawMode ? (
-                    <div className="drawing-actions">
-                      <strong>
-                        {drawnMeasurement?.areaM2
-                          ? formatArea(drawnMeasurement.areaM2)
-                          : drawnMeasurement?.distanceM
-                            ? formatDistance(drawnMeasurement.distanceM)
-                            : `${drawPoints.length} points`}
-                      </strong>
-                      <button onClick={finishDrawing}>
-                        {kind === "Polygon" ? "Finish polygon" : "Finish shape"}
-                      </button>
-                      <button
-                        onClick={() => setDrawPoints((p) => p.slice(0, -1))}
-                      >
-                        Undo point
-                      </button>
-                      <button
-                        onClick={() => {
-                          drawing.current = false;
-                          setDrawMode(false);
-                          setDrawPoints([]);
-                        }}
-                      >
-                        Cancel drawing
-                      </button>
-                    </div>
+                    <>
+                      <div className="drawing-details">
+                        <label>
+                          Drawing name
+                          <input
+                            value={session.active?.name || ""}
+                            maxLength={160}
+                            onChange={(e) =>
+                              session.change({ name: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Target layer
+                          <select
+                            disabled={Boolean(session.active?.originalFeature)}
+                            value={session.active?.targetLayerId || ""}
+                            onChange={(e) =>
+                              session.change({
+                                targetLayerId: e.target.value || undefined,
+                              })
+                            }
+                          >
+                            <option value="">New layer</option>
+                            {data.layers
+                              .filter((l) => l.geojson)
+                              .map((l) => (
+                                <option key={l.id} value={l.id}>
+                                  {l.name}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div className="drawing-actions">
+                        <strong>
+                          {drawnMeasurement?.areaM2
+                            ? formatArea(drawnMeasurement.areaM2)
+                            : drawnMeasurement?.distanceM
+                              ? formatDistance(drawnMeasurement.distanceM)
+                              : `${drawPoints.length} points`}
+                        </strong>
+                        <button
+                          onClick={() =>
+                            void finishDrawing().catch(() =>
+                              setNotice(
+                                "Unable to complete local drawing. Device draft is retained.",
+                              ),
+                            )
+                          }
+                        >
+                          {kind === "Polygon"
+                            ? "Finish polygon"
+                            : "Finish shape"}
+                        </button>
+                        <button
+                          disabled={!session.active?.undo}
+                          onClick={session.undo}
+                        >
+                          Undo point
+                        </button>
+                        <button
+                          onClick={() => {
+                            drawing.current = false;
+                            void session
+                              .discard()
+                              .catch(() =>
+                                setNotice("Unable to discard local drawing."),
+                              );
+                          }}
+                        >
+                          Cancel drawing
+                        </button>
+                      </div>
+                    </>
                   ) : null}
                   <input
                     ref={importInput}
@@ -1713,11 +1973,14 @@ export default function MapWorkspace({
                       <button
                         onClick={() =>
                           startDrawing(
-                            selectedDrawing.geometry.type === "Point"
-                              ? "Point"
-                              : selectedDrawing.geometry.type === "LineString"
-                                ? "LineString"
-                                : "Polygon",
+                            selectedDrawing.properties?.drawing_kind ===
+                              "Rectangle"
+                              ? "Rectangle"
+                              : selectedDrawing.geometry.type === "Point"
+                                ? "Point"
+                                : selectedDrawing.geometry.type === "LineString"
+                                  ? "LineString"
+                                  : "Polygon",
                             selectedDrawing,
                             selection.record.id,
                           )
@@ -2008,7 +2271,14 @@ function DraftPhoto({ photo }: { photo: QueuePhoto }) {
   }, [photo.blob]);
   return (
     <figure>
-      {url ? <img src={url} alt={photo.input.original_filename} /> : null}
+      {url ? (
+        <PhotoPreview
+          key={url}
+          url={url}
+          filename={photo.input.original_filename}
+          mime={photo.input.mime_type}
+        />
+      ) : null}
       <figcaption>
         {photo.status} · {photo.input.original_filename}
       </figcaption>

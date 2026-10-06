@@ -16,12 +16,12 @@ Updated: 2026-10-06 UTC. Resume with STATUS.md, PRODUCT.md and ARCHITECTURE.md. 
 
 ## In progress
 
-Physical signed-device acceptance remains pending Apple signing. Next software unit: unfinished drawing persistence/touch editing, then more official-source coverage and viewport-feature loading. No full MaxQI import/cutover.
+Alpha 2 hardening is in progress. P0 unfinished drawing recovery and simple geometry editing are implemented and verified locally. P1 non-signing TestFlight preparation is ready; physical acceptance remains pending Apple signing. Next: P2 parcel search and saved-property management. No full MaxQI import/cutover.
 
 ## Build status
 
 Verified implementation checkpoint **0718dd6**, cloud main run **37395648724**: all Web + unsigned iPhone + iPad jobs PASSED. Both Vercel Main/Preview READY. Follow-up documentation commits do not change this verified implementation.
-Local lint/types/11 unit tests/disposable PostgreSQL RLS/production build/full Field+spatial+public sharing+both import adapters+native/Web photo-batch+500-record/ten-layer regression PASSED. Native Swift photo-batch changes compile for both Simulator types.
+Alpha 2 local lint/types/13 unit tests/disposable PostgreSQL RLS/production build/full Field+spatial+public sharing+both import adapters+native/Web photo-batch+500-record/ten-layer regression PASSED. Prior native Swift photo-batch changes compile for both Simulator types. New Debug/Release iPhone/iPad CI matrix is awaiting cloud validation.
 Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator builds/bridge simulation do not prove physical camera/HEIC/lock/background acceptance. Read ACCEPTANCE.md before manual testing.
 
 ## Deployment
@@ -39,9 +39,9 @@ Hosted owner-positive/nonmember-negative rollback assertions pass. Advisor has t
 
 ## Known issues
 
-- Raw Web HEIC image preview depends on browser codec support; native photos normalize to JPEG. Cross-browser preview conversion is future work.
+- Raw Web HEIC preview has an explicit retained-photo/original-file fallback; native photos normalize to JPEG. Real HEIC device acceptance remains pending.
 - Real signed iPhone/iPad device checks still required: Camera/PhotosPicker, HEIC/large photos, lock/background/close/relaunch, expired session and device password recovery. Desktop/Web local sync passes; real hosted photo/device acceptance remains separate.
-- Unfinished drawing points are not persisted until Finish; whole-object translation, vertex insertion/removal and dense/multipart editing need expansion. Current editor refuses unsafe geometry simplification.
+- Unfinished drawings now persist immediately in scoped IndexedDB with Continue/Discard; simple geometry supports 44px hit targets, translation, insertion/deletion and one-edit Undo. Holes/multipart/dense imported geometry remains explicitly view-only.
 - Address-first search; parcel identifier search, more road-name cases and broader state providers need expansion. Source response availability is external.
 - Ten catalog layers; more official sources, Satellite/provider licensing and reorder need expansion. Owner development access is full; commercial gating enforcement remains future work, no billing.
 - Paging limits UI to 1,000 records/category, API 100/page; optional bbox filters location points only, not spatial intersection. Whole layer GeoJSON still travels with its page. Incremental refresh/delta/cursor and PostGIS/indexed viewport loading remain next performance work.
@@ -53,10 +53,15 @@ Apple Developer signing/TestFlight credentials required only for real-device dis
 
 ## Next / exact resume step
 
-Persist unfinished geometry editing/drawing state with the existing account/Workspace-scoped local abstraction, enlarge touch targets, then add safe object translation/vertex insertion. Add meaningful interruption/reload and touch geometry tests. Continue legally verified VIC/NSW sources, incremental/viewport feature loading and signed-device field verification. Do not execute full MaxQI import or production cutover.
+Continue P2: inspect authoritative VIC/NSW search fields, handle multi-word/unit/punctuation address cases, add only verified parcel identifiers, strengthen canonical save identity and saved-property management. Then P3 layer quality/order/legend, P4 viewport/incremental queries and P5 share hardening. Read ACCEPTANCE.md and TESTFLIGHT.md; do not execute full MaxQI import or production cutover.
 
 ## Latest continuation
 
 Catalog expansion migration 20261006003749 is hosted/local applied: Victoria All Overlays and NSW EPI Lot Size, enabled total ten. Local scale test passes 500 parcels/polygons + 500 observations with ten persisted active layer preferences. Native and Web file-picker batches persist expected/received counts before ingestion; incomplete/rejected selections require explicit recovery. Full local regression passes. Physical iOS acceptance checklist is in ACCEPTANCE.md.
 
 MaxQI homepage and both protected Land routes checked read-only: HTTP200 with expected access redirects. This proves endpoint health, not every legacy workflow. No production MaxQI changes; limited-copy source rows and original files verified unchanged.
+
+
+## Alpha 2 local checkpoint
+
+P0 production-browser regression passed polygon/line interruption and explicit recovery/discard, account/Workspace isolation, translation/Undo, midpoint insertion, safe vertex deletion, exact saved/reopened geometry, and rectangle translation. Existing full Field/spatial/import/photo/paging/share regression also passed against isolated local services. P1 adds configurable signing/bundle settings, Release configuration, four unsigned Simulator CI jobs, physical-device checklist and Web HEIC preview fallback. Cloud validation is pending publication of this checkpoint. No hosted schema or MaxQI changes in this unit.

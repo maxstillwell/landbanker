@@ -392,3 +392,100 @@ test("drawing tools validate closed geometry without discarding imported holes",
     null,
   );
 });
+
+import {
+  safeSimple,
+  insertVertex,
+  deleteVertex,
+  translatePoints,
+  type XY,
+} from "../src/lib/map/drawing-edit";
+import {
+  writeDrawingSession,
+  readDrawingSession,
+  type DrawingSession,
+} from "../src/lib/layer-draft";
+test("unfinished drawing persistence keeps name/layer/timestamps and isolates both account and workspace", async () => {
+  const fake = await import("fake-indexeddb");
+  globalThis.indexedDB = fake.indexedDB;
+  globalThis.IDBKeyRange = fake.IDBKeyRange;
+  const draft: DrawingSession = {
+    version: 1,
+    id: crypto.randomUUID(),
+    userId: "alpha-user",
+    workspaceId: w,
+    kind: "Polygon",
+    points: [
+      [144, -37],
+      [144.01, -37],
+    ],
+    name: "Acquisition review",
+    layerName: "Analysis",
+    targetLayerId: crypto.randomUUID(),
+    createdAt: 123,
+    updatedAt: 456,
+  };
+  await writeDrawingSession(draft.userId, w, draft);
+  assert.deepEqual(await readDrawingSession(draft.userId, w), draft);
+  assert.equal(await readDrawingSession("other-user", w), null);
+  assert.equal(await readDrawingSession(draft.userId, "other-workspace"), null);
+  await assert.rejects(writeDrawingSession("other-user", w, draft));
+  await writeDrawingSession(draft.userId, w, null);
+  assert.equal(await readDrawingSession(draft.userId, w), null);
+});
+test("safe simple edits preserve closed rings and reject minimum-count, crossing and out-of-world changes", () => {
+  const polygon: XY[] = [
+    [144, -37],
+    [144.01, -37],
+    [144.01, -36.99],
+    [144, -36.99],
+  ];
+  const moved = translatePoints("Polygon", polygon, [0.03, 0.02]);
+  assert.ok(moved);
+  assert.ok(validGeometry(drawingGeometry("Polygon", moved)));
+  const added = insertVertex("Polygon", polygon, 3);
+  assert.equal(added?.length, 5);
+  assert.ok(safeSimple("Polygon", added!));
+  const removed = deleteVertex("Polygon", polygon, 0);
+  assert.equal(removed?.length, 3);
+  assert.equal(deleteVertex("Polygon", removed!, 0), null);
+  assert.equal(
+    deleteVertex(
+      "LineString",
+      [
+        [144, -37],
+        [145, -36],
+      ],
+      0,
+    ),
+    null,
+  );
+  assert.equal(
+    safeSimple("Polygon", [
+      [0, 0],
+      [1, 1],
+      [0, 1],
+      [1, 0],
+    ]),
+    false,
+  );
+  assert.equal(
+    safeSimple("Polygon", [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ]),
+    false,
+  );
+  assert.equal(translatePoints("Polygon", polygon, [100, 0]), null);
+  const rectangle = translatePoints(
+    "Rectangle",
+    [
+      [144, -37],
+      [144.01, -36.99],
+    ],
+    [0.2, 0.3],
+  );
+  assert.ok(rectangle);
+  assert.ok(validGeometry(drawingGeometry("Rectangle", rectangle)));
+});

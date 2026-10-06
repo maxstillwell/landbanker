@@ -44,3 +44,8 @@ Saved Views persist explicit current-map parcel/layer IDs and active official la
 ## Bounded map reads
 
 Authenticated /api/map returns stable 100-row pages per category with hasMore. UI loads further pages explicitly and refreshes only the number already loaded; map movement does not trigger Workspace-wide reads. Legacy raw metadata is excluded from map projection; radius-specific layer data is preserved, other duplicated payloads omitted. Photo signed URLs are batched in groups of 100, at most four requests concurrently. Optional bbox filters parcel/observation location points, not geometry intersections. Current UI cap is 1,000/category; full layer GeoJSON remains a payload risk and indexed feature viewport/cursor/delta loading is future work.
+
+
+## Alpha 2 drawing recovery
+
+The existing account/Workspace-scoped IndexedDB abstraction is upgraded in place to version 2, retaining finished drafts and adding an unfinished drawing session store. Each edit persists coordinates, drawing kind/name, layer target, timestamps and one edit snapshot. Reopening offers Continue/Discard; account/Workspace switching cannot expose another scope. Simple editing validates minimum vertices, closed rings, nonzero area and self-intersection before accepting changes. Imported holes/multipart or more than 200 vertices remain view-only. No database migration is required.

@@ -103,15 +103,13 @@ try {
   await page
     .getByRole("button", { name: "Continue with imported photos" })
     .click();
-  await page
-    .locator("input[type=file][multiple]")
-    .setInputFiles(
-      ["three.png", "four.png"].map((name) => ({
-        name,
-        mimeType: "image/png",
-        buffer: Buffer.from(base64, "base64"),
-      })),
-    );
+  await page.locator("input[type=file][multiple]").setInputFiles(
+    ["three.png", "four.png"].map((name) => ({
+      name,
+      mimeType: "image/png",
+      buffer: Buffer.from(base64, "base64"),
+    })),
+  );
   await page.getByText("pending · four.png").waitFor();
   await save.click();
   await page
@@ -123,6 +121,21 @@ try {
       .field_observation_media.length,
     2,
   );
+  await page.getByRole("button", { name: "Add observation" }).click();
+  await page
+    .locator("input[type=file][multiple]")
+    .setInputFiles({
+      name: "synthetic-unrenderable.heic",
+      mimeType: "image/heic",
+      buffer: Buffer.from("synthetic undecodable HEIC for fallback test"),
+    });
+  await page
+    .getByText("HEIC preview unavailable in this browser.", { exact: true })
+    .waitFor();
+  await page.getByRole("link", { name: "Open original photo" }).waitFor();
+  await page
+    .getByText("pending · synthetic-unrenderable.heic", { exact: true })
+    .waitFor();
   console.log(
     "PASS: native batch blocks early save, both photos persist/upload, interrupted selection requires explicit recovery after reload.",
   );

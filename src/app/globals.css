@@ -837,10 +837,44 @@ fieldset {
   line-height: 1.6;
 }
 .drawing-vertex {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+}
+.drawing-vertex span {
+  width: 16px;
+  height: 16px;
   border: 3px solid white;
   background: #d78641;
   border-radius: 50%;
   box-shadow: 0 1px 6px #0007;
+}
+.drawing-recovery {
+  position: absolute;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 12px;
+  z-index: 1100;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  background: #fafaf4;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px #0003;
+}
+.drawing-recovery span {
+  font-size: 11px;
+}
+.drawing-storage-error {
+  position: absolute;
+  top: 130px;
+  left: 12px;
+  z-index: 1100;
+  padding: 8px;
+  background: #fff3d0;
 }
 .drawing-tools {
   display: grid;
@@ -867,6 +901,7 @@ fieldset {
   margin-top: 6px;
 }
 .map-drawing-bar {
+  flex-wrap: wrap;
   position: absolute;
   z-index: 650;
   bottom: 25px;
@@ -1005,6 +1040,76 @@ fieldset {
     right: calc(30vw + 20px);
   }
 }
-.saved-view { display:flex; align-items:center; gap:8px; }.saved-view .record-row { flex:1; }
-.share-result { padding:14px; background:#edf0df; border-radius:10px; }.share-result a { overflow-wrap:anywhere; font-size:12px; display:block; padding:10px 0; }
-.shared-page { padding:16px; max-width:1300px; margin:auto; }.shared-page header { display:flex; gap:20px; align-items:center; }.shared-page header span { font-size:12px; color:var(--muted); }.shared-page h1 { font-size:24px; }.shared-map { height:70dvh; min-height:320px; border-radius:12px; }.shared-page>p { font-size:12px; }
+.saved-view {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.saved-view .record-row {
+  flex: 1;
+}
+.share-result {
+  padding: 14px;
+  background: #edf0df;
+  border-radius: 10px;
+}
+.share-result a {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  display: block;
+  padding: 10px 0;
+}
+.shared-page {
+  padding: 16px;
+  max-width: 1300px;
+  margin: auto;
+}
+.shared-page header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.shared-page header span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.shared-page h1 {
+  font-size: 24px;
+}
+.shared-map {
+  height: 70dvh;
+  min-height: 320px;
+  border-radius: 12px;
+}
+.shared-page > p {
+  font-size: 12px;
+}
+
+.drawing-midpoint,
+.drawing-move {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+}
+.drawing-midpoint span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff7ec;
+  color: #8c4b22;
+  text-align: center;
+  font-size: 18px;
+  line-height: 22px;
+  box-shadow: 0 1px 5px #0005;
+}
+.drawing-move span {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #234f40;
+  color: white;
+  text-align: center;
+  font-size: 24px;
+  line-height: 30px;
+}
