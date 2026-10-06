@@ -13,7 +13,7 @@
     "import:maxqi": "node --import tsx scripts/import-maxqi.ts",
     "infra:check": "node --import tsx scripts/check-infrastructure.ts",
     "local:start": "bash scripts/local-start.sh",
-    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts"
+    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts && node tests/photo-batch.e2e.mjs && node tests/map-pages.e2e.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

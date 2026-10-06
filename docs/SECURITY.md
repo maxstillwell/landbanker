@@ -13,7 +13,7 @@ Latest Supabase changelog and Auth/SSR/RLS/Storage documentation checked before 
 - Local queue contains private text/photos; physically accessible browser device can access them. Scoped by logged-in user and workspace and not exposed across in-app accounts, persists on logout to avoid losing unsent work. Device cleanup/encryption policy is future work.
 - `.env*`, source exports, reports and storage-copy credentials excluded from Git. Independent backend guard rejects MaxQI and PROS projects.
 
-Validation: real PostgreSQL 17 tests cover bootstrap, different users, viewer/suspended memberships, anonymous access, role escalation, cross-workspace FK, and storage writes. More tests include workspace immutability and share scope. Full hosted security/advisors and iOS permission tests remain pending independent cloud backend/macOS CI.
+Validation: real PostgreSQL 17 tests cover bootstrap, different users, viewer/suspended memberships, anonymous access, role escalation, cross-workspace FK, and storage writes. More tests include workspace immutability and share scope. Hosted owner/nonmember assertions and advisors have also been reviewed. Physical iOS permission tests remain pending; unsigned macOS CI builds pass.
 
 ## LandOS spatial security verification
 

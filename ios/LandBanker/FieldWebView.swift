@@ -38,6 +38,9 @@ struct FieldWebView: UIViewRepresentable {
         var following = false
         var pendingLocation = false
         var requestId: String?
+        var photoObservationId: String?
+        var photoCount = 0
+        var photoFailures = 0
         var observers: [NSObjectProtocol] = []
         func attach(_ web: WKWebView, configuration: WebConfiguration) {
             self.web = web; self.configuration = configuration
@@ -76,8 +79,8 @@ struct FieldWebView: UIViewRepresentable {
             case "requestCurrentLocation": following = false; pendingLocation = true; requestLocation()
             case "startLocationFollow": following = true; pendingLocation = true; requestLocation()
             case "stopLocationFollow": following = false; pendingLocation = false; locationManager.stopUpdatingLocation()
-            case "openCamera": openCamera()
-            case "openPhotoLibrary": openLibrary()
+            case "openCamera": if beginPhotos(command.payload) { openCamera() }
+            case "openPhotoLibrary": if beginPhotos(command.payload) { openLibrary() }
             case "hapticFeedback": UIImpactFeedbackGenerator(style: .light).impactOccurred(); emit("nativeReady", ["platform": "ios", "bridgeVersion": 1])
             case "openExternalNavigation":
                 if let latitude = command.payload["latitude"] as? Double, let longitude = command.payload["longitude"] as? Double,
@@ -109,14 +112,25 @@ struct FieldWebView: UIViewRepresentable {
         }
         func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) { fail(error.localizedDescription) }
         func present(_ controller: UIViewController) {
-            guard let root = web?.window?.rootViewController else { fail("Photo picker unavailable"); return }
+            guard let root = web?.window?.rootViewController else { fail("Photo picker unavailable"); finishPhotos(); return }
             var presenter = root
             while let presented = presenter.presentedViewController { presenter = presented }
             if let popover = controller.popoverPresentationController { popover.sourceView = web; popover.sourceRect = CGRect(x: 20, y: 20, width: 1, height: 1) }
             presenter.present(controller, animated: true)
         }
+        func beginPhotos(_ payload: [String: Any]) -> Bool {
+            guard photoObservationId == nil, let id = payload["observationId"] as? String, UUID(uuidString: id) != nil else { fail("Finish the current photo selection first"); return false }
+            photoObservationId = id; photoCount = 0; photoFailures = 0
+            emit("photoSelectionStarted", ["observationId": id, "count": 0])
+            return true
+        }
+        func finishPhotos() {
+            guard let id = photoObservationId else { return }
+            emit("photoSelectionFinished", ["observationId": id, "count": photoCount, "failed": photoFailures])
+            photoObservationId = nil
+        }
         func openCamera() {
-            guard UIImagePickerController.isSourceTypeAvailable(.camera) else { fail("Camera unavailable on this device or Simulator"); return }
+            guard UIImagePickerController.isSourceTypeAvailable(.camera) else { fail("Camera unavailable on this device or Simulator"); finishPhotos(); return }
             let picker = UIImagePickerController(); picker.sourceType = .camera; picker.delegate = self; present(picker)
         }
         func openLibrary() {
@@ -124,13 +138,16 @@ struct FieldWebView: UIViewRepresentable {
             config.preferredAssetRepresentationMode = .current
             let picker = PHPickerViewController(configuration: config); picker.delegate = self; present(picker)
         }
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { picker.dismiss(animated: true) }
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { picker.dismiss(animated: true); finishPhotos() }
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             picker.dismiss(animated: true)
-            guard let image = info[.originalImage] as? UIImage else { fail("No camera image"); return }
+            photoCount = 1
+            emit("photoSelectionStarted", ["observationId": photoObservationId ?? "", "count": 1])
+            guard let image = info[.originalImage] as? UIImage else { photoFailures = 1; fail("No camera image"); finishPhotos(); return }
             var payload: [String: Any] = ["capturedAt": ISO8601DateFormatter().string(from: Date())]
             if let location = locationManager.location, abs(location.timestamp.timeIntervalSinceNow) < 60 { payload["latitude"] = location.coordinate.latitude; payload["longitude"] = location.coordinate.longitude }
             sendImage(image, metadata: payload)
+            finishPhotos()
         }
         func sendImage(_ image: UIImage, metadata: [String: Any]) {
             // Bound JPEG transfer size before crossing WebKit; all bytes enter durable web IndexedDB.
@@ -139,17 +156,22 @@ struct FieldWebView: UIViewRepresentable {
             let format = UIGraphicsImageRendererFormat(); format.scale = 1
             let renderer = UIGraphicsImageRenderer(size: size, format: format)
             let resized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-            guard let data = resized.jpegData(compressionQuality: 0.85), data.count <= 25 * 1024 * 1024 else { fail("Photo exceeds upload limit"); return }
-            var payload = metadata; payload["base64"] = data.base64EncodedString(); payload["mimeType"] = "image/jpeg"; payload["filename"] = "field-\(UUID().uuidString).jpg"
+            guard let data = resized.jpegData(compressionQuality: 0.85), data.count <= 25 * 1024 * 1024 else { photoFailures += 1; fail("Photo exceeds upload limit"); return }
+            var payload = metadata; payload["observationId"] = photoObservationId; payload["base64"] = data.base64EncodedString(); payload["mimeType"] = "image/jpeg"; payload["filename"] = "field-\(UUID().uuidString).jpg"
             emit("photoSelected", payload)
         }
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
-            for result in results {
-                let provider = result.itemProvider
+            photoCount = results.count
+            emit("photoSelectionStarted", ["observationId": photoObservationId ?? "", "count": photoCount])
+            importPhoto(results, at: 0)
+        }
+        func importPhoto(_ results: [PHPickerResult], at index: Int) {
+            guard index < results.count else { finishPhotos(); return }
+                let provider = results[index].itemProvider
                 let type = provider.registeredTypeIdentifiers.first(where: { $0.contains("image") || $0.contains("jpeg") || $0.contains("png") || $0.contains("heic") }) ?? "public.image"
                 provider.loadDataRepresentation(forTypeIdentifier: type) { [weak self] data, error in
-                    guard let data = data, let image = UIImage(data: data) else { DispatchQueue.main.async { self?.fail(error?.localizedDescription ?? "Unable to read photo") }; return }
+                    guard let data = data, let image = UIImage(data: data) else { DispatchQueue.main.async { self?.photoFailures += 1; self?.fail(error?.localizedDescription ?? "Unable to read photo"); self?.importPhoto(results, at: index + 1) }; return }
                     var metadata: [String: Any] = [:]
                     if let source = CGImageSourceCreateWithData(data as CFData, nil), let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
                         if let exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any], let date = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String {
@@ -161,9 +183,8 @@ struct FieldWebView: UIViewRepresentable {
                             metadata["longitude"] = gps[kCGImagePropertyGPSLongitudeRef as String] as? String == "W" ? -lng : lng
                         }
                     }
-                    DispatchQueue.main.async { self?.sendImage(image, metadata: metadata) }
+                    DispatchQueue.main.async { self?.sendImage(image, metadata: metadata); self?.importPhoto(results, at: index + 1) }
                 }
-            }
         }
     }
 }

@@ -1,92 +1,55 @@
 # LandOS status
 
-Updated: 2026-10-06 (Australia/Sydney). Resume with this file + ARCHITECTURE.md. **NEVER BREAK MAXQI.**
+Updated: 2026-10-06 UTC. Resume with STATUS.md, PRODUCT.md and ARCHITECTURE.md. **NEVER BREAK MAXQI.** Historical checkpoint notes are in STATUS_HISTORY.md; this file is the current state.
 
 ## Completed
 
-- User reports hosted login success. Fixed OSM tile identification in commit 3ce76e2: app-only origin Referrer-Policy plus explicit Leaflet image policy; share/auth privacy unchanged. Same Leaflet map across Web/WKWebView, native application identifier appended. Details in BASEMAP.md. Lint/types/unit/production build and full local Field browser regression passed, including tile Referer assertion and real map screenshot. Main deployment dpl_CngB1qJ6EicHK5xW2mutLJyUCqcy and Preview dpl_FfAahr6BVhWonCC5RMDwGgPdm7FV READY. Main HTTP map/share headers verified. Web CI (including real field/copy browser workflows) and updated iPhone/iPad Simulator builds all passed in run 37378205490.
-- Independent public repository: https://github.com/maxstillwell/landbanker. User explicitly authorized public source/technical docs. All initial local history published with identical commit/tree hashes. Credentials/photos/private MaxQI exports are excluded. Current files retain agent:agent ownership.
-- Independent Vercel project landbanker, id prj_afzfCidHE83CGne0ILQBJPKdBBi6, current Vercel team. Main deployment https://landbanker.vercel.app and separate preview branch https://landbanker-git-preview-maxstillwells-projects.vercel.app. Both build successfully; Preview may require Vercel authentication.
-- Supabase Auth/workspace/RLS/Storage migration and Web Field MVP verified against real independent LOCAL services: signup/login/recovery/logout, Personal Workspace, GPS, notes/photos/signed upload, desktop sync, durable failed-upload retry.
-- Responsive iPhone sheet/iPad inspector/desktop map; GeoJSON/local polygon drafts with durable device storage + Save to Workspace; saved views and secure scoped/revocable share foundation.
-- SwiftUI persistent WKWebView/native bridge/location/camera/PhotosUI/network/navigation shell. GitHub macos-15 unsigned iPhone AND iPad Simulator builds passed in run 37247783731; downloadable .app artifacts exist. CI URL defaults to configurable Vercel app URL. These are Simulator builds, not TestFlight/device-signed builds.
-- Seven unit/queue tests + real PostgreSQL 17 RLS/security tests passed. Actual private source snapshot copied/re-applied/verified in LOCAL test Workspace: 62 parcels, 1 observation, 2 media metadata, 12 layers, 26 features = 103. Source unchanged; files not copied. No import into Max's cloud Workspace.
-- Team branch/PR workflow and boundaries in TEAM.md; project rules in AGENTS.md.
+- Independent product branding **LandOS — The operating system for land.** Web and iOS share Leaflet through persistent WKWebView; CoreLocation supplies GPS, not a separate Apple map.
+- Independent public repository `maxstillwell/landbanker` (source/docs publication explicitly authorized), Vercel project and Supabase project `gksyipjxhrolsgztfyer`. Stable repository/domain/database/bridge identifiers retained. Files owned by current agent user/group.
+- Supabase signup/login/logout/recovery/persistent session; Personal Workspace, membership-based RLS, private photos/signed upload, scoped durable device draft/retry foundation. User reports hosted login success.
+- VIC/NSW address search, official cadastral boundary, metric area, source provenance and idempotent Save to Workspace. Live address lookup/save/reopen verified against both official sources; state coverage is explicitly limited.
+- Point/Line/Polygon/Rectangle, area/distance, draggable vertices, Undo, named shape/note saved into My Layers, normalized Features and atomic RLS-protected save. Finished device drafts persist; imported holes/multipart are preserved rather than silently simplified.
+- Eight enabled official VIC/NSW catalog sources; search/add/remove/visibility/opacity and per-user Workspace preferences. Live VIC flood and NSW zoning image exports verified. No claim of nationwide or NSW flood coverage.
+- Compact safe-area header, verified Workspace selector, contextual selection/inspector, peek/half/full phone sheet, clear Locate/Follow and accuracy, map resize handling, iPad landscape 70/30.
+- Saved View explicit resource/layer/viewport restore; expiring/revocable read-only public link. Frozen Feature manifest excludes later additions. Public projection strips private notes/extra geometry metadata and uses publishable credential plus token-only database RPC.
+- Limited hosted MaxQI **10-source-record test only**: 4 parcels, 1 observation, 2 media metadata, 3 layers / 7 derived Features = 17 target records. Dry run, insert-only copy, mapping verification, repeat/no-overwrite and fresh source-unchanged comparison passed. Original files untouched; media remains legacy_pending. Source contains no NSW parcel or parcel-linked observation; NSW layers used instead, no invented relationships.
 
-## In Progress
+## In progress
 
-Web cloud CI now passes after fixing PostgreSQL readiness race: use final TCP listener, not temporary bootstrap socket. Run 37248285240 passes Web real Auth/Storage/browser flow plus iPhone/iPad builds. Track https://github.com/maxstillwell/landbanker/actions.
-Supabase access is restored through the explicit Landbanker account selector. Hosted foundation and index/RLS migrations already exist. Online signup form is enabled. Hosted end-to-end Auth/Storage/field workflow still needs verification; no claim of successful user login/photo sync yet.
+Completed reliability/performance checkpoint: prevent early Save while photos import, persist native selected-photo progress, explicitly recover interrupted selections, serial native image reads, bounded 100-row map pages, bulk private-photo URL signing, reduced legacy payloads, optional point-location bbox filter and browser Load more.
 
 ## Build status
 
-Local lint/typecheck/unit/RLS/production build and full browser workflow passed. Vercel builds READY. Initial GitHub Web lint/types/unit passed, then DB startup race failed; corrected in 20f33ca. iPhone/iPad Simulator builds succeeded. Corrected cloud run 37248285240 passed all three jobs on commit 20f33ca.
+Last published checkpoint `50810b0`: GitHub run **37393194089** passed Web and unsigned iPhone/iPad Simulator builds; main Vercel deployment READY.
+Current checkpoint: lint/types/11 unit tests/production build passed. Full local Field/spatial/sharing/import/native-batch/500-record browser regression passed. 500 parcels/polygons + 500 observations return five deduplicated 100-row pages, reduced legacy payloads, local page response 101–209 ms. Cloud verification follows publication.
+Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator builds and bridge simulation do not prove physical iOS camera/HEIC/lock/background acceptance.
 
 ## Deployment
 
-- Repository: maxstillwell/landbanker (Public, explicitly approved).
-- Main: https://landbanker.vercel.app (new independent project only).
-- Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app.
-- App URL env configured separately for main/preview; backend URL points only to https://gksyipjxhrolsgztfyer.supabase.co. Active publishable key can now be retrieved through authorized tooling. Main signup page renders an enabled form; current env values and Preview auth behavior have not been audited in this access-check session.
-- create_git_project described its initial deploy as preview, but get_deployment reported production target. A separate preview branch/deployment was then established and verified. No MaxQI aliases/domains changed.
+- Main: https://landbanker.vercel.app
+- Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app (may require Vercel access).
+- Main currently 50810b0; Preview currently b0991fd. Final checkpoint will fast-forward both via independent source publication; no MaxQI deployment/domain changes.
+- Auth/App URLs configured through environment. HTTPS git push is unavailable; scripts/push-via-api.py preserves commit hashes, rejects concurrent remote changes and never force-pushes.
 
 ## Database status
 
-Verified Landbanker project gksyipjxhrolsgztfyer in landbanker organization zhpgbccgfasglutbekts, Tokyo, ACTIVE_HEALTHY, Postgres 17.11. Tools now require explicit link_id; select the Landbanker connection. Hosted migrations already present: 20261005013641 land_banker_foundation; 20261005013949 improve_rls_and_foreign_key_indexes. Eleven public tables all have RLS, 32 public policies, field-media private bucket with 25 MiB limit, one Auth user and one active owner Workspace. No business records/import mappings yet. Read-only rollback test confirmed authenticated nonmember isolation across Workspace/business tables; anon public-table grants absent. Security advisor: leaked-password protection disabled. Performance advisor: unused indexes only. Hosted migration SQL should be reconciled with repository history before further DDL; no duplicate initialization or hosted data changes made in this access-check session.
-Only old projects were inspected read-only; existing MaxQI/PROS not paused/deleted/upgraded. Never substitute them for the new backend.
+Independent hosted PG17.11, active healthy, 14 public tables with RLS, private field-media bucket. Hosted foundation/index history differs in timestamp from local baseline: do not replay initialization or blindly db push.
+Additive hosted migrations: parcel_provenance, layer_features, layer_catalog, scoped_share_projection. All also tested locally. No PostGIS installed; valid GeoJSON JSONB retained.
+Hosted owner-positive/nonmember-negative rollback assertions pass. Advisor has two intentional SECURITY DEFINER token-resolver execution warnings and leaked-password protection disabled; reviewed/documented, not warning-free. No missing-RLS finding.
 
-## Known issues / next
+## Known issues
 
-- Hosted login/confirmation/recovery/SMTP/Storage workflow verification and Max's real import remain pending. Existing Auth user identity/ownership was not inferred from counts.
-- Legacy media file copy/checksums not implemented; metadata is legacy_pending. No source deletion.
-- Explicit retry now; automatic backoff/native background transfer/device cleanup future work. No offline maps/billing/cutover.
-- Full share UI/subset manifests/perimeter rate limiting pending. GeoJSON/polygon first; KML/KMZ/broader spatial editing and query pagination need expansion.
-- iOS real-device permissions/camera/GPS/expired-session/relaunch/native recovery link testing remains. Unsigned Simulator builds do not establish these results.
+- Real signed iPhone/iPad device checks still required: Camera/PhotosPicker, HEIC/large photos, lock/background/close/relaunch, expired session and device password recovery. Desktop/Web local sync passes; real hosted photo/device acceptance remains separate.
+- Unfinished drawing points are not persisted until Finish; whole-object translation, vertex insertion/removal and dense/multipart editing need expansion. Current editor refuses unsafe geometry simplification.
+- Address-first search; parcel identifier search, more road-name cases and broader state providers need expansion. Source response availability is external.
+- Eight catalog layers; more official sources, Satellite/provider licensing and reorder need expansion. Owner development access is full; commercial gating enforcement remains future work, no billing.
+- Paging limits UI to 1,000 records/category, API 100/page; optional bbox filters location points only, not spatial intersection. Whole layer GeoJSON still travels with its page. Incremental refresh/delta/cursor and PostGIS/indexed viewport loading remain next performance work.
+- Limited-copy files are metadata only, not duplicated Storage objects. No full import until schema stabilizes and explicit milestone authorization. Public sharing perimeter rate limiting must be configured before broad launch.
 
 ## External blockers
 
-Access blocker resolved (2026-10-05): explicit Landbanker link_id now routes tools to the correct organization/project. See [SUPABASE_ACCESS.md](SUPABASE_ACCESS.md) for verified results and prior diagnosis. Cloud CLI still has no configured login; use authorized connector tools.
+Apple Developer signing/TestFlight credentials required only for real-device distribution. Supabase access is resolved; no backend access blocker. No blocker justifies changing MaxQI.
 
-1. No Supabase connector access blocker remains. Actual email delivery and hosted Auth URL configuration still need checking; missing external SMTP credentials would be a separate infrastructure dependency.
-2. Apple signing/TestFlight later. Independent Simulator CI works without it.
-   GitHub admin-settings/variables mutations are denied by integration (403); source content API publication works. HTTPS Git push returned 401, so API fallback preserved source history and hashes. Normal fetch/clone works; scripts/push-via-api.py handles committed main updates without force-pushing or overwriting concurrent changes.
+## Next / exact resume step
 
-## Exact next step
-
-Web/Simulator CI passes; hosted access/schema/nonmember isolation confirmed. Reconcile the two already-applied hosted migrations with repository SQL before adding DDL. Check existing Vercel env and Auth site/redirect/email configuration without overwriting another developer's setup. Verify real login/recovery/photo/desktop flow, then identify Max's actual owner Workspace for dry-run → copy → verify existing private snapshot → later checksum-copy media. Continue iOS/backend and milestone 2. MaxQI continues reading its legacy backend.
-
-## LandOS milestone — active 2026-10-06
-
-Visible product renamed LandOS; stable repo/domain/schema/bridge/device queue identifiers retained. PRODUCT.md defines the spatial-workspace direction and required P0→P6 order. P0: API requests bounded to 45 seconds, Supabase browser operations/upload bounded to 120 seconds, local queue preserved with visible failure/retry. Timeout/caller cancellation unit tests added; eight tests, lint, types and production build pass. Existing real-browser Field/tenant-isolation test remains in cloud CI. Online connection banner hidden when healthy; contextual sheet titles started.
-
-Manual/device gaps: native HEIC/camera/large-photo/background/phone-lock/expired-session/relaunch remain real-device acceptance items, not inferred from Simulator compilation. Existing EXIF metadata preserves capture/location without changing observation position. No full offline map.
-
-Next: P1 verify VIC Vicmap Address + VicPlan Parcel and NSW Spatial Services Address/Cadastre endpoints; implement bounded official search/read-only preview/idempotent Workspace save with source provenance. Then drawing/measurement and official catalog; reconcile hosted migration history before additive schema. This milestone permits only 5–10 representative MaxQI records, never full import/cutover.
-
-P1 implementation: VIC/NSW official address search, official parcel preview, measured area/provenance, idempotent server-verified save and primary Parcel selection added. Additive landos_parcel_provenance migration applied only to independent hosted project; existing RLS preserved, local DB isolation tests passed. NSW requires ArcGIS JSON ring conversion (holes/disjoint parts tested). No PostGIS installed; current valid JSONB geometry retained. Live source/browser checks ongoing; do not report NSW GeoJSON support. Full migration prohibited; new schema still evolving.
-
-P1 verification complete: live authenticated local browser/API tests passed for VIC 701 Sturt Street Ballarat and NSW 5 James Street Dunoon; official geometry/area/save/repeat identity/reopen verified. Production build, lint, types, 10 unit tests and complete Field/Auth/Storage/two-user isolation/import synthetic regression pass. Latest P0 cloud run failed only on public container registry rate limiting; sequential bounded pull retries added, cloud rerun pending. Independent hosted provenance migration applied; security advisor only reports existing leaked-password protection setting. Real iOS device acceptance still pending.
-
-Exact next: Draw Point/Line/Polygon/Rectangle, metric measurement and editable persisted My Layers, then official catalog. No source production data copied.
-
-## Spatial milestone checkpoint
-
-Completed: Point/Line/Polygon/Rectangle drawing, metric area/distance, touch-draggable vertices, Undo, shape name/note/target My Layer, account-scoped finished local draft, atomic parent/Feature save, feature selection/edit/delete foundation. Multipart/hole geometries are preserved and explicitly not simplified by editor. Catalog has 8 enabled official VIC/NSW reference layers with provenance/usage/tier metadata; active-layer add/remove/visibility/opacity persists per user/Workspace. Header compacted; membership-verified Workspace selector, clear Locate/Follow states, ResizeObserver and iPad landscape 70/30.
-
-Validation: phone polygon→measurement→named save→reload, stable feature identity, invalid-coordinate rejection, catalog flood add/toggle/reload and iPad 70/30 browser assertions pass. Live VIC flood and NSW zoning exports return valid PNG. Local RLS tests pass including drawing RPC cross-tenant rejection; preference isolation assertions added for next regression. Independent hosted layer_features and layer_catalog migrations applied. No MaxQI writes/import/cutover. Cloud Parcel checkpoint 2dad924 run 37388101233 PASSED all Web/iPhone/iPad jobs; new spatial checkpoint CI pending publication.
-
-Next: run full spatial/Field/RLS/build regression, publish checkpoint, then limited 5–10 representative MaxQI records only (dry-run→copy→verify) and Saved View explicit-resource foundation. Unfinished-drawing persistence, whole-object translate, vertex insertion, more sources, paging/performance, signed real iOS device testing remain explicit work. No nationwide coverage or complete offline maps claimed.
-
-Spatial checkpoint final local verification: lint/types/11 unit tests/disposable PostgreSQL RLS tests/production build/full Field+spatial+synthetic-import browser tests PASSED. Ready for independent publication. Real phone hardware acceptance and unfinished drawing persistence remain unverified/not implemented as recorded above.
-
-Published spatial checkpoint b0991fd to independent main and fast-forwarded Preview (no force). Main/Preview cloud build verification pending. Limited source sample audit: available historical snapshot has VIC parcels and NSW layers; no NSW parcel record or parcel-linked observation in that snapshot. Do not invent relationships or label a VIC parcel NSW to satisfy test coverage. Refresh source inventory read-only, then copy only representative actual records and record coverage gaps.
-
-Limited hosted sample: dry-run→copy→verify→repeat applied successfully to the registered Max Qi owner Workspace in independent backend. 10 source records / 17 destination records (4 parcels, 1 observation, 2 media metadata, 3 layers, 7 derived features). Actual media files copied zero; legacy_pending remains visible. Source sample unchanged check in progress. Original timestamps, IDs/geometry/source metadata and parent relations verified on new inserts. Existing null parcel relation preserved; source has no NSW parcel (NSW layers tested instead). No full import/cutover. New connector SQL adapter is bounded, table-whitelisted, literal-safe, insert-only and owner-guarded; tested locally before hosted use.
-
-Cloud spatial checkpoint b0991fd: Main and Preview READY; runs 37389762173 / 37389823419 passed Web + unsigned iPhone + iPad builds. Next: explicit-resource Saved View persistence and safe read-only sharing projection, then performance/pagination and spatial editing improvements. Real device signing remains external acceptance dependency.
-
-Limited sample verification finished: all 17 destination records/mappings verified, second apply did not overwrite or duplicate records, and a fresh read-only query confirmed every selected MaxQI source row unchanged. Original files remain untouched. Proceeding to Saved View explicit-resource and secure public projection foundation; no full import.
-
-Saved View foundation implemented: explicit parcel/layer/official-layer settings, scoped restore, read-only Share View URL with expiry/revoke. DB public projection uses raw-token hashing internally and publishable client credential; no runtime service key. Exact resource/Feature manifest frozen; private notes/geometry extras and future features excluded. Local anonymous browser sharing/revoke and PostgreSQL token/scope tests pass. Hosted additive projection migration applied. Final full regression/build/publication for this checkpoint next; then pagination/performance and geometry-editing refinements.
-
-Limited-import/Saved View final checkpoint checks: lint/types/11 unit tests/production build/PostgreSQL isolation and public projection tests/full Field+spatial+sharing+both import browser/database adapters PASSED. Hosted owner-positive/nonmember-negative read-only rollback assertions also pass. Advisor now has two intentional token-resolver SECURITY DEFINER execution WARNs plus leaked-password protection setting; reviewed and documented, not warning-free. Source records/files unchanged, only bounded copy completed. Exact next: publish checkpoint, implement bounded paginated workspace reads + bulk signed photo URLs, test 100/500 records, improve touch geometry editing and extend official catalog.
+Commit/push, fast-forward Preview, confirm Web + iPhone + iPad CI and Vercel READY. Then improve unfinished drawing persistence/touch editing, expand legally verified VIC/NSW official catalog, optimize incremental map loading and continue field/device verification. Do not execute full MaxQI import or production cutover.

@@ -14,6 +14,12 @@ export type FieldDraft = {
   input: z.infer<typeof observationInput>;
   photos: QueuePhoto[];
   status: "draft" | "pending" | "uploading" | "uploaded" | "failed";
+  photoSelection?: {
+    expected: number;
+    received: number;
+    finished: boolean;
+    failed: number;
+  };
   error?: string;
   updatedAt: number;
 };

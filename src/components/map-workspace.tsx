@@ -28,6 +28,8 @@ import { geojsonFeatures } from "@/lib/map/geometry";
 import { ParcelSearch } from "./parcel-search";
 import type { MapSelection } from "@/lib/map/selection";
 import type { OfficialParcel } from "@/lib/map/parcel-types";
+import { timeoutFetch } from "@/lib/network";
+import { mergeMapPages, type MapPage } from "@/lib/map/data-pages";
 import { WorkspaceSelector } from "./workspace-selector";
 import { LayerLibrary } from "./layer-library";
 import { createArcGisExportLayer } from "@/lib/map/arcgis-export-layer";
@@ -95,6 +97,10 @@ export default function MapWorkspace({
     useState<Set<string> | null>(null);
   const [catalog, setCatalog] = useState<CatalogLayer[]>([]);
   const [activeLayers, setActiveLayers] = useState<ActiveLayer[]>([]);
+  const loadedPages = useRef(1);
+  const requestGeneration = useRef(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [data, setData] = useState<MapData>(emptyData);
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
@@ -106,6 +112,10 @@ export default function MapWorkspace({
   const [notice, setNotice] = useState("");
   const [draft, setDraft] = useState<FieldDraft | null>(null);
   const draftRef = useRef<FieldDraft | null>(null);
+  const photoProcessing = useRef(0);
+  const photoTasks = useRef(Promise.resolve());
+  const nativePhotoActive = useRef(false);
+  const [processingPhotos, setProcessingPhotos] = useState(0);
   const [queue, setQueue] = useState<FieldDraft[]>([]);
   const [online, setOnline] = useState(true);
   const [sheet, setSheet] = useState<"collapsed" | "medium" | "expanded">(
@@ -115,7 +125,11 @@ export default function MapWorkspace({
     "observations",
   );
   const [selection, setSelection] = useState<MapSelection>(null);
-  const selected = selection?.kind === "observation" ? selection.record : null;
+  const selected =
+    selection?.kind === "observation"
+      ? data.observations.find((o) => o.id === selection.record.id) ||
+        selection.record
+      : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
   const officialParcel =
     selection?.kind === "official-parcel" ? selection.record : null;
@@ -171,17 +185,46 @@ export default function MapWorkspace({
   const polygonDraft = useRef<L.Polyline | null>(null);
   const canWrite = ["owner", "admin", "editor"].includes(role);
   const reload = useCallback(async () => {
+    const generation = ++requestGeneration.current;
     try {
-      const r = await fetch("/api/map", { cache: "no-store" });
-      if (!r.ok)
-        throw new Error(
-          "Session or connection unavailable. Your device drafts are safe.",
-        );
-      setData(await r.json());
+      const pages = await Promise.all(
+        Array.from({ length: loadedPages.current }, async (_, page) => {
+          const r = await timeoutFetch(`/api/map?page=${page}`, {
+            cache: "no-store",
+          });
+          if (!r.ok)
+            throw new Error(
+              "Session or connection unavailable. Your device drafts are safe.",
+            );
+          return (await r.json()) as MapPage;
+        }),
+      );
+      if (generation !== requestGeneration.current) return true;
+      setData(mergeMapPages(pages));
+      setHasMore(Object.values(pages.at(-1)!.pagination.hasMore).some(Boolean));
+      return true;
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "Unable to refresh");
+      if (generation === requestGeneration.current)
+        setNotice(e instanceof Error ? e.message : "Unable to refresh");
+      return false;
     }
   }, []);
+  async function loadMore() {
+    if (loadingMore) return;
+    if (loadedPages.current >= 10) {
+      setNotice(
+        "The first 1,000 records per category are loaded. Larger workspaces need additional paging support.",
+      );
+      return;
+    }
+    setLoadingMore(true);
+    loadedPages.current += 1;
+    try {
+      if (!(await reload())) loadedPages.current -= 1;
+    } finally {
+      setLoadingMore(false);
+    }
+  }
   const reloadLibrary = useCallback(async () => {
     try {
       const response = await fetch("/api/layer-library", { cache: "no-store" });
@@ -292,10 +335,9 @@ export default function MapWorkspace({
   }, []);
   useEffect(() => {
     if (!mapNode.current) return;
-    const m = L.map(mapNode.current, { zoomControl: false }).setView(
-      [-37.5622, 143.8503],
-      11,
-    );
+    const m = L.map(mapNode.current, {
+      zoomControl: false,
+    }).setView([-37.5622, 143.8503], 11);
     map.current = m;
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
@@ -318,13 +360,14 @@ export default function MapWorkspace({
         return;
       }
       const current = draftRef.current;
-      if (current)
+      if (current && current.status !== "uploading")
         void saveDraft({
           ...current,
           input: {
             ...current.input,
             latitude: e.latlng.lat,
             longitude: e.latlng.lng,
+            metadata: { location_source: "map" },
           },
           updatedAt: Date.now(),
         });
@@ -335,7 +378,6 @@ export default function MapWorkspace({
     };
   }, [saveDraft]);
   useEffect(() => {
-    void reload();
     void reloadQueue();
     const active = () => {
       setOnline(navigator.onLine);
@@ -361,6 +403,40 @@ export default function MapWorkspace({
         setNotice(
           "Location access denied. Enable it in Settings or choose a map point.",
         );
+      if (
+        e.type === "photoSelectionStarted" ||
+        e.type === "photoSelectionFinished"
+      ) {
+        const current = draftRef.current;
+        if (current && e.payload.observationId === current.id) {
+          const started = e.type === "photoSelectionStarted";
+          nativePhotoActive.current = started;
+          const expected = Number(e.payload.count || 0);
+          const failed = Number(e.payload.failed || 0);
+          if (
+            Number.isInteger(expected) &&
+            expected >= 0 &&
+            expected <= 10 &&
+            Number.isInteger(failed) &&
+            failed >= 0 &&
+            failed <= expected
+          ) {
+            const progress = {
+              expected,
+              received: started ? 0 : current.photoSelection?.received || 0,
+              finished: !started,
+              failed,
+            };
+            void saveDraft({
+              ...current,
+              photoSelection:
+                !started && progress.received === expected && failed === 0
+                  ? undefined
+                  : progress,
+            });
+          }
+        }
+      }
       if (e.type === "networkStatusChanged")
         setOnline(e.payload.online === true);
       if (e.type === "appBecameActive") {
@@ -370,7 +446,13 @@ export default function MapWorkspace({
       if (e.type === "photoSelected") {
         const base64 = e.payload.base64;
         const current = draftRef.current;
-        if (current && typeof base64 === "string" && base64.length < 36e6) {
+        if (
+          current &&
+          (!e.payload.observationId ||
+            e.payload.observationId === current.id) &&
+          typeof base64 === "string" &&
+          base64.length < 36e6
+        ) {
           try {
             const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
             const file = new File(
@@ -660,7 +742,7 @@ export default function MapWorkspace({
     setTab("observations");
     sendNative("hapticFeedback");
   }
-  async function addPhotos(
+  async function ingestPhotos(
     files: File[],
     nativeMetadata: Record<string, unknown> = {},
   ) {
@@ -716,16 +798,52 @@ export default function MapWorkspace({
           metadata,
         },
       };
+      const progress = current.photoSelection
+        ? {
+            ...current.photoSelection,
+            received: current.photoSelection.received + 1,
+          }
+        : undefined;
       current = {
         ...current,
+        photoSelection:
+          progress?.finished &&
+          progress.received === progress.expected &&
+          progress.failed === 0
+            ? undefined
+            : progress,
         photos: [...current.photos, photo],
         updatedAt: Date.now(),
       };
       await saveDraft(current);
     }
   }
+  async function addPhotos(
+    files: File[],
+    metadata: Record<string, unknown> = {},
+  ) {
+    const observationId = draftRef.current?.id;
+    photoProcessing.current += 1;
+    setProcessingPhotos(photoProcessing.current);
+    const task = photoTasks.current.then(async () => {
+      if (draftRef.current?.id !== observationId) return;
+      await ingestPhotos(files, metadata);
+    });
+    photoTasks.current = task.catch(() => {});
+    try {
+      await task;
+    } catch {
+      setNotice(
+        "Unable to import selected photos. Reselect them before saving.",
+      );
+    } finally {
+      photoProcessing.current -= 1;
+      setProcessingPhotos(photoProcessing.current);
+    }
+  }
   async function uploadDraft(item: FieldDraft) {
-    if (uploading.current) return;
+    if (uploading.current || photoProcessing.current || item.photoSelection)
+      return;
     uploading.current = true;
     const next: FieldDraft = { ...item, status: "uploading", error: undefined };
     try {
@@ -768,7 +886,7 @@ export default function MapWorkspace({
     }
   }
   async function submitDraft() {
-    if (!draft) return;
+    if (!draft || photoProcessing.current || draft.photoSelection) return;
     if (!draft.input.title.trim()) {
       setNotice("Give this observation a title.");
       return;
@@ -1044,6 +1162,10 @@ export default function MapWorkspace({
               }
               setSheet("collapsed");
             }}
+            disabled={
+              processingPhotos > 0 ||
+              Boolean(draft?.photoSelection && nativePhotoActive.current)
+            }
             aria-label="Close inspector"
           >
             ×
@@ -1106,7 +1228,9 @@ export default function MapWorkspace({
                 <div className="actions">
                   <button
                     onClick={() => {
-                      if (!sendNative("openCamera"))
+                      if (
+                        !sendNative("openCamera", { observationId: draft.id })
+                      )
                         cameraInput.current?.click();
                     }}
                   >
@@ -1114,7 +1238,11 @@ export default function MapWorkspace({
                   </button>
                   <button
                     onClick={() => {
-                      if (!sendNative("openPhotoLibrary"))
+                      if (
+                        !sendNative("openPhotoLibrary", {
+                          observationId: draft.id,
+                        })
+                      )
                         libraryInput.current?.click();
                     }}
                   >
@@ -1143,6 +1271,32 @@ export default function MapWorkspace({
                     e.target.value = "";
                   }}
                 />
+                {processingPhotos > 0 ? (
+                  <p role="status">Importing photos… Keep this screen open.</p>
+                ) : null}
+                {draft.photoSelection ? (
+                  <div role="status">
+                    <p>
+                      {draft.photoSelection.received} of{" "}
+                      {draft.photoSelection.expected} selected photos imported.{" "}
+                      {draft.photoSelection.finished
+                        ? "Review missing photos before saving."
+                        : "Photo selection is incomplete."}
+                    </p>
+                    {!processingPhotos && !nativePhotoActive.current ? (
+                      <button
+                        onClick={() =>
+                          void saveDraft({
+                            ...draft,
+                            photoSelection: undefined,
+                          })
+                        }
+                      >
+                        Continue with imported photos
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="photo-grid">
                   {draft.photos.map((p) => (
                     <DraftPhoto key={p.input.id} photo={p} />
@@ -1150,7 +1304,11 @@ export default function MapWorkspace({
                 </div>
                 <button
                   className="primary full"
-                  disabled={draft.status === "uploading"}
+                  disabled={
+                    draft.status === "uploading" ||
+                    processingPhotos > 0 ||
+                    Boolean(draft.photoSelection)
+                  }
                   onClick={() => void submitDraft()}
                 >
                   {draft.status === "uploading"
@@ -1760,6 +1918,14 @@ export default function MapWorkspace({
               ) : null}
             </>
           ) : null}
+          {hasMore ? (
+            <button
+              disabled={loadingMore || loadedPages.current >= 10}
+              onClick={() => void loadMore()}
+            >
+              {loadingMore ? "Loading…" : "Load more Workspace data"}
+            </button>
+          ) : null}
           {queue.length ? (
             <section className="queue">
               <div className="section-label">
@@ -1774,7 +1940,7 @@ export default function MapWorkspace({
                     </small>
                     {d.error ? <p>{d.error}</p> : null}
                   </div>
-                  {d.status === "draft" ? (
+                  {d.status === "draft" || d.photoSelection ? (
                     <button
                       onClick={() => {
                         draftRef.current = d;

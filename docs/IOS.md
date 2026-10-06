@@ -15,3 +15,7 @@ Recovery links opened in Safari do not share WKWebView PKCE cookies. Complete th
 2026-10-05 cloud result: unsigned iPhone and iPad Simulator builds PASSED in https://github.com/maxstillwell/landbanker/actions/runs/37247783731, with downloadable .app artifacts. No device-signing/TestFlight release. Later runs use the configurable Vercel build-setting default; app signup remains unavailable until the independent hosted backend is authorized/configured.
 
 LandOS display name and user-visible branding now configured; Swift project/bridge/environment identifiers retained for compatibility. Latest independent cloud run 37388101233 passed unsigned iPhone and iPad builds plus Web checks. Signup/login is enabled on the independent hosted backend; user reports successful login. Real-device HEIC, camera, lock/background interruption, cookie expiry and relaunch still require signed/device acceptance. Current responsive Web spatial workflow is shared in WKWebView.
+
+## Photo batch reliability
+
+Camera/PhotosPicker commands are correlated to the current observation UUID. Batch start/finish counts are persisted in Web IndexedDB. Save is disabled during native selection and Web EXIF/Blob ingestion. Relaunch with an incomplete selection requires explicit recovery; originals not yet transferred must be reselected. PHPicker decoding is sequential to bound concurrent large-image memory. Browser bridge simulation tests batch save blocking, both photos/private uploads and interrupted recovery; these do not replace physical device Camera/HEIC/background tests.

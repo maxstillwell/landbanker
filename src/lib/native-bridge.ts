@@ -7,6 +7,8 @@ export const nativeEvents = z.object({
     "locationUpdated",
     "locationPermissionChanged",
     "photoSelected",
+    "photoSelectionStarted",
+    "photoSelectionFinished",
     "appBecameActive",
     "appBecameInactive",
     "networkStatusChanged",
