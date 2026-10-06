@@ -16,19 +16,19 @@ Updated: 2026-10-06 UTC. Resume with STATUS.md, PRODUCT.md and ARCHITECTURE.md. 
 
 ## In progress
 
-Reliability/performance checkpoint completed: prevent early Save while photos import, persist native selected-photo progress, explicitly recover interrupted selections, serial native image reads, bounded 100-row map pages, bulk private-photo URL signing, reduced legacy payloads, optional point-location bbox filter and browser Load more.
+Physical signed-device acceptance remains pending Apple signing. Next software unit: unfinished drawing persistence/touch editing, then more official-source coverage and viewport-feature loading. No full MaxQI import/cutover.
 
 ## Build status
 
-Published core checkpoint `2407323`: GitHub main run **37394863501** passed Web and unsigned iPhone/iPad Simulator builds; Main and Preview Vercel deployments READY.
-Current checkpoint: lint/types/11 unit tests/production build passed. Full local Field/spatial/sharing/import/native-batch/500-record browser regression passed. 500 parcels/polygons + 500 observations return five deduplicated 100-row pages, reduced legacy payloads, local page response 101–209 ms. Native photo-batch Swift changes also compiled successfully for both iPhone and iPad in cloud CI. Catalog expansion: local DB/RLS tests and 500-record/10-active-layer regression passed; live metadata/PNG verified.
-Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator builds and bridge simulation do not prove physical iOS camera/HEIC/lock/background acceptance.
+Verified implementation checkpoint **0718dd6**, cloud main run **37395648724**: all Web + unsigned iPhone + iPad jobs PASSED. Both Vercel Main/Preview READY. Follow-up documentation commits do not change this verified implementation.
+Local lint/types/11 unit tests/disposable PostgreSQL RLS/production build/full Field+spatial+public sharing+both import adapters+native/Web photo-batch+500-record/ten-layer regression PASSED. Native Swift photo-batch changes compile for both Simulator types.
+Tests use isolated local Auth/Postgres/Storage and synthetic accounts. Simulator builds/bridge simulation do not prove physical camera/HEIC/lock/background acceptance. Read ACCEPTANCE.md before manual testing.
 
 ## Deployment
 
 - Main: https://landbanker.vercel.app
 - Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app (may require Vercel access).
-- Main and Preview currently 33de6a5; catalog expansion cloud run 37395240685 passes all three jobs. Final Web file-picker batch progress safeguard is locally verified and ready for publication; no MaxQI deployment/domain changes.
+- Main and Preview serve the verified implementation 0718dd6; checkpoint documentation is subsequently fast-forwarded without app-code changes. No MaxQI deployment/domain changes.
 - Auth/App URLs configured through environment. HTTPS git push is unavailable; scripts/push-via-api.py preserves commit hashes, rejects concurrent remote changes and never force-pushes.
 
 ## Database status
@@ -39,6 +39,7 @@ Hosted owner-positive/nonmember-negative rollback assertions pass. Advisor has t
 
 ## Known issues
 
+- Raw Web HEIC image preview depends on browser codec support; native photos normalize to JPEG. Cross-browser preview conversion is future work.
 - Real signed iPhone/iPad device checks still required: Camera/PhotosPicker, HEIC/large photos, lock/background/close/relaunch, expired session and device password recovery. Desktop/Web local sync passes; real hosted photo/device acceptance remains separate.
 - Unfinished drawing points are not persisted until Finish; whole-object translation, vertex insertion/removal and dense/multipart editing need expansion. Current editor refuses unsafe geometry simplification.
 - Address-first search; parcel identifier search, more road-name cases and broader state providers need expansion. Source response availability is external.
@@ -52,10 +53,10 @@ Apple Developer signing/TestFlight credentials required only for real-device dis
 
 ## Next / exact resume step
 
-Publish the verified catalog follow-up, fast-forward Preview and confirm CI/READY. Then improve unfinished drawing persistence/touch editing, expand legally verified VIC/NSW official catalog, optimize incremental map loading and continue field/device verification. Do not execute full MaxQI import or production cutover.
+Persist unfinished geometry editing/drawing state with the existing account/Workspace-scoped local abstraction, enlarge touch targets, then add safe object translation/vertex insertion. Add meaningful interruption/reload and touch geometry tests. Continue legally verified VIC/NSW sources, incremental/viewport feature loading and signed-device field verification. Do not execute full MaxQI import or production cutover.
 
 ## Latest continuation
 
-Catalog expanded with Victoria All Overlays and NSW EPI Lot Size through additive independent migration 20261006003749 (hosted/local applied). Ten active layer preference + 500 polygon/parcel + 500 observation browser test passed (local pages 89–104 ms). No new frontend/source credentials, no MaxQI writes. Next safe unit after publication: persist unfinished geometry editing/drawing state using scoped local abstraction, enlarge touch handles and add safe object translation/vertex insertion; then expand official-source coverage and viewport feature loading.
+Catalog expansion migration 20261006003749 is hosted/local applied: Victoria All Overlays and NSW EPI Lot Size, enabled total ten. Local scale test passes 500 parcels/polygons + 500 observations with ten persisted active layer preferences. Native and Web file-picker batches persist expected/received counts before ingestion; incomplete/rejected selections require explicit recovery. Full local regression passes. Physical iOS acceptance checklist is in ACCEPTANCE.md.
 
-Final Web file-picker continuation: expected/received progress is saved before EXIF reading, rejected or interrupted files require explicit recovery and cannot silently yield a partial successful Save. Local lint/types/production build/full Field+spatial+sharing+imports+Web/native photo-batch+ten-layer scale regression PASS. Current code publication/cloud verification next. MaxQI homepage and protected /land/subdomain routes checked read-only: HTTP 200, correct access redirects. This is endpoint health evidence, not a claim to have exercised every legacy function.
+MaxQI homepage and both protected Land routes checked read-only: HTTP200 with expected access redirects. This proves endpoint health, not every legacy workflow. No production MaxQI changes; limited-copy source rows and original files verified unchanged.
