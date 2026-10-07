@@ -489,3 +489,202 @@ test("safe simple edits preserve closed rings and reject minimum-count, crossing
   assert.ok(rectangle);
   assert.ok(validGeometry(drawingGeometry("Rectangle", rectangle)));
 });
+
+import {
+  addressQueries,
+  parcelIdentifierQuery,
+} from "../src/lib/map/parcel-search-query";
+test("official address parsing keeps multi-word roads, units, punctuation and explicit state", () => {
+  assert.match(
+    addressQueries("701 Sturt Street, Ballarat VIC 3350", "VIC")[0],
+    /HOUSE_NUMBER_1=701 AND ROAD_NAME='STURT' AND ROAD_TYPE='STREET' AND LOCALITY_NAME LIKE 'BALLARAT%'/,
+  );
+  assert.match(
+    addressQueries("2/701 Sturt St Ballarat", "VIC")[0],
+    /HOUSE_NUMBER_1=701/,
+  );
+  assert.match(
+    addressQueries("Unit 2, 701 Sturt St Ballarat", "VIC")[0],
+    /HOUSE_NUMBER_1=701/,
+  );
+  assert.match(
+    addressQueries("99 Old Northern Road", "VIC")[0],
+    /ROAD_NAME='OLD NORTHERN'/,
+  );
+  assert.match(
+    addressQueries("5 James St, Dunoon NSW", "NSW")[0],
+    /housenumber='5'.*%JAMES%.*%STREET%.*%DUNOON%/,
+  );
+  assert.match(
+    addressQueries("Ballarat Sturt Street", "VIC")[1],
+    /%BALLARAT%.*%STURT%/,
+  );
+  assert.throws(() => addressQueries("///", "VIC"));
+  assert(
+    !addressQueries("5 James'; DROP TABLE x; --", "NSW").join().includes(";"),
+  );
+});
+test("parcel identifier queries use only verified provider fields", () => {
+  assert.equal(
+    parcelIdentifierQuery("PFI: 12345", "VIC"),
+    "PARCEL_PFI='12345'",
+  );
+  assert.equal(parcelIdentifierQuery("CADID: 12345", "NSW"), "cadid=12345");
+  assert.equal(
+    parcelIdentifierQuery("1/DP123456", "NSW"),
+    "lotnumber='1' AND planlabel='DP123456'",
+  );
+  assert.equal(
+    parcelIdentifierQuery("Lot 1 PS123456", "VIC"),
+    "PARCEL_LOT_NUMBER='1' AND PARCEL_PLAN_NUMBER='PS123456'",
+  );
+  assert.throws(() => parcelIdentifierQuery("CADID: 1 OR 1=1", "NSW"));
+  assert.throws(() => parcelIdentifierQuery("PFI: 12345", "NSW"));
+});
+
+import { intersectsViewport } from "../src/lib/map/viewport";
+test("viewport intersection finds crossing geometry and excludes holes/false envelopes", () => {
+  const b: [number, number, number, number] = [0, 0, 1, 1];
+  assert(
+    intersectsViewport(
+      {
+        type: "LineString",
+        coordinates: [
+          [-2, 0.5],
+          [2, 0.5],
+        ],
+      },
+      b,
+    ),
+  );
+  assert(
+    !intersectsViewport(
+      {
+        type: "LineString",
+        coordinates: [
+          [-1, 0.2],
+          [0.2, 2],
+        ],
+      },
+      b,
+    ),
+  );
+  assert(
+    intersectsViewport(
+      {
+        type: "Polygon",
+        coordinates: [
+          [
+            [-2, -2],
+            [2, -2],
+            [2, 2],
+            [-2, 2],
+            [-2, -2],
+          ],
+        ],
+      },
+      b,
+    ),
+  );
+  assert(
+    !intersectsViewport(
+      {
+        type: "Polygon",
+        coordinates: [
+          [
+            [-2, -2],
+            [2, -2],
+            [2, 2],
+            [-2, 2],
+            [-2, -2],
+          ],
+          [
+            [-0.1, -0.1],
+            [-0.1, 1.1],
+            [1.1, 1.1],
+            [1.1, -0.1],
+            [-0.1, -0.1],
+          ],
+        ],
+      },
+      b,
+    ),
+  );
+  assert(
+    intersectsViewport(
+      {
+        type: "MultiPolygon",
+        coordinates: [
+          [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+          [
+            [
+              [3, 3],
+              [4, 3],
+              [4, 4],
+              [3, 3],
+            ],
+          ],
+        ],
+      },
+      b,
+    ),
+  );
+});
+
+import { RateWindow } from "../src/lib/rate-window";
+import { readShareUrls, storeShareUrl } from "../src/lib/layer-draft";
+test("share URLs stay scoped on device, and rate windows reset/bound callers", async () => {
+  const url = `https://preview.example/share/${"Q".repeat(43)}`;
+  await storeShareUrl("share-user", "share-workspace", "share-id", url);
+  assert.deepEqual(await readShareUrls("share-other", "share-workspace"), {});
+  assert.deepEqual(
+    await readShareUrls("share-user", "share-other-workspace"),
+    {},
+  );
+  assert.equal(
+    (await readShareUrls("share-user", "share-workspace"))["share-id"],
+    url,
+  );
+  await assert.rejects(
+    storeShareUrl(
+      "share-user",
+      "share-workspace",
+      "bad",
+      "javascript:alert(1)",
+    ),
+  );
+  const window = new RateWindow(2, 100, 10);
+  assert(window.allow("a", 0));
+  assert(window.allow("a", 1));
+  assert(!window.allow("a", 2));
+  assert(window.allow("b", 2));
+  assert(window.allow("a", 101));
+});
+
+test("malformed imported geometry cannot break or falsely match a viewport", () => {
+  const b: [number, number, number, number] = [0, 0, 1, 1];
+  for (const value of [
+    { type: "Polygon", coordinates: null },
+    {
+      type: "LineString",
+      coordinates: [
+        [null, 1],
+        [1, null],
+      ],
+    },
+    { type: "FeatureCollection", features: [] },
+  ]) {
+    assert.equal(
+      intersectsViewport(value as unknown as import("geojson").Geometry, b),
+      false,
+    );
+  }
+});

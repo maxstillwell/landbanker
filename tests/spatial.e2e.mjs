@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { readFile, mkdir } from "node:fs/promises";
 const origin = process.env.E2E_APP_URL || "http://localhost:3000";
@@ -120,6 +120,60 @@ try {
     () =>
       !document.querySelector(".active-layer input[type=checkbox]").disabled,
   );
+  const initialLibrary = await (
+    await page.request.get(origin + "/api/layer-library")
+  ).json();
+  const secondSource = initialLibrary.catalog.find(
+    (l) => l.enabled && l.id !== initialLibrary.active[0].catalog_id,
+  );
+  assert.ok(secondSource);
+  assert.equal(
+    (
+      await page.request.post(origin + "/api/layer-library", {
+        headers: { Origin: origin },
+        data: {
+          id: secondSource.id,
+          action: "save",
+          opacity: 0.35,
+          position: 1,
+        },
+      })
+    ).status(),
+    200,
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "layers", exact: true }).click();
+  await page
+    .getByRole("button", { name: `${secondSource.name} move up`, exact: true })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get(origin + "/api/layer-library")).json())
+          .active[0].catalog_id,
+    )
+    .toBe(secondSource.id);
+  await page.reload();
+  await page.getByRole("button", { name: "layers", exact: true }).click();
+  assert.equal(
+    await page
+      .getByLabel(`${secondSource.name} opacity`, { exact: true })
+      .inputValue(),
+    "0.35",
+  );
+  const ordered = await (
+    await page.request.get(origin + "/api/layer-library")
+  ).json();
+  assert.equal(ordered.active[0].catalog_id, secondSource.id);
+  assert.equal(
+    (
+      await page.request.patch(origin + "/api/layer-library", {
+        headers: { Origin: origin },
+        data: { ids: [secondSource.id, secondSource.id] },
+      })
+    ).status(),
+    400,
+  );
   await page.reload();
   await page.getByRole("button", { name: "layers", exact: true }).click();
   assert.equal(
@@ -132,7 +186,12 @@ try {
     await page.request.get(origin + "/api/layer-library")
   ).json();
   assert.ok(library.catalog.some((l) => l.id === "nsw-zoning"));
-  assert.equal(library.active[0].visible, false);
+  assert.equal(
+    library.active.find(
+      (l) => l.catalog_id === initialLibrary.active[0].catalog_id,
+    ).visible,
+    false,
+  );
   await page.getByRole("button", { name: "Choose workspace" }).click();
   await page.locator(".workspace-menu button").waitFor();
   await page.getByRole("button", { name: "Choose workspace" }).click();

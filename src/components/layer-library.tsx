@@ -1,14 +1,17 @@
 "use client";
 import { useState } from "react";
 import type { CatalogLayer, ActiveLayer } from "@/lib/map/catalog-types";
+import { LayerLegend } from "./layer-legend";
 export function LayerLibrary({
   catalog,
   active,
   onChange,
+  onReorder,
 }: {
   catalog: CatalogLayer[];
   active: ActiveLayer[];
   onChange: (item: ActiveLayer, remove?: boolean) => Promise<void>;
+  onReorder: (ids: string[]) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(""),
@@ -34,7 +37,7 @@ export function LayerLibrary({
       <div className="section-label">
         MY ACTIVE LAYERS <span>{active.length}</span>
       </div>
-      {active.map((item) => {
+      {active.map((item, index) => {
         const layer = catalog.find((l) => l.id === item.catalog_id);
         if (!layer) return null;
         return (
@@ -54,6 +57,7 @@ export function LayerLibrary({
               Opacity
               <input
                 aria-label={`${layer.name} opacity`}
+                key={`${item.catalog_id}:${item.opacity}`}
                 type="range"
                 min="0"
                 max="1"
@@ -74,7 +78,7 @@ export function LayerLibrary({
               />
             </label>
             <small>
-              {layer.provider} · {layer.state} ·{" "}
+              {layer.provider} · {layer.state} · {layer.category} ·{" "}
               {layer.update_frequency || "Update frequency not supplied"}
             </small>
             <details>
@@ -84,8 +88,41 @@ export function LayerLibrary({
               <a href={layer.source_url} target="_blank" rel="noreferrer">
                 Official source
               </a>
+              <LayerLegend id={layer.id} />
             </details>
             <div className="actions">
+              <button
+                disabled={busy !== null || index === 0}
+                aria-label={`${layer.name} move up`}
+                onClick={async () => {
+                  const ids = active.map((l) => l.catalog_id);
+                  [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+                  setBusy(item.catalog_id);
+                  try {
+                    await onReorder(ids);
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                Move up
+              </button>
+              <button
+                disabled={busy !== null || index === active.length - 1}
+                aria-label={`${layer.name} move down`}
+                onClick={async () => {
+                  const ids = active.map((l) => l.catalog_id);
+                  [ids[index + 1], ids[index]] = [ids[index], ids[index + 1]];
+                  setBusy(item.catalog_id);
+                  try {
+                    await onReorder(ids);
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                Move down
+              </button>
               <button
                 disabled={busy !== null}
                 onClick={() => void change(item, true)}

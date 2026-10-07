@@ -8,12 +8,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --import tsx tests/core.test.ts",
+    "test": "node --import tsx tests/core.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts",
     "db:test": "bash scripts/test-database.sh",
     "import:maxqi": "node --import tsx scripts/import-maxqi.ts",
     "infra:check": "node --import tsx scripts/check-infrastructure.ts",
     "local:start": "bash scripts/local-start.sh",
-    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts && node tests/photo-batch.e2e.mjs && node tests/map-pages.e2e.mjs && node tests/drawing-recovery.e2e.mjs"
+    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts && node tests/photo-batch.e2e.mjs && node tests/map-pages.e2e.mjs && node tests/drawing-recovery.e2e.mjs && node tests/parcels.e2e.mjs && node tests/share-hardening.e2e.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

@@ -1,4 +1,5 @@
 import "server-only";
+import { addressQueries, parcelIdentifierQuery } from "./parcel-search-query";
 import { esriRingsGeometry } from "./esri-rings";
 import type { Feature, Point, Polygon, MultiPolygon } from "geojson";
 import type {
@@ -60,29 +61,17 @@ export async function searchOfficialAddresses(
   text: string,
   state: SupportedState,
 ): Promise<AddressResult[]> {
-  const words = text
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  const first = words[0],
-    street = words[1];
-  let where: string;
-  if (state === "VIC")
-    where =
-      /^\d+$/.test(first) && street
-        ? `HOUSE_NUMBER_1=${Number(first)} AND ROAD_NAME='${street}'`
-        : `UPPER(LOCALITY_NAME) LIKE '${words.join(" ")}%'`;
-  else
-    where = /^\d+$/.test(first)
-      ? `housenumber='${first}' AND address LIKE '${words.join("%")}%'`
-      : `address LIKE '%${words.join("%")}%'`;
-  const result = await query(parcelSources[state].address, {
-    where,
-    outFields: state === "VIC" ? "EZI_ADDRESS" : "address",
-    resultRecordCount: "20",
-  });
+  const words = text.toUpperCase().split(/\W+/).filter(Boolean);
+  let result: Response = {};
+  for (const where of addressQueries(text, state)) {
+    result = await query(parcelSources[state].address, {
+      where,
+      outFields:
+        state === "VIC" ? "EZI_ADDRESS,PROPERTY_PFI" : "address,gurasid",
+      resultRecordCount: "20",
+    });
+    if (result.features?.length) break;
+  }
   return (result.features || [])
     .flatMap((feature) => {
       if (feature.geometry?.type !== "Point") return [];
@@ -99,6 +88,11 @@ export async function searchOfficialAddresses(
           latitude,
           longitude,
           source: parcelSources[state].name,
+          addressId: String(
+            feature.properties?.[
+              state === "VIC" ? "PROPERTY_PFI" : "gurasid"
+            ] || "",
+          ),
         },
       ];
     })
@@ -130,6 +124,14 @@ export async function lookupOfficialParcels(
         : "cadid,lotnumber,planlabel,lotidstring,lastupdate",
     resultRecordCount: "20",
   });
+  return parcelsFromFeatures(result, point);
+}
+function parcelsFromFeatures(
+  result: Response,
+  point: AddressResult,
+): OfficialParcel[] {
+  const { state } = point;
+  const source = parcelSources[state];
   return (result.features || []).flatMap((feature) => {
     if (
       feature.geometry?.type !== "Polygon" &&
@@ -163,5 +165,40 @@ export async function lookupOfficialParcels(
         retrievedAt: new Date().toISOString(),
       },
     ];
+  });
+}
+
+export async function searchOfficialParcelIdentifiers(
+  text: string,
+  state: SupportedState,
+): Promise<OfficialParcel[]> {
+  const source = parcelSources[state];
+  const result = await query(source.parcel, {
+    f: state === "NSW" ? "json" : "geojson",
+    where: parcelIdentifierQuery(text, state),
+    outFields:
+      state === "VIC"
+        ? "PARCEL_PFI,PARCEL_SPI,PARCEL_LOT_NUMBER,PARCEL_PLAN_NUMBER"
+        : "cadid,lotnumber,planlabel,lotidstring,lastupdate",
+    resultRecordCount: "20",
+  });
+  return parcelsFromFeatures(result, {
+    state,
+    latitude: 0,
+    longitude: 0,
+    address: "",
+    source: source.name,
+  }).map((parcel) => {
+    // A boundary vertex is on the returned parcel, unlike a centroid outside a concave parcel/hole.
+    const coordinate =
+      parcel.geometry.type === "Polygon"
+        ? parcel.geometry.coordinates[0][0]
+        : parcel.geometry.coordinates[0][0][0];
+    return {
+      ...parcel,
+      longitude: coordinate[0],
+      latitude: coordinate[1],
+      address: `Lot ${parcel.lot || ""} ${parcel.plan || parcel.sourceId}`,
+    };
   });
 }

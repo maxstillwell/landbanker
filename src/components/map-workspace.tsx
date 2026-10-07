@@ -5,7 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
-import type { MapData, LocationFix, Observation } from "@/lib/types";
+import type {
+  MapData,
+  LocationFix,
+  Observation,
+  SpatialLayer,
+  Parcel,
+} from "@/lib/types";
 import {
   sendNative,
   subscribeNative,
@@ -41,7 +47,10 @@ import {
   deleteVertex,
 } from "@/lib/map/drawing-edit";
 import { useDrawingSession } from "@/lib/hooks/use-drawing-session";
+import { ShareWorkspace } from "./share-workspace";
+import { PropertyWorkspace } from "./property-workspace";
 import { PhotoPreview } from "./photo-preview";
+import { useViewport } from "@/lib/hooks/use-viewport";
 import { ShapeDraft } from "./shape-draft";
 import {
   drawingGeometry,
@@ -110,13 +119,38 @@ export default function MapWorkspace({
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [data, setData] = useState<MapData>(emptyData);
+  const [overviewReady, setOverviewReady] = useState(false);
+  const viewport = useViewport(map, `${userId}:${workspaceId}`, overviewReady);
+  const refreshViewport = viewport.refresh;
+  const renderedData = useMemo<MapData>(() => {
+    if (!viewport.ready) return emptyData;
+    const byLayer = new Map<string, Feature[]>();
+    for (const row of viewport.rows.features) {
+      const list = byLayer.get(row.layer_id) || [];
+      list.push(row.feature);
+      byLayer.set(row.layer_id, list);
+    }
+    return {
+      ...data,
+      parcels: viewport.rows.parcels,
+      observations: viewport.rows.observations,
+      layers: [...byLayer]
+        .map<SpatialLayer>(([id, features]) => ({
+          ...data.layers.find((l) => l.id === id),
+          id,
+          workspace_id: workspaceId,
+          name: data.layers.find((l) => l.id === id)?.name || "Workspace layer",
+          layer_kind: "geojson",
+          layer_data: {},
+          metadata: {},
+          geojson: { type: "FeatureCollection" as const, features },
+        }))
+        .concat(data.layers.filter((l) => l.layer_kind === "radius")),
+    };
+  }, [data, viewport.ready, viewport.rows, workspaceId]);
+  const [propertyFilter, setPropertyFilter] = useState("");
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
-  const [shareLink, setShareLink] = useState<{
-    id: string;
-    url: string;
-    expires_at: string;
-  } | null>(null);
   const [notice, setNotice] = useState("");
   const [draft, setDraft] = useState<FieldDraft | null>(null);
   const draftRef = useRef<FieldDraft | null>(null);
@@ -231,7 +265,7 @@ export default function MapWorkspace({
     try {
       const pages = await Promise.all(
         Array.from({ length: loadedPages.current }, async (_, page) => {
-          const r = await timeoutFetch(`/api/map?page=${page}`, {
+          const r = await timeoutFetch(`/api/map?overview=1&page=${page}`, {
             cache: "no-store",
           });
           if (!r.ok)
@@ -243,6 +277,8 @@ export default function MapWorkspace({
       );
       if (generation !== requestGeneration.current) return true;
       setData(mergeMapPages(pages));
+      setOverviewReady(true);
+      refreshViewport();
       setHasMore(Object.values(pages.at(-1)!.pagination.hasMore).some(Boolean));
       return true;
     } catch (e) {
@@ -250,7 +286,7 @@ export default function MapWorkspace({
         setNotice(e instanceof Error ? e.message : "Unable to refresh");
       return false;
     }
-  }, []);
+  }, [refreshViewport]);
   async function loadMore() {
     if (loadingMore) return;
     if (loadedPages.current >= 10) {
@@ -297,14 +333,14 @@ export default function MapWorkspace({
                 minZoom: source.min_zoom,
                 opacity: Number(item.opacity),
                 attribution: source.attribution,
-                zIndex: 200 + item.position,
+                zIndex: 300 - item.position,
                 referrerPolicy: "strict-origin-when-cross-origin",
               },
             )
           : L.tileLayer(source.service_url, {
               attribution: source.attribution,
               opacity: Number(item.opacity),
-              zIndex: 200 + item.position,
+              zIndex: 300 - item.position,
             });
       layer.on("tileerror", () =>
         setNotice(
@@ -338,6 +374,28 @@ export default function MapWorkspace({
     } catch (e) {
       setActiveLayers(previous);
       setNotice(e instanceof Error ? e.message : "Layer change failed");
+    }
+  }
+  async function reorderOfficialLayers(ids: string[]) {
+    const previous = activeLayers;
+    setActiveLayers(
+      ids.map((id, position) => ({
+        ...activeLayers.find((item) => item.catalog_id === id)!,
+        position,
+      })),
+    );
+    try {
+      const response = await timeoutFetch("/api/layer-library", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Layer ordering failed");
+    } catch (e) {
+      setActiveLayers(previous);
+      setNotice(e instanceof Error ? e.message : "Layer ordering failed");
     }
   }
   const reloadQueue = useCallback(async () => {
@@ -525,7 +583,7 @@ export default function MapWorkspace({
     const group = features.current;
     if (!group) return;
     group.clearLayers();
-    for (const parcel of data.parcels) {
+    for (const parcel of renderedData.parcels) {
       if (visibleParcelIds && !visibleParcelIds.has(parcel.id)) continue;
       if (parcel.geometry) {
         L.geoJSON(parcel.geometry, {
@@ -549,7 +607,7 @@ export default function MapWorkspace({
           .addTo(group);
       }
     }
-    for (const observation of data.observations) {
+    for (const observation of renderedData.observations) {
       const node = document.createElement("div");
       node.textContent = observation.title;
       L.circleMarker([observation.latitude, observation.longitude], {
@@ -567,7 +625,7 @@ export default function MapWorkspace({
         })
         .addTo(group);
     }
-    for (const layer of data.layers) {
+    for (const layer of renderedData.layers) {
       if (visibleUserLayerIds && !visibleUserLayerIds.has(layer.id)) continue;
       try {
         if (layer.geojson)
@@ -617,7 +675,7 @@ export default function MapWorkspace({
         color: "#eab268",
         dashArray: "3",
       }).addTo(group);
-  }, [data, draft, localLayer, visibleParcelIds, visibleUserLayerIds]);
+  }, [renderedData, draft, localLayer, visibleParcelIds, visibleUserLayerIds]);
   useEffect(() => {
     if (!map.current || !officialParcel) return;
     const layer = L.geoJSON(officialParcel.geometry, {
@@ -825,7 +883,7 @@ export default function MapWorkspace({
     if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
     watch.current = null;
   }
-  function beginObservation() {
+  function beginObservation(property?: Parcel) {
     if (draftRef.current) {
       setSheet("expanded");
       return;
@@ -845,6 +903,7 @@ export default function MapWorkspace({
         longitude: fix?.longitude ?? p?.lng ?? 143.85,
         observed_at: new Date().toISOString(),
         observed_at_source: "device",
+        linked_parcel_id: property?.id || null,
         metadata: fix
           ? {
               location_source: "gps",
@@ -1158,7 +1217,11 @@ export default function MapWorkspace({
   async function saveShape() {
     if (!localLayer) return;
     try {
-      const target = data.layers.find((l) => l.id === localLayer.targetLayerId);
+      // Viewport collections are partial. Always load the complete authoritative
+      // layer before merging, so saving an edit cannot delete off-screen features.
+      const target = localLayer.targetLayerId
+        ? await loadFullLayer(localLayer.targetLayerId)
+        : null;
       const ids = new Set(localLayer.geojson.features.map((f) => f.id));
       const geojson = target?.geojson
         ? {
@@ -1185,6 +1248,16 @@ export default function MapWorkspace({
       );
     }
   }
+  async function loadFullLayer(id: string): Promise<SpatialLayer> {
+    const response = await timeoutFetch(`/api/layers?id=${id}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Layer unavailable");
+    setData((current) => ({
+      ...current,
+      layers: current.layers.map((l) => (l.id === id ? result.layer : l)),
+    }));
+    return result.layer;
+  }
   const drawnGeometry = drawingGeometry(
     kind,
     drawPoints.map((p) => [p.lng, p.lat]),
@@ -1200,6 +1273,11 @@ export default function MapWorkspace({
       : null;
   return (
     <main className={`map-app sheet-${sheet}`}>
+      {viewport.error ? (
+        <div className="drawing-storage-error" role="status">
+          Map update failed: {viewport.error}. Your local drafts are preserved.
+        </div>
+      ) : null}
       <div
         ref={mapNode}
         className="map-canvas"
@@ -1337,7 +1415,7 @@ export default function MapWorkspace({
       <div className="field-action">
         {canWrite ? (
           !drawMode ? (
-            <button className="primary" onClick={beginObservation}>
+            <button className="primary" onClick={() => beginObservation()}>
               ＋ Add observation
             </button>
           ) : null
@@ -1425,6 +1503,14 @@ export default function MapWorkspace({
             <section className="observation-form">
               <fieldset disabled={draft.status === "uploading"}>
                 <p className="draft-label">LOCAL DRAFT · ONLY ON THIS DEVICE</p>
+                {draft.input.linked_parcel_id ? (
+                  <p>
+                    Linked property:{" "}
+                    {data.parcels.find(
+                      (p) => p.id === draft.input.linked_parcel_id,
+                    )?.title || "Saved property"}
+                  </p>
+                ) : null}
                 <label>
                   Title
                   <input
@@ -1738,34 +1824,127 @@ export default function MapWorkspace({
                       ) : null}
                     </>
                   ) : (
-                    <p>Saved to Workspace</p>
+                    <>
+                      <p>Saved to Workspace</p>
+                      {selectedParcel ? (
+                        <PropertyWorkspace
+                          key={selectedParcel.id}
+                          parcel={selectedParcel}
+                          observations={data.observations}
+                          layers={renderedData.layers}
+                          catalog={catalog}
+                          active={activeLayers}
+                          onObservation={(observation) => {
+                            setSelected(observation);
+                            setTab("observations");
+                            setSheet("expanded");
+                          }}
+                          onAddField={
+                            canWrite
+                              ? () => beginObservation(selectedParcel)
+                              : undefined
+                          }
+                        />
+                      ) : null}
+                      <p>
+                        {selectedParcel?.source_url?.startsWith("https://") ? (
+                          <a
+                            href={selectedParcel.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Official source
+                          </a>
+                        ) : null}{" "}
+                        ·{" "}
+                        {selectedParcel?.source_updated_at
+                          ? `Source date ${new Date(selectedParcel.source_updated_at).toLocaleDateString()}`
+                          : "Source update date not supplied"}
+                      </p>
+                      {selectedParcel?.retrieved_at ? (
+                        <small>
+                          Retrieved{" "}
+                          {new Date(
+                            selectedParcel.retrieved_at,
+                          ).toLocaleString()}
+                        </small>
+                      ) : null}
+                      {selectedParcel && ["owner", "admin"].includes(role) ? (
+                        <button
+                          onClick={async () => {
+                            if (
+                              !window.confirm(
+                                "Remove this saved property from this Workspace? Linked records will block removal.",
+                              )
+                            )
+                              return;
+                            try {
+                              const response = await timeoutFetch(
+                                `/api/parcels?id=${selectedParcel.id}`,
+                                { method: "DELETE" },
+                              );
+                              const result = await response.json();
+                              if (!response.ok)
+                                throw new Error(
+                                  result.error || "Removal failed",
+                                );
+                              setSelection(null);
+                              await reload();
+                              setNotice("Property removed from Workspace.");
+                            } catch (e) {
+                              setNotice(
+                                e instanceof Error
+                                  ? e.message
+                                  : "Removal failed",
+                              );
+                            }
+                          }}
+                        >
+                          Remove from Workspace
+                        </button>
+                      ) : null}
+                    </>
                   )}
                 </section>
               ) : null}
               <div className="section-label">
                 PARCEL REGISTER <span>{data.parcels.length}</span>
               </div>
+              <label>
+                Search saved properties
+                <input
+                  value={propertyFilter}
+                  onChange={(e) => setPropertyFilter(e.target.value)}
+                  placeholder="Address, title or parcel ID"
+                />
+              </label>
               {data.parcels.length ? (
-                data.parcels.map((p) => (
-                  <button
-                    className="record-row"
-                    key={p.id}
-                    onClick={() => {
-                      setSelection({ kind: "parcel", record: p });
-                      if (p.latitude !== null && p.longitude !== null)
-                        map.current?.setView([p.latitude, p.longitude], 15);
-                      setNotice(
-                        `${p.title} · ${p.status}${p.notes ? " · " + p.notes : ""}`,
-                      );
-                    }}
-                  >
-                    <span className="record-icon">◇</span>
-                    <span>
-                      <strong>{p.title}</strong>
-                      <small>{p.status}</small>
-                    </span>
-                  </button>
-                ))
+                data.parcels
+                  .filter((p) =>
+                    `${p.title} ${p.address || ""} ${p.state || ""} ${p.source_parcel_id || ""}`
+                      .toLowerCase()
+                      .includes(propertyFilter.toLowerCase()),
+                  )
+                  .map((p) => (
+                    <button
+                      className="record-row"
+                      key={p.id}
+                      onClick={() => {
+                        setSelection({ kind: "parcel", record: p });
+                        if (p.latitude !== null && p.longitude !== null)
+                          map.current?.setView([p.latitude, p.longitude], 15);
+                        setNotice(
+                          `${p.title} · ${p.status}${p.notes ? " · " + p.notes : ""}`,
+                        );
+                      }}
+                    >
+                      <span className="record-icon">◇</span>
+                      <span>
+                        <strong>{p.title}</strong>
+                        <small>{p.status}</small>
+                      </span>
+                    </button>
+                  ))
               ) : (
                 <p className="empty-state">
                   Your imported or saved parcels will appear here.
@@ -1779,6 +1958,7 @@ export default function MapWorkspace({
                 catalog={catalog}
                 active={activeLayers}
                 onChange={changeOfficialLayer}
+                onReorder={reorderOfficialLayers}
               />
               <div className="section-label">
                 MY LAYERS <span>{data.layers.length}</span>
@@ -1787,6 +1967,20 @@ export default function MapWorkspace({
                 <details
                   className="saved-layer"
                   key={l.id}
+                  onToggle={(e) => {
+                    if (
+                      e.currentTarget.open &&
+                      !l.geojson &&
+                      l.layer_kind !== "radius"
+                    )
+                      void loadFullLayer(l.id).catch((error) =>
+                        setNotice(
+                          error instanceof Error
+                            ? error.message
+                            : "Layer unavailable",
+                        ),
+                      );
+                  }}
                   open={
                     selection?.kind === "drawing" &&
                     selection.record.id === l.id
@@ -1796,6 +1990,21 @@ export default function MapWorkspace({
                     {l.name}
                     <small>Saved to Workspace</small>
                   </summary>
+                  {!l.geojson && l.layer_kind !== "radius" ? (
+                    <button
+                      onClick={() =>
+                        void loadFullLayer(l.id).catch((error) =>
+                          setNotice(
+                            error instanceof Error
+                              ? error.message
+                              : "Layer unavailable",
+                          ),
+                        )
+                      }
+                    >
+                      Load shapes
+                    </button>
+                  ) : null}
                   {l.geojson?.features.slice(0, 50).map((f, index) => (
                     <button
                       className="record-row"
@@ -1991,15 +2200,17 @@ export default function MapWorkspace({
                       <button
                         onClick={async () => {
                           try {
+                            const complete = await loadFullLayer(
+                              selection.record.id,
+                            );
                             await apiRequest("/api/layers", {
                               id: selection.record.id,
                               name: selection.record.name,
                               geojson: {
                                 type: "FeatureCollection",
-                                features:
-                                  selection.record.geojson?.features.filter(
-                                    (f) => f.id !== selectedDrawing.id,
-                                  ),
+                                features: complete.geojson?.features.filter(
+                                  (f) => f.id !== selectedDrawing.id,
+                                ),
                               },
                             });
                             setSelection(null);
@@ -2070,69 +2281,15 @@ export default function MapWorkspace({
                   >
                     {v.name}
                   </button>
-                  {["owner", "admin"].includes(role) ? (
-                    <button
-                      onClick={async () => {
-                        try {
-                          const result = await apiRequest("/api/shares", {
-                            resource_type: "saved_view",
-                            resource_ids: [v.id],
-                            days: 7,
-                          });
-                          setShareLink(
-                            result as {
-                              id: string;
-                              url: string;
-                              expires_at: string;
-                            },
-                          );
-                        } catch (e) {
-                          setNotice(
-                            e instanceof Error
-                              ? e.message
-                              : "Unable to share view",
-                          );
-                        }
-                      }}
-                    >
-                      Share view
-                    </button>
-                  ) : null}
                 </div>
               ))}
-              {shareLink ? (
-                <div className="share-result">
-                  <strong>
-                    Read-only link · expires{" "}
-                    {new Date(shareLink.expires_at).toLocaleDateString()}
-                  </strong>
-                  <p>
-                    Selected properties and shapes only. Private observations,
-                    photos and notes are excluded.
-                  </p>
-                  <a href={shareLink.url} target="_blank" rel="noreferrer">
-                    {shareLink.url}
-                  </a>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await apiRequest(
-                          "/api/shares",
-                          { id: shareLink.id },
-                          "DELETE",
-                        );
-                        setShareLink(null);
-                        setNotice("Share link revoked.");
-                      } catch (e) {
-                        setNotice(
-                          e instanceof Error ? e.message : "Revoke failed",
-                        );
-                      }
-                    }}
-                  >
-                    Revoke link
-                  </button>
-                </div>
+              {["owner", "admin"].includes(role) ? (
+                <ShareWorkspace
+                  key={`${userId}:${workspaceId}`}
+                  userId={userId}
+                  workspaceId={workspaceId}
+                  views={data.savedViews}
+                />
               ) : null}
               {canWrite ? (
                 <button
@@ -2149,7 +2306,7 @@ export default function MapWorkspace({
                           latitude: m.getCenter().lat,
                           longitude: m.getCenter().lng,
                           zoom: m.getZoom(),
-                          parcel_ids: data.parcels
+                          parcel_ids: renderedData.parcels
                             .filter((p) => {
                               if (
                                 visibleParcelIds &&
@@ -2176,7 +2333,7 @@ export default function MapWorkspace({
                               );
                             })
                             .map((p) => p.id),
-                          layer_ids: data.layers
+                          layer_ids: renderedData.layers
                             .filter((l) => {
                               if (
                                 visibleUserLayerIds &&

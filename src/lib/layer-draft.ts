@@ -7,14 +7,60 @@ export type LocalLayerDraft = {
   targetLayerId?: string;
 };
 async function database() {
-  return openDB("land-banker-layer-draft-v1", 2, {
+  return openDB("land-banker-layer-draft-v1", 3, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("layers"))
         db.createObjectStore("layers");
       if (!db.objectStoreNames.contains("drawing"))
         db.createObjectStore("drawing");
+      if (!db.objectStoreNames.contains("shareUrls"))
+        db.createObjectStore("shareUrls");
     },
   });
+}
+
+export async function readShareUrls(
+  user: string,
+  workspace: string,
+): Promise<Record<string, string>> {
+  const db = await database();
+  try {
+    const record = await db.get("shareUrls", key(user, workspace));
+    return record?.userId === user && record?.workspaceId === workspace
+      ? record.urls || {}
+      : {};
+  } finally {
+    db.close();
+  }
+}
+export async function storeShareUrl(
+  user: string,
+  workspace: string,
+  id: string,
+  url: string,
+) {
+  const parsed = new URL(url);
+  if (
+    !/^https?:$/.test(parsed.protocol) ||
+    !/^\/share\/[A-Za-z0-9_-]{43}$/.test(parsed.pathname)
+  )
+    throw new Error("Invalid share URL");
+  const db = await database();
+  try {
+    const record = await db.get("shareUrls", key(user, workspace));
+    const urls =
+      record?.userId === user && record?.workspaceId === workspace
+        ? record.urls || {}
+        : {};
+    urls[id] = url;
+    await db.put(
+      "shareUrls",
+      { userId: user, workspaceId: workspace, urls },
+      key(user, workspace),
+    );
+  } finally {
+    db.close();
+  }
 }
 const key = (user: string, workspace: string) => `${user}:${workspace}`;
 export async function readLayerDraft(

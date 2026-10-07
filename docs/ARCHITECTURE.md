@@ -49,3 +49,9 @@ Authenticated /api/map returns stable 100-row pages per category with hasMore. U
 ## Alpha 2 drawing recovery
 
 The existing account/Workspace-scoped IndexedDB abstraction is upgraded in place to version 2, retaining finished drafts and adding an unfinished drawing session store. Each edit persists coordinates, drawing kind/name, layer target, timestamps and one edit snapshot. Reopening offers Continue/Discard; account/Workspace switching cannot expose another scope. Simple editing validates minimum vertices, closed rings, nonzero area and self-intersection before accepting changes. Imported holes/multipart or more than 200 vertices remain view-only. No database migration is required.
+
+## Alpha 2 viewport and share boundaries
+
+See PERFORMANCE.md for indexed envelope candidates, exact API intersection, bounded cursor/delta contract, normalized Feature loading, lazy full layers and short-lived signed-photo caching. Rendering uses viewport data; editing merges into a freshly read complete layer. Saved View creation derives resource IDs from rendered geometry, not paginated sidebar metadata.
+
+Device draft database version 3 retains existing drawing/layer stores and adds account/Workspace-scoped copy-link URLs. Server share scope remains authoritative, with no-write preview, reviewed-scope hash on create, frozen feature IDs and token-only status. SECURITY.md records the explicit distributed/direct-RPC limiting deployment work still required.

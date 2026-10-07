@@ -14,6 +14,7 @@ export function ParcelSearch({
   onAddress: (p: AddressResult) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"address" | "identifier">("address");
   const [state, setState] = useState<SupportedState>("VIC");
   const [results, setResults] = useState<AddressResult[]>([]);
   const [parcels, setParcels] = useState<OfficialParcel[]>([]);
@@ -29,13 +30,17 @@ export function ParcelSearch({
     setBusy(true);
     setMessage("");
     setParcels([]);
+    setResults([]);
     try {
       const d = await request(
-        `/api/parcels/search?${new URLSearchParams({ q: query, state })}`,
+        `/api/parcels/search?${new URLSearchParams({ q: query, state, mode })}`,
       );
       setResults(d.results);
-      if (!d.results.length)
-        setMessage("No official address match. Try a full street address.");
+      setParcels(d.parcels || []);
+      if (!d.results.length && !d.parcels?.length)
+        setMessage(
+          "No official match. Check the state and address or parcel identifier.",
+        );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Search failed");
     } finally {
@@ -73,9 +78,26 @@ export function ParcelSearch({
         }}
       >
         <label>
+          Search by
+          <select
+            value={mode}
+            disabled={busy}
+            onChange={(e) => {
+              setMode(e.target.value as typeof mode);
+              setResults([]);
+              setParcels([]);
+              setMessage("");
+            }}
+          >
+            <option value="address">Address or suburb</option>
+            <option value="identifier">Parcel identifier</option>
+          </select>
+        </label>
+        <label>
           State
           <select
             value={state}
+            disabled={busy}
             onChange={(e) => {
               setState(e.target.value as SupportedState);
               setResults([]);
@@ -87,11 +109,17 @@ export function ParcelSearch({
           </select>
         </label>
         <label>
-          Search address
+          {mode === "address" ? "Search address" : "Parcel identifier"}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Street address or suburb"
+            placeholder={
+              mode === "address"
+                ? "Street address or suburb"
+                : state === "VIC"
+                  ? "PFI: number or lot/plan"
+                  : "CADID: number or lot/plan"
+            }
             minLength={3}
             maxLength={120}
             required
@@ -113,17 +141,29 @@ export function ParcelSearch({
           key={`${a.latitude}:${i}`}
           onClick={() => void choose(a)}
         >
-          {a.address}
+          <span>
+            <strong>{a.address}</strong>
+            <small>
+              {a.state} · {a.source}{" "}
+              {a.addressId ? `· Address/property ID ${a.addressId}` : ""}
+            </small>
+          </span>
         </button>
       ))}
-      {parcels.length > 1
+      {parcels.length > 0
         ? parcels.map((p) => (
             <button
               key={p.sourceId}
               className="record-row"
+              disabled={busy}
               onClick={() => onSelect(p)}
             >
-              Lot {p.lot} · {p.plan} · {p.sourceId}
+              <span>
+                <strong>{p.address || `Lot ${p.lot} · ${p.plan}`}</strong>
+                <small>
+                  {p.state} · Parcel {p.sourceId} · {p.source}
+                </small>
+              </span>
             </button>
           ))
         : null}

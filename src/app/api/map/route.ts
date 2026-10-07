@@ -3,6 +3,8 @@ import { z } from "zod";
 import { workspaceContext } from "@/lib/workspace";
 import { apiError, json } from "@/lib/api";
 import { MAP_PAGE_SIZE } from "@/lib/map/data-pages";
+import type { Parcel, SpatialLayer } from "@/lib/types";
+import { signedMediaUrls } from "@/lib/media-url-cache";
 const paging = z.coerce.number().int().min(0).max(99);
 const bbox = z
   .tuple([
@@ -14,15 +16,18 @@ const bbox = z
   .refine((b) => b[0] < b[2] && b[1] < b[3]);
 export async function GET(request: NextRequest) {
   try {
-    const { client, workspaceId } = await workspaceContext();
+    const { client, workspaceId, user } = await workspaceContext();
     const page = paging.parse(request.nextUrl.searchParams.get("page") || 0),
       start = page * MAP_PAGE_SIZE;
+    const overview = request.nextUrl.searchParams.get("overview") === "1";
     const box = request.nextUrl.searchParams.get("bbox");
     const bounds = box ? bbox.parse(box.split(",").map(Number)) : null;
     let parcels = client
       .from("land_parcels")
       .select(
-        "id,workspace_id,title,address,state,latitude,longitude,geometry,hectares,status,source,source_parcel_id,saved_at,notes",
+        (overview
+          ? "id,workspace_id,title,address,state,latitude,longitude,hectares,status,source,source_parcel_id,saved_at,notes,source_updated_at,source_url:metadata->>source_url,lot:metadata->>lot,plan:metadata->>plan,retrieved_at:metadata->>retrieved_at"
+          : "id,workspace_id,title,address,state,latitude,longitude,geometry,hectares,status,source,source_parcel_id,saved_at,notes,source_updated_at,source_url:metadata->>source_url,lot:metadata->>lot,plan:metadata->>plan,retrieved_at:metadata->>retrieved_at") as string,
       )
       .eq("workspace_id", workspaceId)
       .order("id")
@@ -30,7 +35,7 @@ export async function GET(request: NextRequest) {
     let observations = client
       .from("field_observations")
       .select(
-        "id,workspace_id,latitude,longitude,title,notes,observed_at,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)",
+        "id,workspace_id,latitude,longitude,title,notes,observed_at,linked_parcel_id,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)",
       )
       .eq("workspace_id", workspaceId)
       .order("observed_at", { ascending: false })
@@ -50,14 +55,19 @@ export async function GET(request: NextRequest) {
         .lte("latitude", bounds[3]);
     }
     const [p, o, l, v] = await Promise.all([
-      parcels,
+      parcels.returns<Parcel[]>(),
       observations,
       client
         .from("spatial_layers")
-        .select("id,workspace_id,name,layer_kind,geojson,layer_data")
+        .select(
+          (overview
+            ? "id,workspace_id,name,layer_kind,layer_data"
+            : "id,workspace_id,name,layer_kind,geojson,layer_data") as string,
+        )
         .eq("workspace_id", workspaceId)
         .order("id")
-        .range(start, start + MAP_PAGE_SIZE),
+        .range(start, start + MAP_PAGE_SIZE)
+        .returns<SpatialLayer[]>(),
       client
         .from("saved_views")
         .select("id,name,view")
@@ -76,29 +86,15 @@ export async function GET(request: NextRequest) {
         ),
       ),
     ];
-    const signed = new Map<string, string>();
-    // Bound concurrency and batch signing instead of one Storage request for each photo.
-    for (let offset = 0; offset < paths.length; offset += 400) {
-      const batches = Array.from(
-        { length: Math.min(4, Math.ceil((paths.length - offset) / 100)) },
-        (_, i) => paths.slice(offset + i * 100, offset + (i + 1) * 100),
-      );
-      const results = await Promise.all(
-        batches.map((batch) =>
-          client.storage.from("field-media").createSignedUrls(batch, 300),
-        ),
-      );
-      for (const result of results) {
-        if (result.error) throw result.error;
-        for (const item of result.data || [])
-          if (item.path && item.signedUrl)
-            signed.set(item.path, item.signedUrl);
-      }
-    }
+    const signed = await signedMediaUrls(
+      client,
+      `${user.id}:${workspaceId}`,
+      paths,
+    );
     return json({
       parcels: (p.data || [])
         .slice(0, MAP_PAGE_SIZE)
-        .map((p) => ({ ...p, metadata: {} })),
+        .map((p) => ({ ...p, geometry: p.geometry || null, metadata: {} })),
       observations: rows.map((item) => ({
         ...item,
         metadata: {},
@@ -110,6 +106,7 @@ export async function GET(request: NextRequest) {
       })),
       layers: (l.data || []).slice(0, MAP_PAGE_SIZE).map((layer) => ({
         ...layer,
+        geojson: layer.geojson || null,
         metadata: {},
         layer_data: layer.layer_kind === "radius" ? layer.layer_data : {},
       })),

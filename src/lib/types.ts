@@ -15,6 +15,11 @@ export type Parcel = {
   source?: string | null;
   source_parcel_id?: string | null;
   saved_at?: string;
+  source_updated_at?: string | null;
+  source_url?: string | null;
+  lot?: string | null;
+  plan?: string | null;
+  retrieved_at?: string | null;
 };
 export type Observation = {
   id: string;
@@ -24,6 +29,7 @@ export type Observation = {
   title: string;
   notes: string | null;
   observed_at: string;
+  linked_parcel_id?: string | null;
   metadata: Record<string, unknown>;
   field_observation_media: Media[];
 };

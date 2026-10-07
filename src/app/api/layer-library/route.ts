@@ -82,3 +82,45 @@ export async function POST(request: NextRequest) {
     return apiError(e);
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    sameOrigin(request);
+    const c = await workspaceContext();
+    const { ids } = z
+      .object({
+        ids: z
+          .array(z.string().min(1).max(100))
+          .max(100)
+          .refine((ids) => new Set(ids).size === ids.length),
+      })
+      .parse(await request.json());
+    const { data, error } = await c.client
+      .from("active_map_layers")
+      .select("catalog_id,visible,opacity")
+      .eq("workspace_id", c.workspaceId)
+      .eq("user_id", c.user.id);
+    if (error) throw error;
+    if (
+      data?.length !== ids.length ||
+      data.some((item) => !ids.includes(item.catalog_id))
+    )
+      throw new Error("Layer list changed. Refresh and try again.");
+    if (!ids.length) return json({ ok: true });
+    const { error: saveError } = await c.client
+      .from("active_map_layers")
+      .upsert(
+        ids.map((id, position) => ({
+          ...data.find((item) => item.catalog_id === id)!,
+          workspace_id: c.workspaceId,
+          user_id: c.user.id,
+          position,
+          updated_at: new Date().toISOString(),
+        })),
+      );
+    if (saveError) throw saveError;
+    return json({ ok: true });
+  } catch (e) {
+    return apiError(e);
+  }
+}

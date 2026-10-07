@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { workspaceContext } from "@/lib/workspace";
 import { json, apiError } from "@/lib/api";
-import { searchOfficialAddresses } from "@/lib/map/official-parcels";
+import {
+  searchOfficialAddresses,
+  searchOfficialParcelIdentifiers,
+} from "@/lib/map/official-parcels";
 export async function GET(request: NextRequest) {
   try {
     await workspaceContext();
@@ -15,8 +18,16 @@ export async function GET(request: NextRequest) {
     const state = z
       .enum(["VIC", "NSW"])
       .parse(request.nextUrl.searchParams.get("state"));
+    const mode = z
+      .enum(["address", "identifier"])
+      .parse(request.nextUrl.searchParams.get("mode") || "address");
     return json({
-      results: await searchOfficialAddresses(q, state),
+      results:
+        mode === "address" ? await searchOfficialAddresses(q, state) : [],
+      parcels:
+        mode === "identifier"
+          ? await searchOfficialParcelIdentifiers(q, state)
+          : [],
       coverage:
         "VIC and NSW only. Source availability and address matching vary.",
     });

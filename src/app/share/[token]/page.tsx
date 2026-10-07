@@ -1,6 +1,7 @@
 import SharedMap from "@/components/shared-map-loader";
 import { notFound } from "next/navigation";
-import { resolveShare } from "@/lib/share-resolver";
+import { resolveShare, shareStatus } from "@/lib/share-resolver";
+import { ShareRateLimit } from "@/lib/share-budget";
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Shared land intelligence · LandOS",
@@ -12,8 +13,28 @@ export default async function Page({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const share = await resolveShare(token);
-  if (!share) notFound();
+  let share;
+  try {
+    share = await resolveShare(token);
+  } catch (e) {
+    if (!(e instanceof ShareRateLimit)) throw e;
+    return (
+      <main className="shared-page">
+        <h1>LandOS</h1>
+        <p>{e.message}</p>
+      </main>
+    );
+  }
+  if (!share) {
+    if ((await shareStatus(token)) === "expired")
+      return (
+        <main className="shared-page">
+          <h1>LandOS</h1>
+          <p>This shared view has expired.</p>
+        </main>
+      );
+    notFound();
+  }
   return (
     <main className="shared-page">
       <header>

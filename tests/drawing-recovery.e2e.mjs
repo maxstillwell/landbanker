@@ -37,7 +37,7 @@ try {
   }
   async function points() {
     return page.evaluate(async () => {
-      const r = indexedDB.open("land-banker-layer-draft-v1", 2);
+      const r = indexedDB.open("land-banker-layer-draft-v1");
       await new Promise((resolve) => (r.onsuccess = resolve));
       const db = r.result;
       const rows = await new Promise((resolve) => {
@@ -203,26 +203,22 @@ try {
     userId = signed.data.user.id;
   assert.equal(
     (
-      await admin
-        .from("workspaces")
-        .insert({
-          id: workspaceB,
-          name: "Secondary synthetic Workspace",
-          created_by: userId,
-        })
+      await admin.from("workspaces").insert({
+        id: workspaceB,
+        name: "Secondary synthetic Workspace",
+        created_by: userId,
+      })
     ).error,
     null,
   );
   assert.equal(
     (
-      await admin
-        .from("workspace_memberships")
-        .insert({
-          workspace_id: workspaceB,
-          user_id: userId,
-          role: "owner",
-          status: "active",
-        })
+      await admin.from("workspace_memberships").insert({
+        workspace_id: workspaceB,
+        user_id: userId,
+        role: "owner",
+        status: "active",
+      })
     ).error,
     null,
   );

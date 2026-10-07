@@ -65,3 +65,29 @@ export async function POST(request: NextRequest) {
     return apiError(e);
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    sameOrigin(request);
+    const c = await workspaceContext();
+    if (!["owner", "admin"].includes(c.role))
+      throw new Error("Only Workspace owners/admins can remove properties.");
+    const id = z.uuid().parse(request.nextUrl.searchParams.get("id"));
+    const { data, error } = await c.client
+      .from("land_parcels")
+      .delete()
+      .eq("workspace_id", c.workspaceId)
+      .eq("id", id)
+      .select("id");
+    if (error?.code === "23503")
+      throw new Error(
+        "This property has linked records. Preserve or relink those records before removing it.",
+      );
+    if (error) throw error;
+    if (!data?.length)
+      throw new Error("Property is unavailable in this Workspace.");
+    return json({ removed: id });
+  } catch (e) {
+    return apiError(e);
+  }
+}

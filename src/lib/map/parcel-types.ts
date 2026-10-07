@@ -6,6 +6,7 @@ export type AddressResult = {
   latitude: number;
   longitude: number;
   source: string;
+  addressId?: string;
 };
 export type OfficialParcel = AddressResult & {
   sourceId: string;

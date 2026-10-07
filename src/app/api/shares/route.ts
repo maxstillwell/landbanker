@@ -14,7 +14,31 @@ const inputSchema = z.object({
   ]),
   resource_ids: z.array(z.uuid()).min(1).max(100),
   days: z.number().int().min(1).max(30).default(7),
+  dry_run: z.boolean().default(false),
+  scope_hash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
 });
+export async function GET() {
+  try {
+    const c = await workspaceContext();
+    if (!["owner", "admin"].includes(c.role))
+      throw new Error("Manager access required");
+    const { data, error } = await c.client
+      .from("share_links")
+      .select(
+        "id,created_at,expires_at,revoked_at,resource_type,resource_ids,manifest",
+      )
+      .eq("workspace_id", c.workspaceId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return json({ shares: data });
+  } catch (e) {
+    return apiError(e);
+  }
+}
 export async function POST(request: NextRequest) {
   try {
     sameOrigin(request);
@@ -66,7 +90,8 @@ export async function POST(request: NextRequest) {
           .from("spatial_layers")
           .select("id,geojson")
           .eq("workspace_id", c.workspaceId)
-          .in("id", scope.layer_ids),
+          .in("id", scope.layer_ids)
+          .order("id"),
       ]);
       if (
         parcels.error ||
@@ -84,7 +109,8 @@ export async function POST(request: NextRequest) {
             l.id,
             (l.geojson?.features || [])
               .map((f: { id?: string }) => f.id)
-              .filter(Boolean),
+              .filter(Boolean)
+              .sort(),
           ]),
         ),
       };
@@ -102,6 +128,40 @@ export async function POST(request: NextRequest) {
       .in("id", input.resource_ids);
     if (error || data?.length !== new Set(input.resource_ids).size)
       throw new Error("Invalid resource selection");
+    const featureCount = Object.values(
+      (manifest.feature_ids || {}) as Record<string, string[]>,
+    ).reduce((sum, ids) => sum + ids.length, 0);
+    if (featureCount > 5000)
+      throw new Error(
+        "Share scope exceeds 5,000 features. Choose a smaller Saved View.",
+      );
+    const summary = {
+      name: manifest.name || "Shared selection",
+      parcels: Array.isArray(manifest.parcel_ids)
+        ? manifest.parcel_ids.length
+        : ["parcel", "parcels"].includes(input.resource_type)
+          ? input.resource_ids.length
+          : 0,
+      layers: Array.isArray(manifest.layer_ids)
+        ? manifest.layer_ids.length
+        : input.resource_type === "spatial_layer"
+          ? input.resource_ids.length
+          : 0,
+      features: featureCount,
+      officialLayers: Array.isArray(manifest.official_layers)
+        ? manifest.official_layers.length
+        : 0,
+      viewport: input.resource_type === "saved_view",
+      privateObservations: false,
+      privatePhotos: false,
+      privateNotes: false,
+    };
+    const scopeHash = tokenHash(JSON.stringify(manifest));
+    if (input.dry_run) return json({ summary, scope_hash: scopeHash });
+    if (input.scope_hash && input.scope_hash !== scopeHash)
+      throw new Error(
+        "Share scope changed. Review it again before creating the link.",
+      );
     const token = newShareToken();
     const { data: link, error: e } = await c.client
       .from("share_links")
@@ -117,7 +177,7 @@ export async function POST(request: NextRequest) {
       .select("id,expires_at")
       .single();
     if (e) throw e;
-    return json({ ...link, url: `${appUrl()}/share/${token}` });
+    return json({ ...link, summary, url: `${appUrl()}/share/${token}` });
   } catch (e) {
     return apiError(e);
   }
@@ -126,6 +186,8 @@ export async function DELETE(request: NextRequest) {
   try {
     sameOrigin(request);
     const c = await workspaceContext();
+    if (!["owner", "admin"].includes(c.role))
+      throw new Error("Manager access required");
     const { id } = z.object({ id: z.uuid() }).parse(await request.json());
     const { error } = await c.client
       .from("share_links")

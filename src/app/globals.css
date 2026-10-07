@@ -1113,3 +1113,27 @@ fieldset {
   font-size: 24px;
   line-height: 30px;
 }
+
+.property-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.property-sections button {
+  min-height: 44px;
+  padding: 8px 10px;
+}
+.property-sections button[aria-pressed="true"] {
+  background: var(--green);
+  color: var(--paper);
+}
+.legend-symbol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.share-management small {
+  display: block;
+}

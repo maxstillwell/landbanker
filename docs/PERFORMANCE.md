@@ -1,0 +1,17 @@
+# Alpha 2 viewport baseline
+
+The map now requests `/api/map/viewport` with `bbox=west,south,east,north`, `zoom`, `kind=parcels|observations|features`, opaque UUID `cursor`, optional ISO `updated_since`, and `limit` (1–100). Each response supplies rows, scanned candidates, next_cursor and a request-start watermark. Crossing lines/polygons and polygon holes are tested; a parcel's stored point outside the viewport cannot hide an intersecting boundary.
+
+Additive LandOS migration 20261006235348 stores generated PostgreSQL `box` envelopes with GiST indexes, plus Workspace/update/id indexes. `landos_viewport_candidates` is SECURITY INVOKER with authenticated-only execution; existing membership RLS still applies even to direct RPC calls. The API checks exact geometry intersection after up to 500 indexed candidates. Empty filtered pages can still have a cursor; continue until it is null. No PostGIS or MaxQI schema change is required.
+
+The browser debounces moveend by 300 ms, cancels superseded fetches, deduplicates identical in-flight bounds and caches 12 scoped viewport results for five seconds. It loads at most 500 matching records per category/10 pages per viewport. This is an explicit initial cap, not unlimited coverage. Inspector overview pages exclude whole layer GeoJSON and parcel geometry; normalized features travel with viewport pages. Full layers load on demand for inspection. Every layer mutation loads the complete current layer before merging/deleting, protecting off-screen features.
+
+Private photo signing is account/Workspace scoped, batches at most 100 paths with four concurrent batches, deduplicates in-flight signing and caches URLs for 240 seconds against a 300-second signature lifetime. Every API request first checks current membership/RLS. Signed URLs remain bearer capabilities until expiry; membership revocation prevents new API retrieval but cannot invalidate an already issued URL before its short expiry.
+
+Local production baseline: 500 parcels, 500 observations, 502 normalized user features, ten active official references. First 100-row viewport pages: parcels 68,636 bytes/191 ms; observations 45,696 bytes/98 ms; features 48,597 bytes/90 ms. These are synthetic local measurements, not hosted/mobile latency guarantees. Tests also verify cursor uniqueness, updated_since deltas, hole rejection, anonymous/nonmember isolation and lean overview payloads.
+
+`updated_since` is available and tested at the API boundary. The UI currently refreshes bounded viewport snapshots and overview pages; a full change feed with deletion tombstones/high-watermark semantics is future work. Clients implementing deltas must overlap time windows and deduplicate identities; a timestamp is not a transactional change-stream cursor. Manual refresh remains reconciliation for deleted records.
+
+Future PostGIS option: additive geometry/geography columns and GiST, copy/backfill/validate, then ST_Intersects behind the existing contract. Preserve original GeoJSON and the box path until verified; do not alter MaxQI. Detailed hosted query plans and large dense geometry stress beyond the cap remain next work.
+
+Final integrated local interaction baseline: 21 viewport requests / 622,830 response bytes across pan, selection and editing; ten frames took 669 ms. Complete-layer edit retained all 502 feature IDs. The first-page measurements were 68,560/45,758/48,406 bytes at 171/120/176 ms. These measurements leave room for renderer and physical-device optimization; they are not a 60fps claim.

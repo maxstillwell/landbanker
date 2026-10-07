@@ -44,3 +44,7 @@ Record a result for every row on both iPhone and iPad, with device model, iOS ve
 | Rotate during active edit and upload | Pending | Pending |
 
 Native HEIC remains normalized to JPEG. Raw Web HEIC failure displays a clear preserved-photo fallback and original-file link; no conversion service introduced. TestFlight signing/configuration steps are in TESTFLIGHT.md.
+
+## Alpha 2 automated hardening
+
+Local production tests cover unfinished polygon/line/rectangle recovery, scoped Continue/Discard, 44px handles, translation/Undo, insertion/deletion/minimum geometry and exact save/reopen; official VIC/NSW address/PFI/CADID identity and repeat save; layer order/opacity; indexed/exact viewport geometry, cursor/delta and 500 parcels/500 observations/502 features/ten references; complete-layer edit preserves off-screen feature IDs. Share preview has no writes, changed scope requires review, manager listing excludes tokens, retained URL reopens, revoke/expiry/private exclusions and same-instance rate limit pass. Physical device/signing and distributed/direct-RPC limiter acceptance remain separate pending checks.

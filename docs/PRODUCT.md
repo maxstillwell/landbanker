@@ -11,3 +11,7 @@ Execution order: P0 field reliability/security; P1 VIC/NSW parcel search and sav
 Independent repository/backend/deployment retain their existing landbanker identifiers. Visible brand is LandOS. Stable database names, migration history, native bridge, queue storage names and environment variable names remain compatible. Domain is environment-configured.
 
 Future plans: free/pro/team entitlements, with development owner full access. No billing, AI assistant, automated valuation, CRM, document system, Android or offline basemap downloads in this milestone.
+
+## Alpha 2 Property workspace foundation
+
+Saved Property inspector starts Overview, Planning, Layers, Field and My Analysis. Overview keeps area/ID/address/source; Planning lists active state reference layers and clearly records that property-specific controls are not yet queried. Field shows explicitly linked loaded observations/photos and can create a property-linked observation while retaining GPS/map positioning. My Analysis lists loaded features with explicit parcel_id association; generic drawings/views remain in Layers. Spatial analysis relationships, exhaustive property controls and complete property-linked paging remain future work. No CRM/valuation/documents are introduced.

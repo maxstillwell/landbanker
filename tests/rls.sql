@@ -72,5 +72,24 @@ update public.share_links set revoked_at=now() where token_hash=encode(sha256(co
 set local role anon;
 do $$begin if public.resolve_landos_share(repeat('Q',43)) is not null then raise exception 'revoked token';end if;end$$;
 reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+insert into public.share_links(workspace_id,token_hash,resource_type,resource_ids,expires_at) values
+(current_setting('test.alice')::uuid,encode(sha256(convert_to(repeat('E',43),'UTF8')),'hex'),'parcel',array['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid],now()-interval '1 day');
+do $$begin
+ if (select count(*) from public.landos_viewport_candidates(current_setting('test.alice')::uuid,'features',array[143.0,-38.0,145.0,-36.0]))<>1 then raise exception 'viewport positive'; end if;
+end$$;
+select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
+do $$begin
+ if (select count(*) from public.landos_viewport_candidates(current_setting('test.alice')::uuid,'features',array[143.0,-38.0,145.0,-36.0]))<>0 then raise exception 'viewport suspended leak'; end if;
+end$$;
+set local role anon;
+do $$declare blocked boolean:=false;begin
+ begin perform * from public.landos_viewport_candidates(current_setting('test.alice')::uuid,'features',array[143.0,-38.0,145.0,-36.0]); exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'viewport anon execution';end if;
+ if public.landos_share_status(repeat('E',43))<>'expired' or public.resolve_landos_share(repeat('E',43)) is not null then raise exception 'expired status';end if;
+ if public.landos_share_status(repeat('Q',43))<>'unavailable' or public.landos_share_status(repeat('Z',43))<>'unavailable' then raise exception 'revoked/unknown status';end if;
+end$$;
+reset role;
 select 'RLS signup, isolation, viewer, suspended, anonymous, FK, storage escalation, immutable workspace/share scope and revoke tests passed' as result;
 rollback;

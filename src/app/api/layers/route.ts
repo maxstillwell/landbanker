@@ -13,6 +13,22 @@ const inputSchema = z.object({
     features: z.array(z.record(z.string(), z.unknown())).max(5000),
   }),
 });
+export async function GET(request: NextRequest) {
+  try {
+    const c = await workspaceContext();
+    const id = z.uuid().parse(request.nextUrl.searchParams.get("id"));
+    const { data, error } = await c.client
+      .from("spatial_layers")
+      .select("id,workspace_id,name,layer_kind,geojson,layer_data")
+      .eq("workspace_id", c.workspaceId)
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return json({ layer: data });
+  } catch (e) {
+    return apiError(e);
+  }
+}
 export async function POST(request: NextRequest) {
   try {
     sameOrigin(request);
