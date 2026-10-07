@@ -119,6 +119,10 @@ try {
         c.row.feature.properties.name === "Updated on Device A",
     ),
   );
+  // Two Playwright pages share one headless browser. Bring Device B forward so
+  // the production visibility guard resumes its incremental poll.
+  await b.bringToFront();
+  await b.evaluate(() => window.dispatchEvent(new Event("focus")));
   await b
     .getByRole("button", { name: "Updated on Device A", exact: true })
     .waitFor({ timeout: 25000 });
@@ -130,6 +134,8 @@ try {
         c.kind === "features" && c.id === feature && c.operation === "delete",
     ),
   );
+  await b.bringToFront();
+  await b.evaluate(() => window.dispatchEvent(new Event("focus")));
   await b
     .getByRole("button", { name: "Updated on Device A", exact: true })
     .waitFor({ state: "hidden", timeout: 25000 });

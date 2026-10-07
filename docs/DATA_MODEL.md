@@ -28,8 +28,7 @@ layer_catalog is shared public reference configuration, authenticated read-only,
 
 Hosted foundation migration timestamps differ from local historical filename; the existing hosted foundation was inspected, not replayed. Subsequent provenance/features/catalog changes are additive and applied only to gksyipjxhrolsgztfyer. No MaxQI changes.
 
-Share Link manifest is additive JSONB; original table/IDs/history stay stable. Saved View has typed explicit parcel_ids/layer_ids/official_layers in view JSON. Link freezes resource/Feature scope; only revoked_at can be updated by clients. public.resolve_landos_share accepts a raw secure token and hashes internally, projects minimal allowed fields and checks workspace on every selected resource. General business tables stay inaccessible to anon.
-
+Share Link manifest is additive JSONB; original table/IDs/history stay stable. Saved View has typed explicit parcel_ids/layer_ids/official_layers in view JSON. Link freezes resource/Feature scope; only revoked_at can be updated by clients. The old resolver/status functions project minimal allowed fields but deny direct anon/auth execution. `landos_share_gateway` requires a server-only capability, hashes the raw token and caller identity, atomically consumes distributed budgets, then invokes the narrow resolver. Private `share_gateway_credentials` stores only the capability hash; private `share_rate_buckets` stores only hashed identities and fixed-window counts. General business tables stay inaccessible to anon.
 
 Alpha 2 parcel identity remains the stable UUID derived from Workspace + state + authoritative PFI (VIC) / CADID (NSW). Lot/plan and address formatting changes do not create another saved copy. Repeat saves leave existing user edits intact. Owner/admin removal is Workspace/RLS scoped and FK-linked records block removal; no cascading observation deletion. Active-layer reorder writes all existing scoped preferences in one PostgREST bulk upsert.
 

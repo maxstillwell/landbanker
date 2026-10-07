@@ -269,6 +269,29 @@ try {
   assert.equal(projection.status(), 200);
   assert(!JSON.stringify(await projection.json()).includes("PRIVATE"));
   assert.equal(projection.headers()["cache-control"], "no-store");
+  const anonymousDb = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    { auth: { persistSession: false } },
+  );
+  assert(
+    (await anonymousDb.rpc("resolve_landos_share", { p_token: token })).error,
+    "anonymous direct projection RPC is revoked",
+  );
+  assert(
+    (await client.rpc("landos_share_status", { p_token: token })).error,
+    "authenticated direct status RPC is revoked",
+  );
+  assert(
+    (
+      await anonymousDb.rpc("landos_share_gateway", {
+        p_token: token,
+        p_gateway_secret: "X".repeat(43),
+        p_caller_hash: "1".repeat(64),
+      })
+    ).error,
+    "direct gateway invocation requires the server capability",
+  );
   await page.reload();
   await page.getByRole("button", { name: "layers", exact: true }).click();
   assert.equal(

@@ -25,6 +25,13 @@ const context = await browser.newContext({
   permissions: ["geolocation"],
 });
 const page = await context.newPage();
+const testTile = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
+await page.route("https://tile.openstreetmap.org/**", (route) =>
+  route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
+);
 let firstTileRequest;
 page.on("request", (request) => {
   if (
@@ -119,6 +126,9 @@ try {
     viewport: { width: 1440, height: 1000 },
   });
   const desktop = await desktopContext.newPage();
+  await desktop.route("https://tile.openstreetmap.org/**", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
+  );
   await login(desktop);
   const desktopData = await (
     await desktop.request.get(`${origin}/api/map`)

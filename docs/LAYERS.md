@@ -4,10 +4,10 @@ LandOS separates My Layers (workspace-owned spatial_features) from official refe
 
 Initial live-verified sources:
 
-| State | Working layers | Provider |
-| --- | --- | --- |
+| State    | Working layers                                                    | Provider                                      |
+| -------- | ----------------------------------------------------------------- | --------------------------------------------- |
 | Victoria | Zoning, flood planning overlays, BMO, heritage, cadastral parcels | Victorian Government Planning/Vicmap services |
-| NSW | EPI zoning, EPI heritage, cadastral parcels | NSW Government / Spatial Services |
+| NSW      | EPI zoning, EPI heritage, cadastral parcels                       | NSW Government / Spatial Services             |
 
 Layer metadata includes source/service URLs, category, description, attribution, usage notes, tier, enabled status and nullable update frequency. No invented refresh frequency. Flood overlays are planning controls, not complete flood modelling; BMO is not the entire bushfire-prone-area dataset. Absence of an overlay does not establish absence of risk. Library clearly describes scope.
 
@@ -27,10 +27,12 @@ Alpha 2: Active layers support atomic move up/down with topmost list item drawn 
 
 The existing official NSW EPI Primary Planning Layers service exposes Floor Space Ratio (1; FSR and CURRENCY_DATE/EPI_NAME fields) and Height of Building (5; MAX_B_H/UNITS/MAX_B_H_M/MAX_B_H_RL and CURRENCY_DATE/EPI_NAME). Both Sydney representative PNG exports returned HTTP200 valid PNG, 11,879/13,963 bytes. These are planning controls where an applicable EPI maps them, not a statewide assurance of development entitlement. Service metadata does not supply a blanket copyright/license statement; complete current provider usage/coverage review before enabling additional catalog entries. No guessed legal rights or nationwide coverage are claimed. Enabled catalog remains ten.
 
-## Alpha 3 release review (2026-10-07)
+## Alpha 3 release decision (completed 2026-10-08 AEDT)
 
 Official NSW Planning Portal dataset pages for [FSR](https://www.planningportal.nsw.gov.au/opendata/dataset/environmental-planning-instrument-floor-space-ratio) and [Height](https://www.planningportal.nsw.gov.au/opendata/dataset/environmental-planning-instrument-height-of-buildings-hob) explicitly list Creative Commons Attribution and Weekly updates. Required attribution retained verbatim: “© State Government of NSW and NSW Department of Planning, Housing and Infrastructure 2018”. Applicable mapped EPIs determine coverage; no result is not unrestricted development/height. Dataset metadata frequency is not a guarantee of current service publication.
 
-Technical fields and earlier PNG exports remain verified. Data dictionary downloads redirected to HTTP403 during this review; current service-wide legend returned HTTP502. Height distinguishes MAX_B_H, units, metres and reduced-level fields; special/missing-value interpretation must be reviewed before enabling either source. Consequently FSR/Height are registered as **disabled**, with complete release-checklist facts/reasons, not guessed values or enabled map sources. Enabled total stays ten.
+The final recheck returned HTTP200 for both official data-dictionary PDFs, both dataset pages, both Feature Layer definitions and the service legend. FSR dictionary semantics define `FSR` as maximum floor-space ratio and `LAY_CLASS` as its mapped range. Height defines `MAX_B_H`, `UNITS`, mutually exclusive ground-level `MAX_B_H_M` and Australian Height Datum `MAX_B_H_RL`. The live renderer is keyed by `SYM_CODE`; the official legend currently has 37 FSR classes and 43 height classes, including `Existing`, metre and reduced-level categories.
+
+The release decision remains **disabled** for both layers. LandOS does not yet have reviewed display rules for `Existing`, null/NA, legislative-reference values, metre versus RL/AHD values, or representative coverage tests across multiple applicable EPIs. No result cannot be presented as no FSR/height restriction. The technical endpoint, license and dictionary are now verified, but those facts alone do not make professional interpretation safe. The server-owned release checklist records this completed disable decision; enabled catalog total remains ten.
 
 Additive `20261007021952_landos_catalog_release_review.sql` adds verified/beta/disabled/deprecated status and release_checklist. Existing technical-verification sources default beta, preserving enablement and preferences; beta does not imply every jurisdiction/usage/special-value issue has passed a professional launch audit. Read-only catalog RLS/grants are unchanged. No historical migration edited. See PLANNING.md for current property intersection adapters and limits.

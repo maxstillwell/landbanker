@@ -62,6 +62,9 @@ export function PropertyPlanningInspector({
           <p>{layer.message}</p>
           {layer.controls.map((control) => (
             <div key={control.source_feature_id} className="planning-control">
+              <h4>
+                {/zone/i.test(control.control_type) ? "Zone" : "Overlays"}
+              </h4>
               <strong>
                 {control.control_type}: {control.control_name}
                 {control.control_code ? ` (${control.control_code})` : ""}
@@ -73,8 +76,14 @@ export function PropertyPlanningInspector({
                   : `${control.intersection_percent.toFixed(1)}% of property · ${formatArea(control.intersection_area_m2 || 0)}`}
               </p>
               <details>
-                <summary>Control provenance</summary>
-                <p>Source feature: {control.source_feature_id}</p>
+                <summary>Source, provenance and limitations</summary>
+                <p>Provider: {layer.provider}</p>
+                <p>Official feature ID: {control.source_feature_id}</p>
+                <p>Retrieved {new Date(control.queried_at).toLocaleString()}</p>
+                <p>{layer.limitation}</p>
+                <a href={layer.source_url} target="_blank" rel="noreferrer">
+                  Official source
+                </a>
                 {Object.entries(control.source_metadata)
                   .filter(([, value]) => value !== null)
                   .map(([key, value]) => (

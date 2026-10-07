@@ -71,18 +71,26 @@ do $$declare result jsonb; blocked boolean:=false;begin
  begin perform * from private.share_rate_buckets;exception when insufficient_privilege then blocked:=true;end;
  if not blocked then raise exception 'gateway bucket table exposed';end if;
 end$$;
-do $$declare projection jsonb;begin
- projection:=public.resolve_landos_share(repeat('Q',43));
+do $$declare projection jsonb; result jsonb;begin
+ result:=public.landos_share_gateway(repeat('Q',43),repeat('G',43),repeat('2',64));
+ projection:=result->'projection';
  if projection is null or projection->>'type'<>'view' or jsonb_array_length(projection->'resources')<>2 then raise exception 'explicit projection';end if;
  if projection::text like '%PRIVATE%' or projection::text like '%Future unshared%' then raise exception 'share projection leak';end if;
- if public.resolve_landos_share(repeat('Z',43)) is not null or public.resolve_landos_share(encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex')) is not null then raise exception 'invalid token/hash credential';end if;
+ if (public.landos_share_gateway(repeat('Z',43),repeat('G',43),repeat('2',64))->>'projection') is not null or (public.landos_share_gateway(encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex'),repeat('G',43),repeat('2',64))->>'projection') is not null then raise exception 'invalid token/hash credential';end if;
+end$$;
+do $$declare blocked boolean:=false;begin
+ begin perform public.resolve_landos_share(repeat('Q',43));exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'direct share projection still public';end if;
+ blocked:=false;
+ begin perform public.landos_share_status(repeat('Q',43));exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'direct share status still public';end if;
 end$$;
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
 update public.share_links set revoked_at=now() where token_hash=encode(sha256(convert_to(repeat('Q',43),'UTF8')),'hex');
 set local role anon;
-do $$begin if public.resolve_landos_share(repeat('Q',43)) is not null then raise exception 'revoked token';end if;end$$;
+do $$declare result jsonb;begin result:=public.landos_share_gateway(repeat('Q',43),repeat('G',43),repeat('3',64));if result->>'status'<>'unavailable' or result->>'projection' is not null then raise exception 'revoked token';end if;end$$;
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
@@ -99,8 +107,8 @@ set local role anon;
 do $$declare blocked boolean:=false;begin
  begin perform * from public.landos_viewport_candidates(current_setting('test.alice')::uuid,'features',array[143.0,-38.0,145.0,-36.0]); exception when insufficient_privilege then blocked:=true;end;
  if not blocked then raise exception 'viewport anon execution';end if;
- if public.landos_share_status(repeat('E',43))<>'expired' or public.resolve_landos_share(repeat('E',43)) is not null then raise exception 'expired status';end if;
- if public.landos_share_status(repeat('Q',43))<>'unavailable' or public.landos_share_status(repeat('Z',43))<>'unavailable' then raise exception 'revoked/unknown status';end if;
+ if (public.landos_share_gateway(repeat('E',43),repeat('G',43),repeat('4',64))->>'status')<>'expired' then raise exception 'expired status';end if;
+ if (public.landos_share_gateway(repeat('Q',43),repeat('G',43),repeat('4',64))->>'status')<>'unavailable' or (public.landos_share_gateway(repeat('Z',43),repeat('G',43),repeat('4',64))->>'status')<>'unavailable' then raise exception 'revoked/unknown status';end if;
 end$$;
 reset role;
 set local role authenticated;

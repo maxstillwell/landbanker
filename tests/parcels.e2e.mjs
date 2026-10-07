@@ -66,6 +66,59 @@ try {
       },
     });
   });
+  await page.route("**/api/parcels/lookup?**", async (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    if (params.get("address") !== "") return route.continue();
+    await route.fulfill({
+      json: {
+        parcels: [1, 2].map((n) => ({
+          address: `Lot ${n} PS-MAP`,
+          state: "VIC",
+          source: "Local map-identify provider",
+          sourceUrl: "https://plan-gis.mapshare.vic.gov.au/",
+          sourceId: `MAP-${n}`,
+          lot: String(n),
+          plan: "PS-MAP",
+          areaM2: 1200 + n,
+          latitude: -37.5,
+          longitude: 143.8,
+          retrievedAt: new Date().toISOString(),
+          sourceUpdatedAt: null,
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [143.8, -37.5],
+                [143.81, -37.5],
+                [143.81, -37.49],
+                [143.8, -37.49],
+                [143.8, -37.5],
+              ],
+            ],
+          },
+        })),
+      },
+    });
+  });
+  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Identify parcel on map", exact: true })
+    .click();
+  await expect(page.getByText("Tap the map to identify")).toBeVisible();
+  await page
+    .locator(".leaflet-container")
+    .click({ position: { x: 300, y: 350 } });
+  await expect(
+    page.getByRole("heading", { name: "Choose the parcel at this point" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button").filter({ hasText: "Local map-identify provider" }),
+  ).toHaveCount(2);
+  await page.getByRole("button").filter({ hasText: "Lot 2 PS-MAP" }).click();
+  await expect(
+    page.getByRole("button", { name: "Save to Workspace", exact: true }),
+  ).toBeVisible();
+  await page.reload();
   await page.getByRole("button", { name: "parcels", exact: true }).click();
   await page
     .getByLabel("Search address", { exact: true })
@@ -302,7 +355,7 @@ try {
     ).data,
   );
   console.log(
-    `PASS: saved-property filter/source/removal, minimal provenance, tenant-safe deletion, multi-parcel choice and scoped recent-search reload${process.env.LANDOS_LIVE_OFFICIAL_TEST === "1" ? ", live VIC/NSW address/identifier lookup and duplicate prevention" : ""}.`,
+    `PASS: map identify/explicit multi-parcel choice, saved-property filter/source/removal, minimal provenance, tenant-safe deletion and scoped recent-search reload${process.env.LANDOS_LIVE_OFFICIAL_TEST === "1" ? ", live VIC/NSW address/identifier lookup and duplicate prevention" : ""}.`,
   );
 } finally {
   await browser.close();

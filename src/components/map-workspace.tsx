@@ -33,7 +33,7 @@ import {
 import { geojsonFeatures } from "@/lib/map/geometry";
 import { ParcelSearch } from "./parcel-search";
 import type { MapSelection } from "@/lib/map/selection";
-import type { OfficialParcel } from "@/lib/map/parcel-types";
+import type { OfficialParcel, SupportedState } from "@/lib/map/parcel-types";
 import { timeoutFetch } from "@/lib/network";
 import { mergeMapPages, type MapPage } from "@/lib/map/data-pages";
 import { WorkspaceSelector } from "./workspace-selector";
@@ -157,6 +157,15 @@ export default function MapWorkspace({
     };
   }, [data, viewport.ready, viewport.rows, workspaceId]);
   const [propertyFilter, setPropertyFilter] = useState("");
+  const [parcelState, setParcelState] = useState<SupportedState>("VIC");
+  const [identifyState, setIdentifyState] = useState<SupportedState | null>(
+    null,
+  );
+  const identifyStateRef = useRef<SupportedState | null>(null);
+  const [identifyBusy, setIdentifyBusy] = useState(false);
+  const [identifiedParcels, setIdentifiedParcels] = useState<OfficialParcel[]>(
+    [],
+  );
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
   const [notice, setNotice] = useState("");
@@ -331,7 +340,7 @@ export default function MapWorkspace({
   function setSelected(record: Observation | null) {
     setSelection(record ? { kind: "observation", record } : null);
   }
-  function selectOfficialParcel(record: OfficialParcel) {
+  const selectOfficialParcel = useCallback((record: OfficialParcel) => {
     setSelection({ kind: "official-parcel", record });
     setTab("parcels");
     setSheet("medium");
@@ -342,7 +351,7 @@ export default function MapWorkspace({
         maxZoom: 18,
       });
     }
-  }
+  }, []);
   const [localLayer, setLocalLayer] = useState<LocalLayerDraft | null>(null);
   const updateLocalLayer = useCallback(
     async (value: LocalLayerDraft | null) => {
@@ -586,6 +595,46 @@ export default function MapWorkspace({
       );
     locateRequested.current = false;
   }, []);
+  function armParcelIdentify(state: SupportedState) {
+    const next = identifyStateRef.current === state ? null : state;
+    identifyStateRef.current = next;
+    setIdentifyState(next);
+    setIdentifiedParcels([]);
+    setNotice(
+      next
+        ? `Tap the map to identify an official ${state} parcel.`
+        : "Map parcel identify cancelled.",
+    );
+  }
+  const identifyParcelAt = useCallback(
+    async (state: SupportedState, latitude: number, longitude: number) => {
+      setIdentifyBusy(true);
+      setIdentifiedParcels([]);
+      try {
+        const response = await timeoutFetch(
+          `/api/parcels/lookup?${new URLSearchParams({ state, latitude: String(latitude), longitude: String(longitude), address: "" })}`,
+        );
+        const result = await response.json();
+        if (!response.ok)
+          throw new Error(result.error || "Official parcel identify failed");
+        const parcels = (result.parcels || []) as OfficialParcel[];
+        if (parcels.length === 1) selectOfficialParcel(parcels[0]);
+        else if (parcels.length > 1) {
+          setIdentifiedParcels(parcels);
+          setSheet("medium");
+          setNotice("Multiple official parcels found. Choose one to preview.");
+        } else
+          setNotice(
+            "No official parcel was returned at that point. Check the selected state or try nearby.",
+          );
+      } catch (e) {
+        setNotice(e instanceof Error ? e.message : "Parcel identify failed");
+      } finally {
+        setIdentifyBusy(false);
+      }
+    },
+    [selectOfficialParcel],
+  );
   useEffect(() => {
     if (!mapNode.current) return;
     const m = L.map(mapNode.current, {
@@ -613,7 +662,7 @@ export default function MapWorkspace({
         return;
       }
       const current = draftRef.current;
-      if (current && current.status !== "uploading")
+      if (current && current.status !== "uploading") {
         void saveDraft({
           ...current,
           input: {
@@ -624,12 +673,20 @@ export default function MapWorkspace({
           },
           updatedAt: Date.now(),
         });
+        return;
+      }
+      const state = identifyStateRef.current;
+      if (state) {
+        identifyStateRef.current = null;
+        setIdentifyState(null);
+        void identifyParcelAt(state, e.latlng.lat, e.latlng.lng);
+      }
     });
     return () => {
       m.remove();
       map.current = null;
     };
-  }, [saveDraft, setDrawPoints]);
+  }, [identifyParcelAt, saveDraft, setDrawPoints]);
   useEffect(() => {
     void reloadQueue();
     const active = () => {
@@ -1875,11 +1932,39 @@ export default function MapWorkspace({
                 key={`${userId}:${workspaceId}`}
                 userId={userId}
                 workspaceId={workspaceId}
+                state={parcelState}
+                identifyActive={Boolean(identifyState)}
+                onStateChange={setParcelState}
+                onIdentify={armParcelIdentify}
                 onSelect={selectOfficialParcel}
                 onAddress={(p) =>
                   map.current?.setView([p.latitude, p.longitude], 17)
                 }
               />
+              {identifyBusy ? <p role="status">Identifying parcel…</p> : null}
+              {identifiedParcels.length > 1 ? (
+                <section aria-label="Map parcel matches">
+                  <h3>Choose the parcel at this point</h3>
+                  {identifiedParcels.map((parcel) => (
+                    <button
+                      className="record-row"
+                      key={parcel.sourceId}
+                      onClick={() => {
+                        setIdentifiedParcels([]);
+                        selectOfficialParcel(parcel);
+                      }}
+                    >
+                      <span>
+                        <strong>{parcel.address}</strong>
+                        <small>
+                          {parcel.state} · Parcel {parcel.sourceId} ·{" "}
+                          {formatArea(parcel.areaM2)} · {parcel.source}
+                        </small>
+                      </span>
+                    </button>
+                  ))}
+                </section>
+              ) : null}
               {officialParcel || selectedParcel ? (
                 <section className="property-details">
                   <h3>

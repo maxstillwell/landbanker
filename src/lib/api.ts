@@ -10,13 +10,18 @@ export function sameOrigin(request: NextRequest) {
     throw new Error("Invalid request origin");
 }
 export function apiError(error: unknown) {
-  console.error("LandOS API:", {
-    event: "api_request_failed",
-    category:
-      error instanceof Error && error.message === "Sign in required"
-        ? "authentication"
-        : "request",
-  });
+  console.error(
+    JSON.stringify({
+      event: "landos_api_failure",
+      category:
+        error instanceof Error && error.message === "Sign in required"
+          ? "authentication"
+          : "request",
+      status: 400,
+      observed_at: new Date().toISOString(),
+      release: process.env.VERCEL_GIT_COMMIT_SHA || "local",
+    }),
+  );
   return NextResponse.json(
     { error: error instanceof Error ? error.message : "Request failed" },
     { status: 400, headers: { "Cache-Control": "no-store" } },

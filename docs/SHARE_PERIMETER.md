@@ -1,29 +1,35 @@
-# Alpha 3 public share perimeter — deployment pending
+# Alpha 3 public share perimeter
 
 The app's process-local limiter is not distributed protection. Public share token entropy, immutable scope, RLS and immediate no-store revoke/expiry remain necessary but do not replace abuse controls.
 
-## Reviewed Vercel rule foundation
+## Vercel Firewall diagnosis — 2026-10-08 AEDT
 
-`infra/firewall/landos-share-rules.json` is a review artifact, not an applied configuration. It covers only GET `/share/*` and `/api/published/*` in the independent LandOS project: Preview has a 600-request/IP/60-second distributed platform budget; Production has observation-only logging. Confirm plan limits, actual global/regional enforcement and traffic before promoting any blocking Production rule. A high shared-IP budget avoids accidental field-team lockout during staging.
+The independent LandOS Vercel project is `prj_afzfCidHE83CGne0ILQBJPKdBBi6` under the only connected team, `Maxstillwell's projects` (`team_uz00skMNo5QcnakBUYe8ZuVl`). The project and team APIs confirm access but do not return a billing-plan or WAF-entitlement field, so the current plan cannot be proven from this API response. The dashboard Billing page remains the authoritative plan check.
 
-On 2026-10-07, reading active/draft configuration and submitting this configuration for project prj_afzfCidHE83CGne0ILQBJPKdBBi6 returned HTTP404 `Seawall Config not found`. No firewall rule was applied. The connected account needs a usable Firewall configuration/plan/permission through the Vercel dashboard or an authorized integration. This is not an automatic approval rejection. Preserve and merge existing rules after a successful read; never blindly overwrite unrelated project rules. MaxQI projects and domains are excluded.
+Official Vercel documentation now reads the activated configuration at `GET /v1/security/firewall/config?projectId=...`; a specific version uses `/v1/security/firewall/config/{configVersion}`. The connected tool calls the versioned form with `active` or `draft`. Both reads and the reviewed PUT returned HTTP 404 `Seawall Config not found`. A permission failure would normally be 403, so the evidence supports an uninitialised/unavailable Seawall configuration or a connected-tool/API-version mismatch rather than an application-code failure. The Vercel CLI also requires an interactive device login in this environment. No Firewall rule was applied and blind retries stopped.
 
-## Direct Supabase RPC perimeter — still pending
+`infra/firewall/landos-share-rules.json` remains the reviewed Path A artifact. After the dashboard exposes Firewall, an owner should initialise Firewall/WAF, confirm the plan entitlement, stage the Preview 600-request/IP/minute rule, test it, and publish it explicitly. Preserve any existing project rules and exclude all MaxQI projects/domains.
 
-Vercel rules cannot cover calls directly to Supabase `resolve_landos_share` or `landos_share_status`. They currently intentionally accept an unpredictable share token using the publishable credential. A public launch requires a server-only gateway capability or dedicated least-privilege role with a shared database budget, followed by revoking direct anon/auth execution on the old resolver/status. The gateway must verify its server credential, freeze the same projection, preserve immediate expiry/revocation, and expose no arbitrary Workspace read. Do not revoke the existing grants before server configuration, gateway tests and new deployment are verified; doing so would break existing share links.
+## Path B — deployed and accepted
 
-Current Vercel environment metadata contains app/Supabase URLs and publishable credentials only; no server gateway credential has been provisioned. Do not put any new gateway secret in NEXT_PUBLIC variables, browser/iOS code, Git, logs or documentation. No service role should be used for ordinary user CRUD.
+No Vercel Marketplace storage integration is installed for this team, and provisioning Upstash requires the same interactive Vercel login/dashboard flow. Alpha 3 therefore uses the existing independent LandOS Supabase Postgres as the supported distributed counter store instead of an in-memory fallback or a new unapproved paid resource.
 
-## Required acceptance
+`/share/[token]` and `/api/published/[token]` now call one server-only database gateway. Vercel stores a 256-bit `LANDOS_SHARE_GATEWAY_SECRET` as a sensitive server variable; Supabase stores only its SHA-256 hash. The ordinary Supabase publishable credential remains least privilege and no service-role key is added to the Web or iOS app. The gateway checks the secret before resolution, returns one fixed status/projection envelope, and exposes no Workspace/table parameters.
 
-- Two separate application instances must consume the same caller/token budgets; 429 must be no-store with Retry-After.
-- Unknown/malformed tokens cannot enumerate Workspace or reveal private metadata; direct RPC without a server credential must fail.
-- Valid shared view still returns only frozen resources; private observations, notes and media remain excluded.
-- Revoke is immediately unavailable; expiry reveals only the fixed expired message.
-- Test staged rules with normal/shared-IP usage and repeated abusive requests, record actual platform enforcement, then review a Production blocking rule.
+The database atomically enforces fixed one-minute budgets of 120 requests per caller and 60 requests per share token across every Vercel instance. Caller addresses are HMAC-SHA-256 hashed by the Vercel server; share tokens use their existing SHA-256 identity. Raw IPs, tokens and the gateway secret are absent from rate-bucket rows and logs. Expired buckets are deleted through the indexed gateway path. The existing process-local limiter remains only an early defense.
 
-These requirements remain open. Alpha 3 is not cleared for broad public launch by this artifact.
+The additive gateway migration and sensitive Vercel environment variable are installed. Production acceptance passed before cutover. Direct anonymous/authenticated execution of `resolve_landos_share` and `landos_share_status` is now revoked; authenticated execution of the gateway is also revoked. Only anon may call the protected gateway, and only the Vercel server possesses the required 256-bit capability. Existing public URLs did not change.
+
+## Acceptance evidence — 2026-10-08 AEDT
+
+- Production concurrent same-token requests returned 60 normal unavailable responses followed by 10 HTTP429 responses. A caller-budget series produced the same 60/10 split. The counter transaction is stored in Postgres, so all Vercel instances consume the same atomic budget; no process memory is authoritative.
+- Unknown and malformed tokens return only the fixed unavailable result with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. Direct old RPC calls are denied; gateway calls without the 256-bit server capability are denied.
+- A synthetic valid shared View returned only its frozen minimal projection. Private observations, notes and media remained excluded.
+- Revocation became unavailable immediately. An expired synthetic link returned only the fixed expired response. All hosted acceptance fixtures were deleted after testing.
+- Local PostgreSQL, browser and API regressions cover valid, invalid, malformed, expired, revoked, wrong-capability and concurrent-limit paths plus old-RPC denial.
+
+Hosted post-cutover read-back confirms the old grants are absent and only the protected gateway retains anon execution. Supabase Advisor now reports one intentional anon SECURITY DEFINER warning for that gateway plus leaked-password protection disabled; there is no authenticated gateway warning or missing-RLS finding. Path B satisfies the Alpha 3 distributed perimeter and direct-RPC exit criteria. Path A remains optional defense in depth after an owner enables or confirms Vercel Firewall entitlement in the dashboard; any WAF rule must be staged and explicitly published by an owner.
 
 ## Hosted function review — 2026-10-07
 
-Read-back confirms empty search_path on every reviewed function. `record_workspace_change` is private SECURITY DEFINER with neither anon nor authenticated EXECUTE; `has_workspace_role` is private SECURITY DEFINER, authenticated-only for RLS evaluation and takes the current auth.uid rather than a caller-supplied user. Public `landos_workspace_changes` and `save_layer_features` are SECURITY INVOKER, authenticated-only with membership/RLS checks. Only `resolve_landos_share` and `landos_share_status` remain intentionally token-only anon/auth SECURITY DEFINER capabilities. Their fixed projection/status, strict token format, hash storage, frozen scope, expiry/revoke and lack of arbitrary table/Workspace parameters were retained and regression-tested. Owner/nonmember/anon feed checks and existing private Storage RLS tests pass. Advisors still report the intentional capability grants and leaked-password protection disabled. This review does not claim direct-RPC rate limiting is deployed.
+Read-back confirms empty search_path on every reviewed function. `record_workspace_change` is private SECURITY DEFINER with neither anon nor authenticated EXECUTE; `has_workspace_role` is private SECURITY DEFINER, authenticated-only for RLS evaluation and takes the current auth.uid rather than a caller-supplied user. Public `landos_workspace_changes` and `save_layer_features` are SECURITY INVOKER, authenticated-only with membership/RLS checks. `resolve_landos_share` and `landos_share_status` remain internal implementation functions but no longer grant execution to anon or authenticated roles. `landos_share_gateway` is the sole anonymous database capability: it requires the server-only capability, consumes distributed budgets and then invokes the narrow resolver. Owner/nonmember/anon feed checks and existing private Storage RLS tests pass. Advisor still reports the intentional gateway warning and leaked-password protection disabled. No Firewall enforcement is claimed; distributed Postgres enforcement is deployed.

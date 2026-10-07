@@ -117,13 +117,11 @@ try {
     intersectFeature = crypto.randomUUID();
   assert.ifError(
     (
-      await admin
-        .from("spatial_layers")
-        .insert({
-          id: layerId,
-          workspace_id: membership.data.workspace_id,
-          name: "Property analysis",
-        })
+      await admin.from("spatial_layers").insert({
+        id: layerId,
+        workspace_id: membership.data.workspace_id,
+        name: "Property analysis",
+      })
     ).error,
   );
   assert.ifError(
@@ -156,13 +154,11 @@ try {
   );
   assert.ifError(
     (
-      await admin
-        .from("saved_views")
-        .insert({
-          workspace_id: membership.data.workspace_id,
-          name: "Property review view",
-          view: { parcel_ids: [id] },
-        })
+      await admin.from("saved_views").insert({
+        workspace_id: membership.data.workspace_id,
+        name: "Property review view",
+        view: { parcel_ids: [id] },
+      })
     ).error,
   );
   const detail = await (
@@ -283,8 +279,13 @@ try {
       { exact: true },
     )
     .waitFor();
-  await page.getByText("Control provenance", { exact: true }).click();
-  await page.getByText("Source feature: 0:42", { exact: true }).waitFor();
+  await page
+    .getByText("Source, provenance and limitations", { exact: true })
+    .click();
+  await page.getByText("Official feature ID: 0:42", { exact: true }).waitFor();
+  await page
+    .getByText("Provider: Victorian Government", { exact: true })
+    .waitFor();
   await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByRole("button", { name: "Planning", exact: true }).click();
   await page.getByText("Zone: Farming Zone (FZ)", { exact: true }).waitFor();
@@ -338,7 +339,7 @@ try {
     assert.equal(other.status(), 400);
   }
   console.log(
-    "PASS: planning API owner/other-workspace/anonymous isolation, coverage/provenance/failure inspector and persistent property selection.",
+    "PASS: planning API owner/other-workspace/anonymous isolation, readable Zone/Overlays coverage, provenance/failure inspector and persistent property selection.",
   );
 } finally {
   await browser.close();

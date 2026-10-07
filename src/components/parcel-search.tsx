@@ -15,17 +15,24 @@ import {
 export function ParcelSearch({
   userId,
   workspaceId,
+  state,
+  identifyActive,
   onSelect,
   onAddress,
+  onStateChange,
+  onIdentify,
 }: {
   userId: string;
   workspaceId: string;
+  state: SupportedState;
+  identifyActive: boolean;
   onSelect: (p: OfficialParcel) => void;
   onAddress: (p: AddressResult) => void;
+  onStateChange: (state: SupportedState) => void;
+  onIdentify: (state: SupportedState) => void;
 }) {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"address" | "identifier">("address");
-  const [state, setState] = useState<SupportedState>("VIC");
   const [results, setResults] = useState<AddressResult[]>([]);
   const [parcels, setParcels] = useState<OfficialParcel[]>([]);
   const [busy, setBusy] = useState(false);
@@ -133,7 +140,7 @@ export function ParcelSearch({
             value={state}
             disabled={busy}
             onChange={(e) => {
-              setState(e.target.value as SupportedState);
+              onStateChange(e.target.value as SupportedState);
               setResults([]);
               setParcels([]);
             }}
@@ -162,6 +169,9 @@ export function ParcelSearch({
         <button disabled={busy} type="submit">
           {busy ? "Searching…" : "Search properties"}
         </button>
+        <button disabled={busy} type="button" onClick={() => onIdentify(state)}>
+          {identifyActive ? "Cancel map identify" : "Identify parcel on map"}
+        </button>
       </form>
       {recent.length ? (
         <details>
@@ -174,7 +184,7 @@ export function ParcelSearch({
               disabled={busy}
               onClick={() => {
                 setQuery(item.query);
-                setState(item.state);
+                onStateChange(item.state);
                 setMode(item.mode);
                 setResults([]);
                 setParcels([]);

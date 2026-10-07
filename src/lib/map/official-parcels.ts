@@ -148,7 +148,17 @@ export async function lookupOfficialParcels(
         : "cadid,lotnumber,planlabel,lotidstring,lastupdate",
     resultRecordCount: "20",
   });
-  return parcelsFromFeatures(result, point);
+  return parcelsFromFeatures(result, point).map((parcel) =>
+    point.address
+      ? parcel
+      : {
+          ...parcel,
+          address:
+            [parcel.lot ? `Lot ${parcel.lot}` : null, parcel.plan]
+              .filter(Boolean)
+              .join(" ") || `Parcel ${parcel.sourceId}`,
+        },
+  );
 }
 function parcelsFromFeatures(
   result: Response,

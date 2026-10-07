@@ -4,6 +4,7 @@ import { supabaseConfig } from "./config";
 import type { SharedProjection } from "./map/share-types";
 import { ShareRateLimit, shareGatewayArguments } from "./share-budget";
 const lastFailure = new Map<"gateway", number>();
+let lastAbuse = 0;
 function recordShareFailure(operation: "gateway") {
   const now = Date.now();
   if (now - (lastFailure.get(operation) || 0) < 60000) return;
@@ -30,8 +31,18 @@ export async function resolveShare(token: string): Promise<ShareResolution> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await client.rpc("landos_share_gateway", args);
-  if (error?.code === "P0001" && error.message === "Share rate limited")
+  if (error?.code === "P0001" && error.message === "Share rate limited") {
+    if (Date.now() - lastAbuse >= 60000) {
+      lastAbuse = Date.now();
+      console.warn(
+        JSON.stringify({
+          event: "landos_share_abuse",
+          observed_at: new Date().toISOString(),
+        }),
+      );
+    }
     throw new ShareRateLimit();
+  }
   if (error) {
     recordShareFailure("gateway");
     throw new Error("LandOS share gateway is unavailable.");
