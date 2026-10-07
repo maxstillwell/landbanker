@@ -1,4 +1,4 @@
-import { randomBytes, createHmac } from "node:crypto";
+import { randomBytes, createHash, createHmac } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 const existingApp = await readFile(".env.local", "utf8").catch(() => null);
 if (existingApp !== null)
@@ -29,15 +29,19 @@ function key(role) {
   );
 }
 const anon = key("anon"),
-  service = key("service_role");
+  service = key("service_role"),
+  shareGatewaySecret = randomBytes(32).toString("base64url"),
+  shareGatewayHash = createHash("sha256")
+    .update(shareGatewaySecret)
+    .digest("hex");
 await writeFile(
   "infra/local/.env",
-  `JWT_SECRET=${secret}\nANON_KEY=${anon}\nSERVICE_KEY=${service}\n`,
+  `JWT_SECRET=${secret}\nANON_KEY=${anon}\nSERVICE_KEY=${service}\nSHARE_GATEWAY_SECRET_HASH=${shareGatewayHash}\n`,
   { mode: 0o600 },
 );
 await writeFile(
   ".env.local",
-  `NEXT_PUBLIC_APP_URL=http://localhost:3000\nLAND_BANKER_APP_URL=http://localhost:3000\nNEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${anon}\nLAND_BANKER_SUPABASE_SECRET_KEY=${service}\n`,
+  `NEXT_PUBLIC_APP_URL=http://localhost:3000\nLAND_BANKER_APP_URL=http://localhost:3000\nNEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${anon}\nLAND_BANKER_SUPABASE_SECRET_KEY=${service}\nLANDOS_SHARE_GATEWAY_SECRET=${shareGatewaySecret}\n`,
   { mode: 0o600 },
 );
 console.log(

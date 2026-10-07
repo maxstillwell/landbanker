@@ -1,6 +1,6 @@
 import SharedMap from "@/components/shared-map-loader";
 import { notFound } from "next/navigation";
-import { resolveShare, shareStatus } from "@/lib/share-resolver";
+import { resolveShare } from "@/lib/share-resolver";
 import { ShareRateLimit } from "@/lib/share-budget";
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -13,9 +13,9 @@ export default async function Page({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  let share;
+  let resolution;
   try {
-    share = await resolveShare(token);
+    resolution = await resolveShare(token);
   } catch (e) {
     if (!(e instanceof ShareRateLimit)) throw e;
     return (
@@ -25,8 +25,9 @@ export default async function Page({
       </main>
     );
   }
+  const { share, status } = resolution;
   if (!share) {
-    if ((await shareStatus(token)) === "expired")
+    if (status === "expired")
       return (
         <main className="shared-page">
           <h1>LandOS</h1>

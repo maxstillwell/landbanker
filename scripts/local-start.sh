@@ -47,6 +47,12 @@ for migration in supabase/migrations/*.sql; do
     "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 -c "insert into private.local_migrations values('$version')"
   fi
 done
+gateway_hash=$(sed -n 's/^SHARE_GATEWAY_SECRET_HASH=//p' infra/local/.env)
+if [[ ! $gateway_hash =~ ^[0-9a-f]{64}$ ]]; then
+  echo 'Local share gateway credential is missing. Regenerate isolated local config in a fresh checkout.'
+  exit 1
+fi
+"${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 -c "insert into private.share_gateway_credentials(id,secret_hash) values(true,'$gateway_hash') on conflict(id) do update set secret_hash=excluded.secret_hash,rotated_at=now(),disabled_at=null"
 "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -v ON_ERROR_STOP=1 < infra/local/storage-grants.sql
 "${compose[@]}" exec -T db psql -h 127.0.0.1 -U postgres -d landbanker -c "notify pgrst, 'reload schema'"
 "${compose[@]}" create gateway

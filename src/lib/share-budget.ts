@@ -1,4 +1,5 @@
 import "server-only";
+import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { tokenHash } from "./sharing";
 import { RateWindow } from "./rate-window";
@@ -10,10 +11,13 @@ export class ShareRateLimit extends Error {
     super("Too many share requests. Try again in a minute.");
   }
 }
-export async function checkShareBudget(token: string) {
+export async function shareGatewayArguments(token: string) {
+  const secret = process.env.LANDOS_SHARE_GATEWAY_SECRET;
+  if (!secret || Buffer.byteLength(secret) < 32)
+    throw new Error("LandOS share gateway is not configured.");
   const h = await headers();
   // Trust only the hosting platform's reserved address header. Other deployments
-  // share a conservative instance-wide budget until an authenticated gateway exists.
+  // use one conservative caller bucket in the distributed database gateway.
   const address = process.env.VERCEL
     ? h.get("x-vercel-forwarded-for") || "unknown"
     : "self-hosted";
@@ -29,4 +33,9 @@ export async function checkShareBudget(token: string) {
     }
     throw new ShareRateLimit();
   }
+  return {
+    p_token: token,
+    p_gateway_secret: secret,
+    p_caller_hash: createHmac("sha256", secret).update(address).digest("hex"),
+  };
 }

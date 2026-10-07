@@ -57,8 +57,20 @@ update public.workspace_memberships set status='suspended' where user_id='222222
 set local role authenticated;
 do $$begin if (select count(*) from public.land_parcels)<>0 then raise exception 'suspended read';end if;end$$;
 reset role;
+insert into private.share_gateway_credentials(id,secret_hash) values(
+ true,encode(sha256(convert_to(repeat('G',43),'UTF8')),'hex')
+);
 set local role anon;
 do $$declare failed boolean;begin failed:=false;begin perform * from public.land_parcels;exception when insufficient_privilege then failed:=true;end;if not failed then raise exception 'anonymous leak';end if;end$$;
+do $$declare result jsonb; blocked boolean:=false;begin
+ result:=public.landos_share_gateway(repeat('Q',43),repeat('G',43),repeat('1',64));
+ if result->>'status'<>'active' or result->'projection'->>'type'<>'view' then raise exception 'gateway projection';end if;
+ begin perform public.landos_share_gateway(repeat('Q',43),repeat('X',43),repeat('1',64));exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'gateway secret bypass';end if;
+ blocked:=false;
+ begin perform * from private.share_rate_buckets;exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'gateway bucket table exposed';end if;
+end$$;
 do $$declare projection jsonb;begin
  projection:=public.resolve_landos_share(repeat('Q',43));
  if projection is null or projection->>'type'<>'view' or jsonb_array_length(projection->'resources')<>2 then raise exception 'explicit projection';end if;
