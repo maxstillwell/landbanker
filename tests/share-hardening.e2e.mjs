@@ -83,6 +83,21 @@ try {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("**/app/map");
+  const diagnostic = await page.request.post(origin + "/api/telemetry", {
+    headers: { Origin: origin },
+    data: { event: "upload_failed" },
+  });
+  assert.equal(diagnostic.status(), 202);
+  assert.equal(diagnostic.headers()["cache-control"], "no-store");
+  const rejectedDiagnostic = await page.request.post(
+    origin + "/api/telemetry",
+    {
+      headers: { Origin: origin },
+      data: { event: "upload_failed", photo_url: "PRIVATE PHOTO URL" },
+    },
+  );
+  assert.equal(rejectedDiagnostic.status(), 400);
+  assert(!(await rejectedDiagnostic.text()).includes("PRIVATE PHOTO URL"));
   await page.getByRole("button", { name: "layers", exact: true }).click();
   const viewScope = {
     latitude: -33,
@@ -173,9 +188,7 @@ try {
     page.getByRole("button", { name: "Reviewed private map", exact: true }),
   ).toBeVisible();
   assert.equal((await client.from("saved_views").select("id")).data.length, 2);
-  await page
-    .getByLabel("Saved View to share")
-    .selectOption(viewId);
+  await page.getByLabel("Saved View to share").selectOption(viewId);
   await page.getByRole("button", { name: "Share view", exact: true }).click();
   await page.getByText("This link will include:", { exact: true }).waitFor();
   await expect(page.locator(".share-scope")).toContainText(
@@ -232,6 +245,15 @@ try {
   assert(!JSON.stringify(links).includes("token_hash"));
   const publicContext = await browser.newContext(),
     visitor = await publicContext.newPage();
+  assert.equal(
+    (
+      await visitor.request.post(origin + "/api/telemetry", {
+        headers: { Origin: origin },
+        data: { event: "frontend_fatal" },
+      })
+    ).status(),
+    400,
+  );
   assert.equal(
     (
       await visitor.request.post(origin + "/api/views/preview", {

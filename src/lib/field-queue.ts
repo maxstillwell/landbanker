@@ -1,4 +1,5 @@
 import { openDB, type DBSchema } from "idb";
+import { reportClientFailure } from "./client-failure";
 import type { z } from "zod";
 import type { observationInput, mediaInput } from "./validation";
 import { timeoutFetch } from "./network";
@@ -87,6 +88,7 @@ export async function processDraft(
     } catch (e) {
       photo.status = "failed";
       await storeDraft(draft);
+      reportClientFailure("upload_failed");
       throw e;
     }
   }

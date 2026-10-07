@@ -15,7 +15,51 @@ import {
 } from "../src/lib/sharing";
 import { observationInput, mediaInput } from "../src/lib/validation";
 import { locationFromPayload } from "../src/lib/native-bridge";
+import {
+  clientFailureInput,
+  reportClientFailure,
+} from "../src/lib/client-failure";
 const w = "11111111-1111-4111-8111-111111111111";
+test("client failure telemetry allows only fixed categories and sends no private payload", async () => {
+  assert(clientFailureInput.safeParse({ event: "frontend_fatal" }).success);
+  assert(
+    !clientFailureInput.safeParse({
+      event: "upload_failed",
+      photo_url: "private",
+    }).success,
+  );
+  assert(
+    !clientFailureInput.safeParse({
+      event: "upload_failed",
+      geometry: [145, -37],
+    }).success,
+  );
+  assert(
+    !clientFailureInput.safeParse({ event: "arbitrary_error_text" }).success,
+  );
+  const originalFetch = globalThis.fetch;
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const bodies: string[] = [];
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {},
+  });
+  globalThis.fetch = async (_url, init) => {
+    bodies.push(String(init?.body));
+    return new Response("{}", { status: 202 });
+  };
+  try {
+    reportClientFailure("frontend_fatal");
+    reportClientFailure("frontend_fatal");
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    assert.deepEqual(bodies, [JSON.stringify({ event: "frontend_fatal" })]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousWindow)
+      Object.defineProperty(globalThis, "window", previousWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+});
 test("recent searches are account/Workspace scoped, bounded and clearable", async () => {
   const fake = await import("fake-indexeddb");
   Object.assign(
