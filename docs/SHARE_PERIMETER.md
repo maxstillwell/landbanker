@@ -23,3 +23,7 @@ Current Vercel environment metadata contains app/Supabase URLs and publishable c
 - Test staged rules with normal/shared-IP usage and repeated abusive requests, record actual platform enforcement, then review a Production blocking rule.
 
 These requirements remain open. Alpha 3 is not cleared for broad public launch by this artifact.
+
+## Hosted function review — 2026-10-07
+
+Read-back confirms empty search_path on every reviewed function. `record_workspace_change` is private SECURITY DEFINER with neither anon nor authenticated EXECUTE; `has_workspace_role` is private SECURITY DEFINER, authenticated-only for RLS evaluation and takes the current auth.uid rather than a caller-supplied user. Public `landos_workspace_changes` and `save_layer_features` are SECURITY INVOKER, authenticated-only with membership/RLS checks. Only `resolve_landos_share` and `landos_share_status` remain intentionally token-only anon/auth SECURITY DEFINER capabilities. Their fixed projection/status, strict token format, hash storage, frozen scope, expiry/revoke and lack of arbitrary table/Workspace parameters were retained and regression-tested. Owner/nonmember/anon feed checks and existing private Storage RLS tests pass. Advisors still report the intentional capability grants and leaked-password protection disabled. This review does not claim direct-RPC rate limiting is deployed.

@@ -42,6 +42,59 @@ try {
     return signupEmail;
   }
   const accountEmail = await signup("Parcel Test");
+  // Deterministic result hierarchy/history fixture; live provider checks remain separate below.
+  await page.route("**/api/parcels/search?**", async (route) => {
+    if (
+      new URL(route.request().url()).searchParams.get("q") !==
+      "Recent local search"
+    )
+      return route.continue();
+    await route.fulfill({
+      json: {
+        results: [],
+        parcels: [1, 2].map((n) => ({
+          address: "Synthetic multiple-parcel address",
+          state: "VIC",
+          source: "Local test provider",
+          sourceId: `SYNTHETIC-${n}`,
+          lot: String(n),
+          plan: "PS123",
+          areaM2: 1000,
+          latitude: -37.5,
+          longitude: 143.8,
+        })),
+      },
+    });
+  });
+  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await page
+    .getByLabel("Search address", { exact: true })
+    .fill("Recent local search");
+  await page
+    .getByRole("button", { name: "Search properties", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("button")
+      .filter({ hasText: "Synthetic multiple-parcel address" }),
+  ).toHaveCount(2);
+  await expect(page.locator(".parcel-search")).toContainText("Lot 1 · PS123");
+  await expect(page.locator(".parcel-search")).toContainText("1,000 m²");
+  await expect(
+    page.getByRole("button", { name: "Save to Workspace", exact: true }),
+  ).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await page.getByText("Recent searches", { exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Recent local search · VIC · Address",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByLabel("Search address", { exact: true })).toHaveValue(
+    "Recent local search",
+  );
   if (process.env.LANDOS_LIVE_OFFICIAL_TEST === "1") {
     for (const [state, q] of [
       ["VIC", "701 Sturt Street, Ballarat VIC 3350"],
@@ -230,6 +283,10 @@ try {
   await page.goto(origin + "/app/settings");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await signup("Parcel Other Test");
+  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await expect(page.getByText("Recent searches", { exact: true })).toHaveCount(
+    0,
+  );
   const denied = await page.request.delete(
     `${origin}/api/parcels?id=${protectedId}`,
     { headers: { Origin: origin } },
@@ -245,7 +302,7 @@ try {
     ).data,
   );
   console.log(
-    `PASS: saved-property filter/source/removal, minimal provenance, tenant-safe deletion${process.env.LANDOS_LIVE_OFFICIAL_TEST === "1" ? ", live VIC/NSW address/identifier lookup and duplicate prevention" : ""}.`,
+    `PASS: saved-property filter/source/removal, minimal provenance, tenant-safe deletion, multi-parcel choice and scoped recent-search reload${process.env.LANDOS_LIVE_OFFICIAL_TEST === "1" ? ", live VIC/NSW address/identifier lookup and duplicate prevention" : ""}.`,
   );
 } finally {
   await browser.close();

@@ -1,5 +1,56 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import {
+  recordProviderHealth,
+  providerHealthSnapshot,
+} from "../src/lib/provider-health";
+test("provider diagnostics retain success/failure and emit only bounded public-source health", () => {
+  const logs: string[] = [];
+  recordProviderHealth(
+    "test-public-source",
+    "Test public provider",
+    "healthy",
+    12.4,
+    (line) => logs.push(line),
+  );
+  recordProviderHealth(
+    "test-public-source",
+    "Test public provider",
+    "unavailable",
+    15000,
+    (line) => logs.push(line),
+  );
+  const health = providerHealthSnapshot().find(
+    (value) => value.id === "test-public-source",
+  )!;
+  assert.equal(health.status, "unavailable");
+  assert(health.last_success && health.last_failure);
+  assert.equal(health.latency_ms, 15000);
+  assert.deepEqual(
+    Object.keys(JSON.parse(logs[1])).sort(),
+    [
+      "event",
+      "id",
+      "provider",
+      "status",
+      "last_success",
+      "last_failure",
+      "latency_ms",
+      "observed_at",
+    ].sort(),
+  );
+  recordProviderHealth(
+    "invalid/id?private=coordinate",
+    "Test",
+    "healthy",
+    1,
+    (line) => logs.push(line),
+  );
+  assert.equal(logs.length, 2);
+  for (let i = 0; i < 105; i++)
+    recordProviderHealth(`bounded-source-${i}`, "Test", "healthy", 1, () => {});
+  assert.equal(providerHealthSnapshot().length, 100);
+});
 import type { Polygon, MultiPolygon } from "geojson";
 import type { CatalogLayer } from "../src/lib/map/catalog-types";
 import {
@@ -284,7 +335,18 @@ test("incremental map changes reconcile create/update/delete and reject mismatch
   );
 });
 
-test('tiny Australian parcel centroid avoids cancellation in absolute coordinates',()=>{
- const center=propertyCentroid({type:'Polygon',coordinates:[[[144,-36.9999],[144.001,-36.9999],[144.001,-36.99989],[144,-36.9999]]]})!;
- assert.ok(Math.abs(center[0]-144.00066666666666)<1e-10);assert.ok(Math.abs(center[1]+36.999896666666665)<1e-10);
+test("tiny Australian parcel centroid avoids cancellation in absolute coordinates", () => {
+  const center = propertyCentroid({
+    type: "Polygon",
+    coordinates: [
+      [
+        [144, -36.9999],
+        [144.001, -36.9999],
+        [144.001, -36.99989],
+        [144, -36.9999],
+      ],
+    ],
+  })!;
+  assert.ok(Math.abs(center[0] - 144.00066666666666) < 1e-10);
+  assert.ok(Math.abs(center[1] + 36.999896666666665) < 1e-10);
 });

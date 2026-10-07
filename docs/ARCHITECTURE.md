@@ -59,3 +59,5 @@ Device draft database version 3 retains existing drawing/layer stores and adds a
 ## Alpha 3 Property intelligence
 
 Planning now uses Property-specific official spatial intersections rather than map-active layer names. `src/lib/planning` separates geometry, explicit provider adapters and the unified per-source result contract. The authenticated property route first checks Workspace RLS, then runs bounded official requests; the Inspector shows clipping coverage, provenance and independent source failure. See PLANNING.md. Catalog release status/checklist distinguish reviewed readiness from technical map availability; FSR/Height remain disabled for documented release gates.
+
+Alpha 3 refinements keep query history in the existing account/Workspace-scoped IndexedDB abstraction (additive version 4 store). Government health uses fixed-schema platform events and bounded instance diagnostics, not a durable uptime claim; see OBSERVABILITY.md. SHARE_PERIMETER.md records staged configuration and unresolved 404 rather than claiming distributed protection.

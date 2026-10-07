@@ -19,3 +19,5 @@ Final integrated local interaction baseline: 21 viewport requests / 622,830 resp
 ## Alpha 3 regression checkpoint — 2026-10-07
 
 The bounded overview/lazy-full-geometry workflow with 500 parcels, 500 observations, 502 Features and ten persisted active official references passed. Full-suite pan window: 21 viewport requests, 686,020 bytes, ten-frame timing 755 ms. First-page bytes 68,584/45,761/48,773; timings 166/99/124 ms. Full-layer save retained 502 UUIDs. Automatic revision-based polling and two-browser create/update/delete reconciliation were separately verified; no physical-device or concurrent high-write throughput baseline is inferred. Planning government-source requests are on-demand per Property, bounded separately and not included in these viewport byte totals.
+
+Final refinement regression: 23 viewport requests / 493,865 bytes / ten-frame 382 ms; first-page bytes 68,610/45,709/48,793, timings 157/112/113 ms. Same synthetic 500/500/502/ten-layer fixture retained all IDs. Variation is a local baseline, not a performance guarantee.

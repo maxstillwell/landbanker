@@ -4,7 +4,7 @@ import { resolveShare, shareStatus } from "@/lib/share-resolver";
 import { ShareRateLimit } from "@/lib/share-budget";
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Shared land intelligence · LandOS",
+  title: "Shared land view · LandOS",
   robots: { index: false, follow: false },
 };
 export default async function Page({
@@ -39,9 +39,9 @@ export default async function Page({
     <main className="shared-page">
       <header>
         <strong>LandOS</strong>
-        <span>Read-only shared view</span>
+        <span>Shared land view</span>
       </header>
-      <h1>{share.view?.name || "Shared land intelligence"}</h1>
+      <h1>{share.view?.name || "Shared land view"}</h1>
       <SharedMap share={share} />
       <p>
         Only explicitly shared objects are visible. Private observations, photos

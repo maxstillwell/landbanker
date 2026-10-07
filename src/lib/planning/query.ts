@@ -3,6 +3,7 @@ import type { Feature, Geometry } from "geojson";
 import type { CatalogLayer } from "../map/catalog-types";
 import { esriRingsGeometry } from "../map/esri-rings";
 import { planningSources } from "./sources";
+import { recordProviderHealth } from "../provider-health";
 import {
   esriProperty,
   propertyGeometry,
@@ -136,6 +137,7 @@ export async function queryPropertyPlanning(
         .slice(start, start + 3)
         .map(async (layer): Promise<PlanningLayerResult> => {
           const adapter = planningSources[layer.id];
+          const started = performance.now();
           const base: PlanningLayerResult = {
             catalog_layer_id: layer.id,
             name: layer.name,
@@ -197,6 +199,12 @@ export async function queryPropertyPlanning(
                 });
               }
             }
+            recordProviderHealth(
+              layer.id,
+              layer.provider,
+              "healthy",
+              performance.now() - started,
+            );
             return controls.length
               ? {
                   ...base,
@@ -219,6 +227,12 @@ export async function queryPropertyPlanning(
                 ["TimeoutError", "AbortError", "TypeError"].includes(
                   error.name,
                 ));
+            recordProviderHealth(
+              layer.id,
+              layer.provider,
+              unavailable ? "unavailable" : "failed",
+              performance.now() - started,
+            );
             return {
               ...base,
               status: unavailable ? "source_unavailable" : "request_failed",

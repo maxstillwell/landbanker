@@ -10,10 +10,13 @@ export function sameOrigin(request: NextRequest) {
     throw new Error("Invalid request origin");
 }
 export function apiError(error: unknown) {
-  console.error(
-    "LandOS API:",
-    error instanceof Error ? error.message : "request failed",
-  );
+  console.error("LandOS API:", {
+    event: "api_request_failed",
+    category:
+      error instanceof Error && error.message === "Sign in required"
+        ? "authentication"
+        : "request",
+  });
   return NextResponse.json(
     { error: error instanceof Error ? error.message : "Request failed" },
     { status: 400, headers: { "Cache-Control": "no-store" } },

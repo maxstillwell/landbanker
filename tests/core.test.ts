@@ -16,6 +16,46 @@ import {
 import { observationInput, mediaInput } from "../src/lib/validation";
 import { locationFromPayload } from "../src/lib/native-bridge";
 const w = "11111111-1111-4111-8111-111111111111";
+test("recent searches are account/Workspace scoped, bounded and clearable", async () => {
+  const fake = await import("fake-indexeddb");
+  Object.assign(
+    globalThis,
+    Object.fromEntries(
+      Object.entries(fake).filter(
+        ([name]) => name === "indexedDB" || name.startsWith("IDB"),
+      ),
+    ),
+  );
+  const { readRecentSearches, rememberSearch } =
+    await import("../src/lib/layer-draft");
+  for (let i = 0; i < 12; i++)
+    await rememberSearch("search-owner", w, {
+      query: `Local search ${i}`,
+      state: "VIC",
+      mode: "address",
+      searchedAt: i,
+    });
+  assert.equal((await readRecentSearches("search-owner", w)).length, 8);
+  assert.deepEqual(await readRecentSearches("another-account", w), []);
+  assert.deepEqual(
+    await readRecentSearches("search-owner", "another-workspace"),
+    [],
+  );
+  await rememberSearch("search-owner", w, {
+    query: " LOCAL SEARCH 11 ",
+    state: "VIC",
+    mode: "address",
+    searchedAt: 13,
+  });
+  const items = await readRecentSearches("search-owner", w);
+  assert.equal(items.length, 8);
+  assert.equal(
+    items.filter((i) => i.query.toLowerCase() === "local search 11").length,
+    1,
+  );
+  await rememberSearch("search-owner", w, null);
+  assert.deepEqual(await readRecentSearches("search-owner", w), []);
+});
 test("production backend isolation", () => {
   assert.throws(() =>
     assertIndependentBackend("https://kcdzzbmkqtuwfzbeqcks.supabase.co"),

@@ -7,7 +7,7 @@ export type LocalLayerDraft = {
   targetLayerId?: string;
 };
 async function database() {
-  return openDB("land-banker-layer-draft-v1", 3, {
+  return openDB("land-banker-layer-draft-v1", 4, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("layers"))
         db.createObjectStore("layers");
@@ -15,8 +15,81 @@ async function database() {
         db.createObjectStore("drawing");
       if (!db.objectStoreNames.contains("shareUrls"))
         db.createObjectStore("shareUrls");
+      if (!db.objectStoreNames.contains("searches"))
+        db.createObjectStore("searches");
     },
   });
+}
+
+export type RecentSearch = {
+  query: string;
+  state: "VIC" | "NSW";
+  mode: "address" | "identifier";
+  searchedAt: number;
+};
+function validSearch(value: RecentSearch) {
+  return (
+    value &&
+    typeof value.query === "string" &&
+    value.query.trim().length >= 3 &&
+    value.query.length <= 120 &&
+    ["VIC", "NSW"].includes(value.state) &&
+    ["address", "identifier"].includes(value.mode) &&
+    Number.isFinite(value.searchedAt)
+  );
+}
+export async function readRecentSearches(
+  user: string,
+  workspace: string,
+): Promise<RecentSearch[]> {
+  const db = await database();
+  try {
+    const record = await db.get("searches", key(user, workspace));
+    return record?.userId === user &&
+      record?.workspaceId === workspace &&
+      Array.isArray(record.items)
+      ? record.items.filter(validSearch).slice(0, 8)
+      : [];
+  } finally {
+    db.close();
+  }
+}
+export async function rememberSearch(
+  user: string,
+  workspace: string,
+  value: RecentSearch | null,
+): Promise<RecentSearch[]> {
+  if (value && !validSearch(value)) throw new Error("Invalid recent search");
+  const db = await database();
+  try {
+    const tx = db.transaction("searches", "readwrite");
+    const record = await tx.store.get(key(user, workspace));
+    const current: RecentSearch[] =
+      record?.userId === user &&
+      record?.workspaceId === workspace &&
+      Array.isArray(record.items)
+        ? record.items.filter(validSearch)
+        : [];
+    const items = value
+      ? [
+          { ...value, query: value.query.trim() },
+          ...current.filter(
+            (item) =>
+              item.query.toLowerCase() !== value.query.trim().toLowerCase() ||
+              item.state !== value.state ||
+              item.mode !== value.mode,
+          ),
+        ].slice(0, 8)
+      : [];
+    await tx.store.put(
+      { userId: user, workspaceId: workspace, items },
+      key(user, workspace),
+    );
+    await tx.done;
+    return items;
+  } finally {
+    db.close();
+  }
 }
 
 export async function readShareUrls(

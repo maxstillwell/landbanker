@@ -1865,6 +1865,9 @@ export default function MapWorkspace({
           {!draft && tab === "parcels" ? (
             <>
               <ParcelSearch
+                key={`${userId}:${workspaceId}`}
+                userId={userId}
+                workspaceId={workspaceId}
                 onSelect={selectOfficialParcel}
                 onAddress={(p) =>
                   map.current?.setView([p.latitude, p.longitude], 17)

@@ -8,6 +8,7 @@ import type {
   SupportedState,
 } from "./parcel-types";
 import { geometryMeasurement } from "./measurement";
+import { recordProviderHealth } from "../provider-health";
 export const parcelSources = {
   VIC: {
     name: "Vicmap / VicPlan",
@@ -33,29 +34,52 @@ async function query(
   url: string,
   params: Record<string, string>,
 ): Promise<Response> {
-  const r = await fetch(
-    `${url}/query?${new URLSearchParams({ ...params, f: params.f || "geojson", outSR: "4326", returnGeometry: "true" })}`,
-    { signal: AbortSignal.timeout(15000), next: { revalidate: 3600 } },
+  const source = Object.entries(parcelSources).find(
+    ([, source]) => source.address === url || source.parcel === url,
   );
-  if (!r.ok)
-    throw new Error("Official source temporarily unavailable. Try again.");
-  const data = await r.json();
-  if (data.error)
+  const id = source
+    ? `${source[0].toLowerCase()}-${source[1].address === url ? "addresses" : "parcels"}`
+    : "official-parcels";
+  const provider = source?.[1].name || "Official parcel source",
+    started = performance.now();
+  try {
+    const r = await fetch(
+      `${url}/query?${new URLSearchParams({ ...params, f: params.f || "geojson", outSR: "4326", returnGeometry: "true" })}`,
+      { signal: AbortSignal.timeout(15000), next: { revalidate: 3600 } },
+    );
+    if (!r.ok)
+      throw new Error(
+        "Official source temporarily unavailable. Your saved LandOS data is unaffected.",
+      );
+    const data = await r.json();
+    if (data.error)
+      throw new Error(
+        "Official source could not answer this query. Try a full address or another location.",
+      );
+    if (params.f === "json" && data.features)
+      data.features = data.features.map(
+        (feature: {
+          attributes: Record<string, unknown>;
+          geometry: { rings: unknown };
+        }) => ({
+          type: "Feature",
+          properties: feature.attributes,
+          geometry: esriRingsGeometry(feature.geometry.rings),
+        }),
+      );
+    recordProviderHealth(id, provider, "healthy", performance.now() - started);
+    return data;
+  } catch {
+    recordProviderHealth(
+      id,
+      provider,
+      "unavailable",
+      performance.now() - started,
+    );
     throw new Error(
-      "Official source could not answer this query. Try a full address or another location.",
+      "Official source temporarily unavailable. Your saved LandOS data is unaffected.",
     );
-  if (params.f === "json" && data.features)
-    data.features = data.features.map(
-      (feature: {
-        attributes: Record<string, unknown>;
-        geometry: { rings: unknown };
-      }) => ({
-        type: "Feature",
-        properties: feature.attributes,
-        geometry: esriRingsGeometry(feature.geometry.rings),
-      }),
-    );
-  return data;
+  }
 }
 export async function searchOfficialAddresses(
   text: string,
