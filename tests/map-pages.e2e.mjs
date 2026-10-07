@@ -220,7 +220,9 @@ try {
     timings = [];
   for (let i = 0; i < 5; i++) {
     const start = performance.now(),
-      response = await page.request.get(origin + "/api/map?page=" + i);
+      response = await page.request.get(
+        origin + "/api/map?overview=1&page=" + i,
+      );
     assert.equal(response.status(), 200);
     const raw = await response.text(),
       data = JSON.parse(raw);
@@ -265,13 +267,26 @@ try {
     .getByRole("button", { name: "Load more Workspace data", exact: true })
     .waitFor({ state: "hidden" });
   await page.getByRole("button", { name: "parcels", exact: true }).click();
+  const propertyDetails = page.waitForResponse((r) =>
+    /\/api\/properties\/[^/]+$/.test(new URL(r.url()).pathname),
+  );
   await page
     .locator(".record-row")
     .filter({ hasText: "Synthetic property 1" })
     .first()
     .click();
-  for (let i = 0; i < 3; i++)
+  await propertyDetails;
+  await page
+    .locator(".property-workspace dd")
+    .filter({ hasText: /144\./ })
+    .waitFor();
+  // Property now fits its actual small boundary (up to zoom 18), not its stored
+  // point at zoom 15. Zoom out to the same large-workspace test extent.
+  for (let i = 0; i < 6; i++) {
     await page.locator(".leaflet-control-zoom-out").click();
+    // Leaflet ignores further zoom clicks during its 250ms transition.
+    await page.waitForTimeout(350);
+  }
   await expect
     .poll(async () => page.locator(".leaflet-overlay-pane path").count(), {
       timeout: 30000,

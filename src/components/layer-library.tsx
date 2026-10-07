@@ -84,7 +84,12 @@ export function LayerLibrary({
             <details>
               <summary>Source & scope</summary>
               <p>{layer.description}</p>
+              <small>Release status: {layer.release_status || "beta"}</small>
+              {!layer.enabled && layer.release_checklist?.release_blocker ? (
+                <p>{String(layer.release_checklist.release_blocker)}</p>
+              ) : null}
               <p>{layer.usage_notes}</p>
+              <p>Release status: {layer.release_status || "beta"}</p>
               <a href={layer.source_url} target="_blank" rel="noreferrer">
                 Official source
               </a>

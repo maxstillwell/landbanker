@@ -51,6 +51,7 @@ import { ShareWorkspace } from "./share-workspace";
 import { PropertyWorkspace } from "./property-workspace";
 import { PhotoPreview } from "./photo-preview";
 import { useViewport } from "@/lib/hooks/use-viewport";
+import type { MapChange } from "@/lib/map/change-feed";
 import { ShapeDraft } from "./shape-draft";
 import {
   drawingGeometry,
@@ -169,10 +170,155 @@ export default function MapWorkspace({
   const [selection, setSelection] = useState<MapSelection>(null);
   const selected =
     selection?.kind === "observation"
-      ? data.observations.find((o) => o.id === selection.record.id) ||
+      ? viewport.rows.observations.find((o) => o.id === selection.record.id) ||
+        data.observations.find((o) => o.id === selection.record.id) ||
         selection.record
       : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
+  const selectedPropertyId = selectedParcel?.id;
+  useEffect(() => {
+    function changed(event: Event) {
+      const detail = (
+        event as CustomEvent<{ scope: string; changes: MapChange[] }>
+      ).detail;
+      if (detail?.scope !== `${userId}:${workspaceId}`) return;
+      const changes = detail.changes.filter((c) => !c.viewport_only);
+      setData((current) => {
+        const merge = (rows: { id: string }[], kind: MapChange["kind"]) => {
+          const entries = new Map(rows.map((row) => [row.id, row]));
+          for (const c of changes.filter((c) => c.kind === kind)) {
+            if (c.operation === "delete") entries.delete(c.id);
+            else if (c.row) {
+              const row =
+                kind === "layers"
+                  ? {
+                      ...(c.row as SpatialLayer),
+                      geojson:
+                        (entries.get(c.id) as SpatialLayer | undefined)
+                          ?.geojson || null,
+                    }
+                  : (c.row as { id: string });
+              entries.set(c.id, row);
+            }
+          }
+          return [...entries.values()].slice(0, 1000);
+        };
+        const layers = (merge(current.layers, "layers") as SpatialLayer[]).map(
+          (layer) => {
+            if (!layer.geojson) return layer;
+            const features = new Map(
+              layer.geojson.features.map((f) => [String(f.id), f]),
+            );
+            for (const change of detail.changes.filter(
+              (c) => c.kind === "features",
+            )) {
+              const row = change.row as
+                { layer_id: string; feature: Feature } | undefined;
+              if (change.operation === "delete" && !change.viewport_only)
+                features.delete(change.id);
+              else if (row?.layer_id === layer.id)
+                features.set(change.id, row.feature);
+            }
+            return {
+              ...layer,
+              geojson: {
+                type: "FeatureCollection" as const,
+                features: [...features.values()],
+              },
+            };
+          },
+        );
+        return {
+          ...current,
+          parcels: merge(current.parcels, "parcels") as Parcel[],
+          observations: merge(
+            current.observations,
+            "observations",
+          ) as Observation[],
+          layers,
+        };
+      });
+      setSelection((current) => {
+        if (!current) return current;
+        if (current.kind === "official-parcel") return current;
+        const kind =
+          current.kind === "parcel"
+            ? "parcels"
+            : current.kind === "observation"
+              ? "observations"
+              : current.kind === "drawing"
+                ? "layers"
+                : null;
+        const change = changes.find(
+          (c) => c.kind === kind && c.id === current.record.id,
+        );
+        if (change?.operation === "delete") return null;
+        if (
+          current.kind === "drawing" &&
+          changes.some(
+            (c) =>
+              c.kind === "features" &&
+              c.id === current.featureId &&
+              c.operation === "delete",
+          )
+        )
+          return null;
+        if (current.kind === "parcel" && change?.row)
+          return { ...current, record: change.row as Parcel };
+        return current;
+      });
+    }
+    window.addEventListener("landos:map-data-changed", changed);
+    return () => window.removeEventListener("landos:map-data-changed", changed);
+  }, [userId, workspaceId]);
+  useEffect(() => {
+    if (!selectedPropertyId) return;
+    const controller = new AbortController();
+    fetch(`/api/properties/${selectedPropertyId}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Property unavailable");
+        return body.property as Parcel;
+      })
+      .then((property) => {
+        if (controller.signal.aborted) return;
+        setSelection((current) =>
+          current?.kind === "parcel" && current.record.id === selectedPropertyId
+            ? { kind: "parcel", record: property }
+            : current,
+        );
+        if (property.geometry && map.current) {
+          const bounds = L.geoJSON(property.geometry).getBounds();
+          if (bounds.isValid())
+            map.current.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 });
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setNotice(
+            "Property details temporarily unavailable. Saved data is unaffected.",
+          );
+      });
+    return () => controller.abort();
+  }, [selectedPropertyId, workspaceId, userId]);
+  useEffect(() => {
+    if (!map.current || !selectedParcel?.geometry) return;
+    const highlight = L.geoJSON(selectedParcel.geometry, {
+      interactive: false,
+      style: {
+        color: "#fff3b0",
+        weight: 4,
+        fillColor: "#bed86a",
+        fillOpacity: 0.18,
+      },
+    }).addTo(map.current);
+    return () => {
+      highlight.remove();
+    };
+  }, [selectedParcel?.geometry]);
   const officialParcel =
     selection?.kind === "official-parcel" ? selection.record : null;
   function setSelected(record: Observation | null) {
@@ -1830,8 +1976,6 @@ export default function MapWorkspace({
                         <PropertyWorkspace
                           key={selectedParcel.id}
                           parcel={selectedParcel}
-                          observations={data.observations}
-                          layers={renderedData.layers}
                           catalog={catalog}
                           active={activeLayers}
                           onObservation={(observation) => {

@@ -20,6 +20,7 @@ export type Parcel = {
   lot?: string | null;
   plan?: string | null;
   retrieved_at?: string | null;
+  centroid?: [number, number] | null;
 };
 export type Observation = {
   id: string;

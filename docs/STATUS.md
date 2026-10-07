@@ -59,3 +59,27 @@ Read STATUS/ARCHITECTURE/PRODUCT/ACCEPTANCE; implementation 27bfe5a is verified 
 2026-10-07 read-only homepage and both protected Land routes: HTTP200 with expected access redirects. This is endpoint health, not exhaustive legacy acceptance. No MaxQI schema/Auth/RLS/Storage/API/publishing/source changes, full import or cutover in Alpha 2.
 
 CI transport validation: deterministic local reset server confirms maxRetries=1 recovers exactly one ECONNRESET and never retries/hides HTTP500. The scale geometry regression still passes and retains 502 IDs. No application/database/iOS behavior change in this fix; CI pipefail retained and cookie/authorization output redacted.
+
+## Alpha 3 current checkpoint — P0–P3 implemented
+
+- P0: authenticated Property-specific official VIC/NSW planning intersection with true clipped area/coverage, multipart/holes, raw control values, provenance and distinct no-result/nonintersection/unavailable/failed/unsupported states. No-result is explicitly not proof of no restriction. Live public Ballarat/Dunoon source reads are documented separately from deterministic CI fixtures in PLANNING.md.
+- P1: FSR/Height official pages establish CC Attribution and Weekly metadata. Dictionary downloads HTTP403 and latest legend HTTP502 block special/missing-value interpretation; both catalog entries remain disabled with release_checklist/reasons. Existing ten sources remain enabled beta. No invented height units/FSR interpretation.
+- P2: saved Property full-boundary retrieval/persistent highlight, stable tiny-parcel centroid, Lot/Plan/source Overview and scoped paged Linked vs Nearby Field / Linked vs Spatially intersects Analysis / Saved View relations. Proximity never creates a relationship. Raw legacy metadata stays out of detail/map/relations payloads.
+- P3: transactional per-Workspace revision allocation and retained deletion tombstones, RLS/read-only change tables, stable-watermark paging and automatic visible-map polling/focus refresh. Real two-browser create/update/delete reconciliation passes without reload. Media deletion refreshes the parent Observation; it never removes a surviving parent. The update-only timestamp no-op case avoids whole-layer invalidation storms. See SYNC.md for caps/retention/throughput limits.
+- P4 foundation: reviewed staged Firewall JSON and SHARE_PERIMETER.md. Vercel active config GET and PUT both returned HTTP404 SeawallConfig not found; no rule applied. Current direct token-only Supabase RPC remains intentional, not gateway-protected. Distributed/direct-RPC acceptance is **open**, not launch-ready.
+
+### Alpha 3 verification
+
+Local PASS: lint/typecheck, 18 core + 9 planning/sync + 3 private-media unit tests, disposable PostgreSQL RLS including event forgery/tenant isolation/stable pages/media-parent invalidation, production build, all eleven browser/API/import workflows. After the final additive SQL fix, the targeted two-device/media-removal browser test also passed. Imports in tests are synthetic local source copies only; no new MaxQI import.
+
+500-record regression: 500 parcels, 500 observations, 502 Features, ten persisted active layers. Latest full-suite pan window: 21 viewport requests, 686,020 response bytes, ten-frame timing 755 ms; first-page bytes 68,584/45,761/48,773 and timings 166/99/124 ms. Complete-layer editing retained 502 IDs. Synthetic local results, not physical/network production acceptance. The scale test explicitly exercises bounded overview snapshots and lazy full-geometry detail, rather than the compatibility full-layer endpoint.
+
+Hosted additive migrations: catalog_release_review 20261007022214 (local 20261007021952), workspace_change_feed 20261007024059 (local 20261007022915), media_change_invalidation 20261007025256 (local 20261007030000). No existing migration was rewritten. Own-backend owner-positive/nonmember-negative/anon-denial rollback checks pass. There are now 16 exposed business/catalog/sync tables, all RLS-enabled. Advisors retain intentional share resolver/status anon/auth SECURITY DEFINER findings and leaked-password protection disabled; no new missing-RLS finding. No claim of concurrent-write throughput stress testing.
+
+Alpha 3 source publication/cloud CI/deployment: pending this checkpoint's commit. Hosted app remains Alpha 2 until a new deployment is READY. Earlier Alpha 2 status above is historical and does not imply Alpha 3 deployment or launch approval.
+
+### Known Alpha 3 limits / exact next step
+
+Verify cloud CI and Main/Preview after publishing this tested P0–P3 unit. Then implement and provision a server-only least-privilege share gateway/shared budgets, test staged deployment before revoking old anon/auth RPC grants, and resolve independent LandOS Firewall configuration access (404) without changing MaxQI. Continue provider health/observability and selection/search refinements; real iPhone/iPad matrix only when signing is available. Do not mark Alpha 3 exit criteria complete until distributed/multi-instance/direct-RPC acceptance passes. Do not prune sync tombstones without a reset contract; 500/category viewport caps and explicit snapshots remain bounded reconciliation paths. No full import/photo copy/cutover.
+
+MaxQI: no schema/Auth/RLS/Storage/API/publishing/site/data-source changes, no new source import or file copy in Alpha 3. All writes in this phase target only independent LandOS or disposable local fixtures.

@@ -15,3 +15,7 @@ Local production baseline: 500 parcels, 500 observations, 502 normalized user fe
 Future PostGIS option: additive geometry/geography columns and GiST, copy/backfill/validate, then ST_Intersects behind the existing contract. Preserve original GeoJSON and the box path until verified; do not alter MaxQI. Detailed hosted query plans and large dense geometry stress beyond the cap remain next work.
 
 Final integrated local interaction baseline: 21 viewport requests / 622,830 response bytes across pan, selection and editing; ten frames took 669 ms. Complete-layer edit retained all 502 feature IDs. The first-page measurements were 68,560/45,758/48,406 bytes at 171/120/176 ms. These measurements leave room for renderer and physical-device optimization; they are not a 60fps claim.
+
+## Alpha 3 regression checkpoint — 2026-10-07
+
+The bounded overview/lazy-full-geometry workflow with 500 parcels, 500 observations, 502 Features and ten persisted active official references passed. Full-suite pan window: 21 viewport requests, 686,020 bytes, ten-frame timing 755 ms. First-page bytes 68,584/45,761/48,773; timings 166/99/124 ms. Full-layer save retained 502 UUIDs. Automatic revision-based polling and two-browser create/update/delete reconciliation were separately verified; no physical-device or concurrent high-write throughput baseline is inferred. Planning government-source requests are on-demand per Property, bounded separately and not included in these viewport byte totals.

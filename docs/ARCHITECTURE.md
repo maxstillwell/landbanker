@@ -55,3 +55,7 @@ The existing account/Workspace-scoped IndexedDB abstraction is upgraded in place
 See PERFORMANCE.md for indexed envelope candidates, exact API intersection, bounded cursor/delta contract, normalized Feature loading, lazy full layers and short-lived signed-photo caching. Rendering uses viewport data; editing merges into a freshly read complete layer. Saved View creation derives resource IDs from rendered geometry, not paginated sidebar metadata.
 
 Device draft database version 3 retains existing drawing/layer stores and adds account/Workspace-scoped copy-link URLs. Server share scope remains authoritative, with no-write preview, reviewed-scope hash on create, frozen feature IDs and token-only status. SECURITY.md records the explicit distributed/direct-RPC limiting deployment work still required.
+
+## Alpha 3 Property intelligence
+
+Planning now uses Property-specific official spatial intersections rather than map-active layer names. `src/lib/planning` separates geometry, explicit provider adapters and the unified per-source result contract. The authenticated property route first checks Workspace RLS, then runs bounded official requests; the Inspector shows clipping coverage, provenance and independent source failure. See PLANNING.md. Catalog release status/checklist distinguish reviewed readiness from technical map availability; FSR/Height remain disabled for documented release gates.

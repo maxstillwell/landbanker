@@ -1,19 +1,17 @@
 "use client";
 import { useState } from "react";
-import type { Parcel, Observation, SpatialLayer } from "@/lib/types";
+import type { Parcel, Observation } from "@/lib/types";
 import type { CatalogLayer, ActiveLayer } from "@/lib/map/catalog-types";
+import { PropertyPlanningInspector } from "./property-planning";
+import { PropertyRelations } from "./property-relations";
 export function PropertyWorkspace({
   parcel,
-  observations,
-  layers,
   catalog,
   active,
   onObservation,
   onAddField,
 }: {
   parcel: Parcel;
-  observations: Observation[];
-  layers: SpatialLayer[];
   catalog: CatalogLayer[];
   active: ActiveLayer[];
   onObservation: (observation: Observation) => void;
@@ -24,12 +22,6 @@ export function PropertyWorkspace({
     .filter((a) => a.visible)
     .map((a) => catalog.find((l) => l.id === a.catalog_id))
     .filter((l): l is CatalogLayer => Boolean(l && l.state === parcel.state));
-  const field = observations.filter((o) => o.linked_parcel_id === parcel.id);
-  const analysis = layers.flatMap((l) =>
-    (l.geojson?.features || [])
-      .filter((f) => f.properties?.parcel_id === parcel.id)
-      .map((f) => ({ layer: l.name, feature: f })),
-  );
   return (
     <div className="property-workspace">
       <nav className="property-sections" aria-label="Property sections">
@@ -46,28 +38,43 @@ export function PropertyWorkspace({
         )}
       </nav>
       {section === "Overview" ? (
-        <p>
-          {parcel.notes ||
-            "Property overview and official provenance are shown above."}
-        </p>
+        <div>
+          <dl>
+            <dt>Address</dt>
+            <dd>{parcel.address || parcel.title}</dd>
+            <dt>State</dt>
+            <dd>{parcel.state || "Not supplied"}</dd>
+            <dt>Official parcel ID</dt>
+            <dd>{parcel.source_parcel_id || "Not supplied"}</dd>
+            <dt>Lot / Plan</dt>
+            <dd>
+              {[parcel.lot, parcel.plan].filter(Boolean).join(" / ") ||
+                "Not supplied"}
+            </dd>
+            <dt>Centroid (longitude, latitude)</dt>
+            <dd>
+              {parcel.centroid?.map((v) => v.toFixed(6)).join(", ") ||
+                "Boundary centroid unavailable"}
+            </dd>
+            <dt>Saved</dt>
+            <dd>
+              {parcel.saved_at
+                ? new Date(parcel.saved_at).toLocaleDateString()
+                : "Not supplied"}
+            </dd>
+            <dt>Source</dt>
+            <dd>{parcel.source || "Not supplied"}</dd>
+          </dl>
+          <small>
+            Geometric centroid may lie outside a concave property; it is
+            separate from GPS/Field position. Geometry parts are not assumed to
+            be separate cadastral lots.
+          </small>
+          {parcel.notes ? <p>{parcel.notes}</p> : null}
+        </div>
       ) : null}
       {section === "Planning" ? (
-        <div>
-          <p>Property-specific planning controls have not been queried yet.</p>
-          <ul>
-            {references
-              .filter((l) => l.category.toLowerCase() === "planning")
-              .map((l) => (
-                <li key={l.id}>
-                  {l.name} · {l.provider}
-                </li>
-              ))}
-          </ul>
-          <small>
-            Active planning reference layers for {parcel.state || "this state"};
-            coverage is described in the Layer Library.
-          </small>
-        </div>
+        <PropertyPlanningInspector propertyId={parcel.id} />
       ) : null}
       {section === "Layers" ? (
         <div>
@@ -84,40 +91,14 @@ export function PropertyWorkspace({
           ) : null}
         </div>
       ) : null}
-      {section === "Field" ? (
-        <div>
-          <small>Linked observations in loaded Workspace records</small>
-          {field.map((o) => (
-            <button
-              key={o.id}
-              className="record-row"
-              onClick={() => onObservation(o)}
-            >
-              {o.title} · {o.field_observation_media.length} photos
-            </button>
-          ))}
-          {!field.length ? (
-            <p>No linked observations in the loaded records.</p>
-          ) : null}
-          {onAddField ? (
-            <button onClick={onAddField}>Add property observation</button>
-          ) : null}
-        </div>
-      ) : null}
-      {section === "My Analysis" ? (
-        <div>
-          {analysis.map(({ layer, feature }) => (
-            <p key={String(feature.id)}>
-              {String(feature.properties?.name || "Shape")} · {layer}
-            </p>
-          ))}
-          {!analysis.length ? (
-            <p>
-              No property-linked analysis in the loaded records. Workspace
-              drawings and Saved Views remain available in Layers.
-            </p>
-          ) : null}
-        </div>
+      {section === "Field" || section === "My Analysis" ? (
+        <PropertyRelations
+          key={section}
+          propertyId={parcel.id}
+          section={section}
+          onObservation={onObservation}
+          onAddField={onAddField}
+        />
       ) : null}
     </div>
   );

@@ -15,6 +15,8 @@ export type CatalogLayer = {
   premium_tier: "free" | "pro" | "team";
   min_zoom: number;
   enabled: boolean;
+  release_status?: "verified" | "beta" | "disabled" | "deprecated";
+  release_checklist?: Record<string, unknown>;
 };
 export type ActiveLayer = {
   catalog_id: string;

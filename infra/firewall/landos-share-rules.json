@@ -1,0 +1,116 @@
+{
+  "firewallEnabled": true,
+  "rules": [
+    {
+      "id": "rule_landos_share_preview_budget",
+      "name": "LandOS shared views preview budget",
+      "active": true,
+      "description": "Alpha 3 preview-only distributed per-region IP budget; 600 GETs per minute",
+      "conditionGroup": [
+        {
+          "conditions": [
+            {
+              "type": "path",
+              "op": "pre",
+              "value": "/share/"
+            },
+            {
+              "type": "method",
+              "op": "eq",
+              "value": "GET"
+            },
+            {
+              "type": "environment",
+              "op": "eq",
+              "value": "preview"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "type": "path",
+              "op": "pre",
+              "value": "/api/published/"
+            },
+            {
+              "type": "method",
+              "op": "eq",
+              "value": "GET"
+            },
+            {
+              "type": "environment",
+              "op": "eq",
+              "value": "preview"
+            }
+          ]
+        }
+      ],
+      "action": {
+        "mitigate": {
+          "action": "rate_limit",
+          "rateLimit": {
+            "algo": "fixed_window",
+            "window": 60,
+            "limit": 600,
+            "keys": [
+              "ip"
+            ],
+            "action": "rate_limit"
+          }
+        }
+      }
+    },
+    {
+      "id": "rule_landos_share_production_monitor",
+      "name": "LandOS shared views production monitor",
+      "active": true,
+      "description": "Observe only; preserve production behavior before traffic review",
+      "conditionGroup": [
+        {
+          "conditions": [
+            {
+              "type": "path",
+              "op": "pre",
+              "value": "/share/"
+            },
+            {
+              "type": "method",
+              "op": "eq",
+              "value": "GET"
+            },
+            {
+              "type": "environment",
+              "op": "eq",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "type": "path",
+              "op": "pre",
+              "value": "/api/published/"
+            },
+            {
+              "type": "method",
+              "op": "eq",
+              "value": "GET"
+            },
+            {
+              "type": "environment",
+              "op": "eq",
+              "value": "production"
+            }
+          ]
+        }
+      ],
+      "action": {
+        "mitigate": {
+          "action": "log"
+        }
+      }
+    }
+  ]
+}

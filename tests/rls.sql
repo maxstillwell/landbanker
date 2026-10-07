@@ -91,5 +91,39 @@ do $$declare blocked boolean:=false;begin
  if public.landos_share_status(repeat('Q',43))<>'unavailable' or public.landos_share_status(repeat('Z',43))<>'unavailable' then raise exception 'revoked/unknown status';end if;
 end$$;
 reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+do $$declare w uuid:=current_setting('test.alice')::uuid; start_revision bigint; first jsonb; second jsonb; watermark bigint; blocked boolean:=false;begin
+ start_revision:=(public.landos_workspace_changes(w)->>'cursor')::bigint;
+ insert into public.land_parcels(id,workspace_id,title) values('abababab-abab-4bab-8bab-abababababab',w,'Sync create');
+ update public.land_parcels set title='Sync update' where id='abababab-abab-4bab-8bab-abababababab';
+ delete from public.land_parcels where id='abababab-abab-4bab-8bab-abababababab';
+ first:=public.landos_workspace_changes(w,start_revision,null,2);watermark:=(first->>'watermark')::bigint;
+ if jsonb_array_length(first->'events')<>2 or not (first->>'has_more')::boolean then raise exception 'sync stable page';end if;
+ second:=public.landos_workspace_changes(w,(first->>'cursor')::bigint,watermark,2);
+ if jsonb_array_length(second->'events')<>1 or second->'events'->0->>'operation'<>'delete' or (second->>'has_more')::boolean then raise exception 'sync deletion or watermark';end if;
+ begin insert into public.workspace_changes(workspace_id,revision,kind,object_id,operation) values(w,999,'parcels','abababab-abab-4bab-8bab-abababababab','delete');exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'client can forge change log';end if;
+end$$;
+do $$declare w uuid:=current_setting('test.alice')::uuid; o uuid; m uuid; head bigint; changes jsonb;begin
+ select id into o from public.field_observations where workspace_id=w limit 1;
+ insert into public.field_observation_media(workspace_id,observation_id,mime_type,original_filename,size_bytes,upload_status) values(w,o,'image/jpeg','synthetic.jpg',1,'pending') returning id into m;
+ head:=(public.landos_workspace_changes(w)->>'cursor')::bigint;
+ delete from public.field_observation_media where id=m;
+ changes:=public.landos_workspace_changes(w,head);
+ if changes->'events'->0->>'kind'<>'observations' or changes->'events'->0->>'id'<>o::text or changes->'events'->0->>'operation'<>'upsert' then raise exception 'media deletion removed parent';end if;
+ if not exists(select 1 from public.field_observations where id=o) then raise exception 'parent lost';end if;
+end$$;
+select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
+do $$declare blocked boolean:=false;begin
+ begin perform public.landos_workspace_changes(current_setting('test.alice')::uuid);exception when raise_exception then if sqlerrm='Workspace access denied' then blocked:=true;else raise;end if;end;
+ if not blocked or exists(select 1 from public.workspace_changes where workspace_id=current_setting('test.alice')::uuid) then raise exception 'nonmember change leak';end if;
+end$$;
+set local role anon;
+do $$declare blocked boolean:=false;begin
+ begin perform public.landos_workspace_changes(current_setting('test.alice')::uuid);exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'anon change feed execution';end if;
+end$$;
+reset role;
 select 'RLS signup, isolation, viewer, suspended, anonymous, FK, storage escalation, immutable workspace/share scope and revoke tests passed' as result;
 rollback;
