@@ -32,3 +32,5 @@ Share Link manifest is additive JSONB; original table/IDs/history stay stable. S
 
 
 Alpha 2 parcel identity remains the stable UUID derived from Workspace + state + authoritative PFI (VIC) / CADID (NSW). Lot/plan and address formatting changes do not create another saved copy. Repeat saves leave existing user edits intact. Owner/admin removal is Workspace/RLS scoped and FK-linked records block removal; no cascading observation deletion. Active-layer reorder writes all existing scoped preferences in one PostgREST bulk upsert.
+
+Alpha 3 Saved View pre-save preview checks resources through normal membership RLS and counts all normalized Features in selected user layers, including off-screen. It performs no writes. A personal View stores live layer references/centre/zoom, not a frozen public projection or copied private observations/media/notes. The existing share creation path freezes explicit Feature IDs separately and excludes private content. The existing 100-parcel/100-user-layer/30-official-setting limits remain; no schema change is needed for preview.

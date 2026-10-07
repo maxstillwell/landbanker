@@ -10,7 +10,7 @@ Updated 2026-10-07 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACC
 - P2: full saved boundary highlight/retrieval, stable tiny-parcel centroid/Lot/Plan/source Overview, paged scoped Linked vs Nearby Field, Linked vs Spatially intersects Analysis and related Views. Proximity never creates a relationship. Lean payloads exclude raw legacy metadata.
 - P3: commit-ordered per-Workspace revision feed/tombstones, membership RLS/client event-write denial, fixed-watermark pages and visible-map automatic create/update/delete reconciliation. Two-browser real API/UI tests pass without reload. Media deletion upsert-invalidates the parent rather than deleting it from the map. See SYNC.md for limits.
 - P5 refinement: eight most recent successful queries persist only in scoped account/Workspace device storage, with replay and Clear. Multi-parcel results remain separate user choices and display state/Lot/Plan/available area/source. Refresh persistence/account isolation tests pass; no CRM/history server table.
-- P6 refinement: public branding LandOS / Shared land view, unchanged private observation/note/media exclusions and frozen share scope. Saved View pre-save preview remains next.
+- P6 refinement: public branding LandOS / Shared land view, unchanged private observation/note/media exclusions and frozen share scope. Saved View pre-save scope preview is implemented and being verified: no-write/cancel/confirm, exact selected-layer Feature count including off-screen and explicit private-content exclusions. Personal View references and frozen public shares remain distinct.
 - P7 foundation: fixed-schema official Planning/parcel/address health log events and bounded instance diagnostics; status/last success/failure/latency without geometry/address/user IDs/photo URLs/tokens. API failure logs avoid arbitrary exception text. See OBSERVABILITY.md; this is not a complete frontend/upload/error tracking service.
 
 ## In progress / external blockers
@@ -22,13 +22,13 @@ Updated 2026-10-07 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACC
 
 Published core Alpha 3 implementation **4018303066207ea4370572c4837e6ebfa6523101**: Main cloud run [37564284712](https://github.com/maxstillwell/landbanker/actions/runs/37564284712) and Preview [37564333302](https://github.com/maxstillwell/landbanker/actions/runs/37564333302) SUCCESS, Web and all four unsigned iPhone/iPad Debug/Release jobs passed.
 
-Current P5/P6-brand/P7 refinement unit: local lint/typecheck, 19 core + 10 Planning/sync/health + 3 private-media unit tests, production build and all eleven browser/API/import workflows PASS. Disposable PostgreSQL RLS including sync/media-parent/tenant/forgery tests already passed; no DB change in refinements. This unit's cloud publication/CI/deployment is pending commit, not yet claimed hosted.
+Published refinement **c8fbbaa332c3bb9905226ff56d3ac4b2afee0a35**, Main cloud run [37575928299](https://github.com/maxstillwell/landbanker/actions/runs/37575928299) SUCCESS (Web plus four simulator jobs); Main/Preview deployments READY, Preview cloud run 37576064917 SUCCESS (Web plus four simulator jobs). Local lint/typecheck, 19 core + 10 Planning/sync/health + 3 private-media unit tests, production build and all eleven browser/API/import workflows PASS. Disposable PostgreSQL RLS including sync/media-parent/tenant/forgery tests already passed; no DB change in refinements. The subsequent Saved View preview unit passes lint/typecheck/build; its targeted owner/foreign-Workspace/anon/no-write/cancel/save and existing share/revoke/expiry browser workflow PASSED before publication.
 
 Latest final local scale window: 500 parcels, 500 observations, 502 Features, ten active references; 23 viewport requests, 493,865 response bytes, ten-frame timing 382 ms. First-page bytes 68,610/45,709/48,793, timings 157/112/113 ms. Complete-layer edits retain all 502 IDs. Synthetic local baseline only, not production/physical acceptance. Two-device sync tested separately; no high-write concurrent transaction throughput stress claim.
 
 ## Deployment
 
-Main https://landbanker.vercel.app and Preview https://landbanker-git-preview-maxstillwells-projects.vercel.app core 4018303 READY. Main dpl_EkPEGKfv7iRBVuQf5iviK3Qt7Le8; Preview dpl_9RjaD6f4ub3f1mkRjRGy8mag7oPP. Main login HTTP200. New refinement health endpoint not deployed yet (404 at core checkpoint). Configured domains/credentials remain independent/environment-based; API publication preserves exact hashes and refuses concurrent/force overwrites. Repo maxstillwell/landbanker source/docs public publication authorized; no secrets/photos/private exports committed. Current agent:agent ownership retained.
+Main https://landbanker.vercel.app and Preview https://landbanker-git-preview-maxstillwells-projects.vercel.app refinement c8fbbaa READY. Main dpl_B9tY9sU4hBYDxvZPv5vCAGo2B6MM; Preview dpl_EQveV7DPzV9NFHuCwXMAc9UbSEHH. Main login HTTP200. Provider health endpoint is deployed with refinement c8fbbaa; hosted auth-negative smoke check is pending. Configured domains/credentials remain independent/environment-based; API publication preserves exact hashes and refuses concurrent/force overwrites. Repo maxstillwell/landbanker source/docs public publication authorized; no secrets/photos/private exports committed. Current agent:agent ownership retained.
 
 ## Database status
 
@@ -44,7 +44,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-Publish and verify this tested refinement unit. Then implement a clear Saved View pre-save scope preview (viewport/parcels/layers/features/private exclusions) without conflating personal View references with frozen public sharing. Resolve own LandOS Firewall configuration access or supported distributed integration; provision a least-privilege server gateway and test before revoking old share RPC grants. Continue safe map identify/search refinements, operational error coverage and signed device acceptance when available. Do not claim Alpha 3 exit complete until distributed/multi-instance/direct-RPC acceptance passes.
+Finish/publish the Saved View preview regression and verify its cloud CI/deployment. Continue shared perimeter configuration with no MaxQI changes. Resolve own LandOS Firewall configuration access or supported distributed integration; provision a least-privilege server gateway and test before revoking old share RPC grants. Continue safe map identify/search refinements, operational error coverage and signed device acceptance when available. Do not claim Alpha 3 exit complete until distributed/multi-instance/direct-RPC acceptance passes.
 
 ## MaxQI safety / migration
 

@@ -48,6 +48,8 @@ import {
 } from "@/lib/map/drawing-edit";
 import { useDrawingSession } from "@/lib/hooks/use-drawing-session";
 import { ShareWorkspace } from "./share-workspace";
+import { SavedViewPreview } from "./saved-view-preview";
+import type { SavedViewInput } from "@/lib/map/view-input";
 import { PropertyWorkspace } from "./property-workspace";
 import { PhotoPreview } from "./photo-preview";
 import { useViewport } from "@/lib/hooks/use-viewport";
@@ -115,6 +117,11 @@ export default function MapWorkspace({
     useState<Set<string> | null>(null);
   const [catalog, setCatalog] = useState<CatalogLayer[]>([]);
   const [activeLayers, setActiveLayers] = useState<ActiveLayer[]>([]);
+  const [pendingView, setPendingView] = useState<{
+    scope: string;
+    id: string;
+    view: SavedViewInput["view"];
+  } | null>(null);
   const loadedPages = useRef(1);
   const requestGeneration = useRef(0);
   const [hasMore, setHasMore] = useState(false);
@@ -2438,74 +2445,77 @@ export default function MapWorkspace({
                   views={data.savedViews}
                 />
               ) : null}
+              {pendingView?.scope === `${userId}:${workspaceId}` ? (
+                <SavedViewPreview
+                  key={pendingView.id}
+                  view={pendingView.view}
+                  onCancel={() => setPendingView(null)}
+                  onSave={async (name) => {
+                    await apiRequest("/api/views", {
+                      id: pendingView.id,
+                      name,
+                      view: pendingView.view,
+                    });
+                    await reload();
+                    setPendingView(null);
+                    setNotice("Map View saved to Workspace.");
+                  }}
+                />
+              ) : null}
               {canWrite ? (
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     const m = map.current;
                     if (!m) return;
-                    const name = prompt("Name this map view");
-                    if (!name) return;
-                    try {
-                      await apiRequest("/api/views", {
-                        id: crypto.randomUUID(),
-                        name,
-                        view: {
-                          latitude: m.getCenter().lat,
-                          longitude: m.getCenter().lng,
-                          zoom: m.getZoom(),
-                          parcel_ids: renderedData.parcels
-                            .filter((p) => {
-                              if (
-                                visibleParcelIds &&
-                                !visibleParcelIds.has(p.id)
-                              )
-                                return false;
-                              if (p.geometry) {
-                                try {
-                                  return m
-                                    .getBounds()
-                                    .intersects(
-                                      L.geoJSON(p.geometry).getBounds(),
-                                    );
-                                } catch {
-                                  return false;
-                                }
-                              }
-                              return (
-                                p.latitude != null &&
-                                p.longitude != null &&
-                                m
-                                  .getBounds()
-                                  .contains([p.latitude, p.longitude])
-                              );
-                            })
-                            .map((p) => p.id),
-                          layer_ids: renderedData.layers
-                            .filter((l) => {
-                              if (
-                                visibleUserLayerIds &&
-                                !visibleUserLayerIds.has(l.id)
-                              )
-                                return false;
-                              if (!l.geojson) return false;
+                    setPendingView({
+                      scope: `${userId}:${workspaceId}`,
+                      id: crypto.randomUUID(),
+                      view: {
+                        latitude: m.getCenter().lat,
+                        longitude: m.getCenter().lng,
+                        zoom: m.getZoom(),
+                        parcel_ids: renderedData.parcels
+                          .filter((p) => {
+                            if (visibleParcelIds && !visibleParcelIds.has(p.id))
+                              return false;
+                            if (p.geometry) {
                               try {
                                 return m
                                   .getBounds()
-                                  .intersects(L.geoJSON(l.geojson).getBounds());
+                                  .intersects(
+                                    L.geoJSON(p.geometry).getBounds(),
+                                  );
                               } catch {
                                 return false;
                               }
-                            })
-                            .map((l) => l.id),
-                          official_layers: activeLayers,
-                        },
-                      });
-                      await reload();
-                    } catch (e) {
-                      setNotice(
-                        e instanceof Error ? e.message : "Unable to save view",
-                      );
-                    }
+                            }
+                            return (
+                              p.latitude != null &&
+                              p.longitude != null &&
+                              m.getBounds().contains([p.latitude, p.longitude])
+                            );
+                          })
+                          .map((p) => p.id),
+                        layer_ids: renderedData.layers
+                          .filter((l) => {
+                            if (
+                              visibleUserLayerIds &&
+                              !visibleUserLayerIds.has(l.id)
+                            )
+                              return false;
+                            if (!l.geojson) return false;
+                            try {
+                              return m
+                                .getBounds()
+                                .intersects(L.geoJSON(l.geojson).getBounds());
+                            } catch {
+                              return false;
+                            }
+                          })
+                          .map((l) => l.id),
+                        official_layers: activeLayers,
+                      },
+                    });
                   }}
                 >
                   Save current map view

@@ -52,21 +52,19 @@ assert.ifError(
 );
 assert.ifError(
   (
-    await client
-      .from("saved_views")
-      .insert({
-        id: viewId,
-        workspace_id: workspaceId,
-        name: "Alpha 2 review",
-        view: {
-          latitude: -33,
-          longitude: 151,
-          zoom: 14,
-          parcel_ids: [],
-          layer_ids: [layerId],
-          official_layers: [],
-        },
-      })
+    await client.from("saved_views").insert({
+      id: viewId,
+      workspace_id: workspaceId,
+      name: "Alpha 2 review",
+      view: {
+        latitude: -33,
+        longitude: 151,
+        zoom: 14,
+        parcel_ids: [],
+        layer_ids: [layerId],
+        official_layers: [],
+      },
+    })
   ).error,
 );
 const browser = await chromium.launch({
@@ -86,6 +84,98 @@ try {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("**/app/map");
   await page.getByRole("button", { name: "layers", exact: true }).click();
+  const viewScope = {
+    latitude: -33,
+    longitude: 151,
+    zoom: 14,
+    parcel_ids: [],
+    layer_ids: [layerId],
+    official_layers: [],
+  };
+  const scopeResponse = await page.request.post(origin + "/api/views/preview", {
+    headers: { Origin: origin },
+    data: { view: viewScope },
+  });
+  assert.equal(scopeResponse.status(), 200);
+  const scope = await scopeResponse.json();
+  assert.equal(scope.features, 1);
+  assert.equal(scope.user_layers, 1);
+  assert.equal(scope.private_observations, "not_copied");
+  assert(!JSON.stringify(scope).includes("PRIVATE"));
+  const foreign = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    { auth: { persistSession: false } },
+  );
+  assert.ifError(
+    (
+      await foreign.auth.signUp({
+        email: `foreign-view-${Date.now()}@landbanker.test`,
+        password,
+      })
+    ).error,
+  );
+  const foreignMembership = await foreign
+    .from("workspace_memberships")
+    .select("workspace_id")
+    .single();
+  assert.ifError(foreignMembership.error);
+  const foreignLayer = crypto.randomUUID();
+  assert.ifError(
+    (
+      await foreign.rpc("save_layer_features", {
+        p_workspace: foreignMembership.data.workspace_id,
+        p_id: foreignLayer,
+        p_name: "Private other-tenant layer",
+        p_geojson: {
+          type: "FeatureCollection",
+          features: [{ ...feature, id: crypto.randomUUID() }],
+        },
+      })
+    ).error,
+  );
+  const deniedPreview = await page.request.post(origin + "/api/views/preview", {
+    headers: { Origin: origin },
+    data: { view: { ...viewScope, layer_ids: [foreignLayer] } },
+  });
+  assert.equal(deniedPreview.status(), 400);
+  assert(!Object.hasOwn(await deniedPreview.json(), "features"));
+  await page
+    .getByRole("button", { name: "Save current map view", exact: true })
+    .click();
+  const review = page.getByRole("region", { name: "Saved View preview" });
+  await expect(review).toContainText(
+    "Private observations, notes and photos are not copied",
+  );
+  await expect(review).toContainText("off-screen");
+  assert.equal(
+    (await client.from("saved_views").select("id")).data.length,
+    1,
+    "preview must not write a View",
+  );
+  await review
+    .getByRole("button", { name: "Cancel view preview", exact: true })
+    .click();
+  await expect(review).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Save current map view", exact: true })
+    .click();
+  await page
+    .getByLabel("View name", { exact: true })
+    .fill("Reviewed private map");
+  await page
+    .getByRole("button", { name: "Save reviewed view", exact: true })
+    .click();
+  await page
+    .getByText("Map View saved to Workspace.", { exact: true })
+    .waitFor();
+  await expect(
+    page.getByRole("button", { name: "Reviewed private map", exact: true }),
+  ).toBeVisible();
+  assert.equal((await client.from("saved_views").select("id")).data.length, 2);
+  await page
+    .getByLabel("Saved View to share")
+    .selectOption(viewId);
   await page.getByRole("button", { name: "Share view", exact: true }).click();
   await page.getByText("This link will include:", { exact: true }).waitFor();
   await expect(page.locator(".share-scope")).toContainText(
@@ -142,6 +232,15 @@ try {
   assert(!JSON.stringify(links).includes("token_hash"));
   const publicContext = await browser.newContext(),
     visitor = await publicContext.newPage();
+  assert.equal(
+    (
+      await visitor.request.post(origin + "/api/views/preview", {
+        headers: { Origin: origin },
+        data: { view: viewScope },
+      })
+    ).status(),
+    400,
+  );
   const projection = await visitor.request.get(
     `${origin}/api/published/${token}`,
   );
@@ -165,17 +264,15 @@ try {
   const expiredToken = randomBytes(32).toString("base64url");
   assert.ifError(
     (
-      await admin
-        .from("share_links")
-        .insert({
-          workspace_id: workspaceId,
-          created_by: signup.data.user.id,
-          token_hash: createHash("sha256").update(expiredToken).digest("hex"),
-          resource_type: "saved_view",
-          resource_ids: [viewId],
-          expires_at: new Date(Date.now() - 86400000).toISOString(),
-          manifest: { name: "SECRET WORKSPACE METADATA" },
-        })
+      await admin.from("share_links").insert({
+        workspace_id: workspaceId,
+        created_by: signup.data.user.id,
+        token_hash: createHash("sha256").update(expiredToken).digest("hex"),
+        resource_type: "saved_view",
+        resource_ids: [viewId],
+        expires_at: new Date(Date.now() - 86400000).toISOString(),
+        manifest: { name: "SECRET WORKSPACE METADATA" },
+      })
     ).error,
   );
   const expired = await visitor.request.get(
@@ -204,7 +301,7 @@ try {
   assert(rateLimited, "same-instance public endpoint rate budget enforced");
   await publicContext.close();
   console.log(
-    "PASS: explicit/fresh share scope, no preview writes, scope-change rejection, device URL persistence, manager list without tokens, private exclusions, immediate revoke, expiry without metadata, bounded public rate limiting.",
+    "PASS: Saved View scope counts/no-write/cancel/save and owner/foreign/anon guards; explicit/fresh share scope, no preview writes, scope-change rejection, device URL persistence, manager list without tokens, private exclusions, immediate revoke, expiry without metadata, bounded public rate limiting.",
   );
 } finally {
   await browser.close();

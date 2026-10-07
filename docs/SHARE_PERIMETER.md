@@ -6,7 +6,7 @@ The app's process-local limiter is not distributed protection. Public share toke
 
 `infra/firewall/landos-share-rules.json` is a review artifact, not an applied configuration. It covers only GET `/share/*` and `/api/published/*` in the independent LandOS project: Preview has a 600-request/IP/60-second distributed platform budget; Production has observation-only logging. Confirm plan limits, actual global/regional enforcement and traffic before promoting any blocking Production rule. A high shared-IP budget avoids accidental field-team lockout during staging.
 
-On 2026-10-07, both reading active configuration and submitting this configuration for project prj_afzfCidHE83CGne0ILQBJPKdBBi6 returned HTTP404 `SeawallConfig not found`. No firewall rule was applied. The connected account needs a usable Firewall configuration/plan/permission through the Vercel dashboard or an authorized integration. This is not an automatic approval rejection. Preserve and merge existing rules after a successful read; never blindly overwrite unrelated project rules. MaxQI projects and domains are excluded.
+On 2026-10-07, reading active/draft configuration and submitting this configuration for project prj_afzfCidHE83CGne0ILQBJPKdBBi6 returned HTTP404 `Seawall Config not found`. No firewall rule was applied. The connected account needs a usable Firewall configuration/plan/permission through the Vercel dashboard or an authorized integration. This is not an automatic approval rejection. Preserve and merge existing rules after a successful read; never blindly overwrite unrelated project rules. MaxQI projects and domains are excluded.
 
 ## Direct Supabase RPC perimeter — still pending
 
