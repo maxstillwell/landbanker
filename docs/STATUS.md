@@ -17,11 +17,11 @@ Updated: 2026-10-07 UTC. Resume with STATUS.md, ARCHITECTURE.md, PRODUCT.md and 
 
 ## In progress
 
-Alpha 2 source b08cfb4 is published and Main/Preview READY. Cloud run 37552017543: all four iOS jobs passed; Web hit a loopback socket reset at the scale test final read. A bounded read-only ECONNRESET retry and redacted server diagnostics are prepared; rerun cloud validation. Software hardening is locally verified; physical and distributed-public-perimeter acceptance is not complete. Further official sources and transactional change-feed reconciliation remain next work.
+Alpha 2 implementation **27bfe5ada32aed23e0a13c624d6a63c883d4037e** is published; Main and Preview READY. Cloud run **37552658585** completed successfully: Web and all four iPhone/iPad Debug/Release jobs passed. Software hardening is verified locally and in cloud CI; physical and distributed-public-perimeter acceptance is not complete. Further official sources and transactional change-feed reconciliation remain next work.
 
 ## Build status
 
-P0/P1 implementation **492ff40**, cloud run **37548356471**: Web + all four unsigned iPhone/iPad Debug/Release jobs PASSED. b08cfb4 source deployed READY. Web CI transport fix is being published; do not report cloud Web PASS until the new run passes.
+Alpha 2 implementation **27bfe5a**, cloud run [37552658585](https://github.com/maxstillwell/landbanker/actions/runs/37552658585): Web lint/typecheck/unit/DB/build/browser workflows and all four unsigned iPhone/iPad Debug/Release jobs PASSED. Previous Preview implementation b08cfb4 also passed run 37552131375; the Main-only read socket reset is handled by one bounded ECONNRESET retry, verified with a deterministic reset server; HTTP errors are never retried.
 Local latest: lint/types, 18 core + 3 private-media cache unit tests, disposable PostgreSQL RLS including viewport/expiry, Next production build and all nine integrated browser/import regressions PASSED. Tests are isolated local Auth/Postgres/Storage with synthetic users. Physical device results are not inferred from simulations.
 Scale acceptance: 500 parcels, 500 observations, 502 user Features, ten active official references. Pan/selection/edit window 21 viewport requests, 622,830 response bytes; ten browser frames 669 ms. Full-layer edit retained all 502 identities. First-page bytes 68,560/45,758/48,406 and timings 171/120/176 ms. Synthetic local baseline only; see PERFORMANCE.md.
 
@@ -29,7 +29,7 @@ Scale acceptance: 500 parcels, 500 observations, 502 user Features, ten active o
 
 Main: https://landbanker.vercel.app
 Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app (may require Vercel access).
-Main/Preview source b08cfb4 READY; anonymous hosted login/unknown-share status checks pass, recent new-deployment error/fatal log count is empty. Cloud Web transport fix publication is pending. URLs/credentials remain environment configured. API publication fallback preserves commit/tree hashes, rejects concurrent changes and never force-pushes. No MaxQI deployment/domain changes.
+Main/Preview implementation 27bfe5a READY (Main dpl_8jHgNV58xXduhpXdYVC8DSau5B44; Preview dpl_Bghu6KC5H4c4Rw512nAHXfKLirj9). Hosted login HTTP200/LandOS branding and unknown-share HTTP404/no-store checks pass. Previous b08cfb4 deployment runtime error/fatal count was empty at review; this is limited traffic evidence, not exhaustive monitoring. URLs/credentials remain environment configured. API publication fallback preserves commit/tree hashes, rejects concurrent changes and never force-pushes. No MaxQI deployment/domain changes.
 
 ## Database status
 
@@ -52,7 +52,7 @@ Apple Developer/team/signing/App Store Connect agreement needed for signed devic
 
 ## Next / exact resume step
 
-Check published Alpha 2 commit Web + four iOS CI jobs and both Vercel deployments, fix any actual regression. Then finish authoritative NSW FSR/Height usage/coverage review and enable through an additive catalog migration, improve viewport UI deltas with deletion reconciliation and query-plan baselines, complete distributed Web/direct-RPC abuse controls, refine Property planning/relations. Execute ACCEPTANCE device matrix when signing becomes available. No full MaxQI import or production cutover.
+Read STATUS/ARCHITECTURE/PRODUCT/ACCEPTANCE; implementation 27bfe5a is verified by cloud run 37552658585 and both deployments. Next finish authoritative NSW FSR/Height usage/coverage review (do not enable before review), then add through an own-backend additive catalog migration. Improve viewport UI deltas with deletion reconciliation and query-plan baselines; complete distributed Web/direct-RPC abuse controls and multi-instance tests; refine Property planning/relations. Execute ACCEPTANCE device matrix when signing becomes available. No full MaxQI import or production cutover.
 
 ## MaxQI safety verification
 
