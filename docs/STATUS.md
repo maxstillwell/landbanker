@@ -17,11 +17,11 @@ Updated: 2026-10-07 UTC. Resume with STATUS.md, ARCHITECTURE.md, PRODUCT.md and 
 
 ## In progress
 
-Final Alpha 2 checkpoint publication and cloud CI/deployment validation. Software hardening is locally verified; physical and distributed-public-perimeter acceptance is not complete. Further official sources and transactional change-feed reconciliation remain next work.
+Alpha 2 source b08cfb4 is published and Main/Preview READY. Cloud run 37552017543: all four iOS jobs passed; Web hit a loopback socket reset at the scale test final read. A bounded read-only ECONNRESET retry and redacted server diagnostics are prepared; rerun cloud validation. Software hardening is locally verified; physical and distributed-public-perimeter acceptance is not complete. Further official sources and transactional change-feed reconciliation remain next work.
 
 ## Build status
 
-P0/P1 implementation **492ff40**, cloud run **37548356471**: Web + all four unsigned iPhone/iPad Debug/Release jobs PASSED. Latest full Alpha 2 source is awaiting publication/cloud validation.
+P0/P1 implementation **492ff40**, cloud run **37548356471**: Web + all four unsigned iPhone/iPad Debug/Release jobs PASSED. b08cfb4 source deployed READY. Web CI transport fix is being published; do not report cloud Web PASS until the new run passes.
 Local latest: lint/types, 18 core + 3 private-media cache unit tests, disposable PostgreSQL RLS including viewport/expiry, Next production build and all nine integrated browser/import regressions PASSED. Tests are isolated local Auth/Postgres/Storage with synthetic users. Physical device results are not inferred from simulations.
 Scale acceptance: 500 parcels, 500 observations, 502 user Features, ten active official references. Pan/selection/edit window 21 viewport requests, 622,830 response bytes; ten browser frames 669 ms. Full-layer edit retained all 502 identities. First-page bytes 68,560/45,758/48,406 and timings 171/120/176 ms. Synthetic local baseline only; see PERFORMANCE.md.
 
@@ -29,7 +29,7 @@ Scale acceptance: 500 parcels, 500 observations, 502 user Features, ten active o
 
 Main: https://landbanker.vercel.app
 Preview: https://landbanker-git-preview-maxstillwells-projects.vercel.app (may require Vercel access).
-Currently verified deployed checkpoint 492ff40; newest source publication is pending. URLs/credentials remain environment configured. API publication fallback preserves commit/tree hashes, rejects concurrent changes and never force-pushes. No MaxQI deployment/domain changes.
+Main/Preview source b08cfb4 READY; anonymous hosted login/unknown-share status checks pass, recent new-deployment error/fatal log count is empty. Cloud Web transport fix publication is pending. URLs/credentials remain environment configured. API publication fallback preserves commit/tree hashes, rejects concurrent changes and never force-pushes. No MaxQI deployment/domain changes.
 
 ## Database status
 
@@ -57,3 +57,5 @@ Check published Alpha 2 commit Web + four iOS CI jobs and both Vercel deployment
 ## MaxQI safety verification
 
 2026-10-07 read-only homepage and both protected Land routes: HTTP200 with expected access redirects. This is endpoint health, not exhaustive legacy acceptance. No MaxQI schema/Auth/RLS/Storage/API/publishing/source changes, full import or cutover in Alpha 2.
+
+CI transport validation: deterministic local reset server confirms maxRetries=1 recovers exactly one ECONNRESET and never retries/hides HTTP500. The scale geometry regression still passes and retains 502 IDs. No application/database/iOS behavior change in this fix; CI pipefail retained and cookie/authorization output redacted.

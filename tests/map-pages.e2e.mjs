@@ -315,14 +315,21 @@ try {
   await page
     .getByLabel("Drawing name", { exact: true })
     .fill("Edited viewport shape");
-  await page.getByLabel("Drawing controls").getByRole("button", { name: "Finish polygon", exact: true }).click();
+  await page
+    .getByLabel("Drawing controls")
+    .getByRole("button", { name: "Finish polygon", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Save to Workspace", exact: true })
     .click();
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   const complete = (
-    await (
-      await page.request.get(`${origin}/api/layers?id=${featureLayerId}`)
+    await // Playwright can reuse a loopback keep-alive socket closed during the UI
+    // edit. Retry one ECONNRESET only; HTTP errors/assertions still fail.
+    (
+      await page.request.get(`${origin}/api/layers?id=${featureLayerId}`, {
+        maxRetries: 1,
+      })
     ).json()
   ).layer.geojson.features;
   assert.equal(

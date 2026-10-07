@@ -24,12 +24,14 @@ jobs:
       - run: npm run build
       - name: Verify real local field and copy workflows
         run: |
+          set -o pipefail
+          trap 'tail -n 80 /tmp/land-banker-server.log | sed -E "s/(cookie:|authorization:).*/\1 [redacted]/Ig"' ERR
           npm run start > /tmp/land-banker-server.log 2>&1 &
           for attempt in {1..30}; do
             if curl --fail --silent http://localhost:3000/ >/dev/null; then break; fi
             sleep 1
           done
-          npm run test:e2e
+          npm run test:e2e 2>&1 | sed -E 's/(cookie:|authorization:).*/\1 [redacted]/Ig'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
