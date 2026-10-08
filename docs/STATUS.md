@@ -15,6 +15,7 @@ Updated 2026-10-08 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACC
 - P5 map identify: Parcel Search can arm a VIC/NSW map tap, reuse the official lookup provider, require an explicit choice for multiple matches, preview the existing official parcel model and Save through the existing idempotent path. No parallel parcel model was added.
 - P7 foundation: fixed-schema official Planning/parcel/address health log events and bounded instance diagnostics; status/last success/failure/latency without geometry/address/user IDs/photo URLs/tokens. API/auth/share/server failure schemas avoid arbitrary exception text. Next instrumentation captures only route pattern/type, release and time. See OBSERVABILITY.md; dashboards/alerts/global retention remain external account work.
 - LandOS Visual Identity v1 is implemented on `codex/landos-visual-identity-v1`: three original GIS/land-intelligence directions were compared and Survey Grid selected. Editable SVG masters, deterministic Web/iOS raster generation, complete iPhone/iPad AppIcon assets including 1024 marketing art, native SwiftUI launch presentation, Web favicon/manifest/landing/login/map/share lockups, App Store screenshot templates and BRAND.md are included. No database, Supabase, MaxQI, map-data or workflow behaviour changed.
+- The owner superseded Survey Grid and selected Visual Identity v2 **Spatial Data Overlay / 多维空间数据图层**. Branch `codex/landos-spatial-overlay-icon-v2` implements a square 1024 vector master without pre-rounded corners, three perspective data planes, a luminous active parcel, contour texture and number-free connected nodes. Deterministic iPhone/iPad AppIcon, Web favicon/manifest, lockup mark, SwiftUI launch mark and App Store template derivatives are updated. Round 1 and Round 2 review branches remain intact as rollback/reference checkpoints. No database, Supabase, MaxQI, map-data or business workflow changed.
 
 ## In progress / external blockers
 
@@ -33,11 +34,15 @@ Alpha 3 application close candidate **abd4425e0d06265decd2363d69ff380900c21056**
 
 Visual Identity implementation **e3982d337ae27b2aa870732f6233ea318e1332b7**: local lint, typecheck, 20 core + 10 Planning/sync/health + 3 private-media unit tests and production build pass. Desktop landing and 390 px login visual captures were reviewed locally. Branch cloud run [37771078367](https://github.com/maxstillwell/landbanker/actions/runs/37771078367) is SUCCESS: the full Web job and all four unsigned iPhone/iPad Debug/Release Simulator jobs passed. This validates compilation and existing automated workflows, not Apple signing, TestFlight processing, physical-device behaviour or App Store approval.
 
+Owner-selected Spatial Data Overlay implementation **bac1333ad5872af1ffaef2d1e2ac3e9b9f0d3ff8**: local asset generation, exact 32/60/120/1024 review, iOS masked preview, desktop/mobile Web visual review, lint, typecheck, 20 core + 10 Planning/sync/health + 3 private-media tests and production build pass. Branch cloud run [37859636631](https://github.com/maxstillwell/landbanker/actions/runs/37859636631) is SUCCESS: the full Web job and all four unsigned iPhone/iPad Debug/Release Simulator jobs passed. This does not imply signing, TestFlight processing, physical-device acceptance or App Store approval.
+
 ## Deployment
 
 Main https://landbanker.vercel.app application checkpoint abd4425 is READY at `dpl_9PUWHQXeyTGfjjRGpe6BseMdVDDH`. Production login returns HTTP200; malformed share returns HTTP404 with fixed `Share unavailable`, no-store and no-referrer. Preview https://landbanker-git-preview-maxstillwells-projects.vercel.app is updated from the same tested commit after this status checkpoint. Configured domains/credentials remain independent/environment-based; API publication preserves exact hashes and refuses concurrent/force overwrites. Repo maxstillwell/landbanker source/docs public publication authorized; no secrets/photos/private exports committed. Current agent:agent ownership retained.
 
-Visual Identity v1 is pushed on its branch and has not been described as merged or deployed to Main/Preview. Production and Preview remain at their previously recorded stable checkpoints until a human approves the visual direction and merges/deploys the branch.
+Visual Identity v1 remains pushed on its original branch and was never merged or deployed to Main/Preview; it is now superseded by the owner-selected v2 direction.
+
+Visual Identity v2 is also branch-only. The owner selected the direction, but Main/Preview remain unchanged until the implementation branch is explicitly merged and deployed.
 
 ## Database status
 
@@ -53,7 +58,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-The distributed share perimeter, protected gateway cutover, direct-RPC revocation, FSR/Height decision, map identify, Planning readability, privacy-safe observability, production build/deployment and Visual Identity v1 branch CI are complete. Next, a human should review the three direction boards, 1024 px icon, small-size icon, Web landing/login/map header and screenshot-template copy; merge and deploy only after approval. Generate final App Store screenshots from a signed reviewed build with publishable data. The only unexecuted acceptance class is signed physical iPhone/iPad testing, blocked on Apple account/signing access; execute every ACCEPTANCE matrix row when credentials become available. Optional Vercel WAF work may follow dashboard entitlement review and must be staged before an owner explicitly publishes it. Do not re-enable direct RPCs, enable FSR/Height, import MaxQI broadly or perform a cutover.
+The distributed share perimeter, protected gateway cutover, direct-RPC revocation, FSR/Height decision, map identify, Planning readability, privacy-safe observability, production build/deployment and owner-selected Visual Identity v2 branch CI are complete. Next, inspect the selected icon on actual signed iPhone/iPad home screens and the native launch transition, then explicitly approve merge/deployment. Generate final App Store screenshots from a signed reviewed build with publishable data. The only unexecuted acceptance class is signed physical iPhone/iPad testing, blocked on Apple account/signing access; execute every ACCEPTANCE matrix row when credentials become available. Optional Vercel WAF work may follow dashboard entitlement review and must be staged before an owner explicitly publishes it. Do not re-enable direct RPCs, enable FSR/Height, import MaxQI broadly or perform a cutover.
 
 ## MaxQI safety / migration
 
