@@ -1,6 +1,8 @@
 # LandOS App Icon Redesign — Round 2
 
-Design exploration only. No winner has been selected, and none of these assets is wired into the app, Web UI, SwiftUI launch experience, manifest or App Store asset catalog.
+This directory began as design exploration only. The owner later selected a refined **Concept B — Spatial Data Overlay / 多维空间数据图层** direction supplied after the original A/B/C board. The untouched review checkpoint remains on `codex/landos-app-icon-round-2-review`; the selected production-intent implementation lives on `codex/landos-spatial-overlay-icon-v2`.
+
+The selected vector review copy is `concept-b-spatial-data-overlay-v2.svg`. Its canonical source is `brand/landos-app-icon.svg`; generated 32/60/120/1024 and iOS-mask previews use the `selected-spatial-data-overlay-*` filenames in `previews/`.
 
 ## Concepts
 
@@ -36,4 +38,4 @@ Light and dark iPhone home-screen simulations are included on the comparison boa
 
 All geometry is original and repository-native. No third-party marks, type artwork, stock assets, map symbols, houses, roofs or location pins are used. Existing Visual Identity v1 assets remain unchanged as reference/rollback material. No MaxQI, Supabase, database or LandOS business code is touched.
 
-Regenerate all PNG review derivatives with `npm run brand:round2`. Do not implement a concept until the owner explicitly selects it.
+Regenerate the original comparison board with `npm run brand:round2`. Regenerate the owner-selected production icon derivatives with `npm run brand:assets`.

@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388 96" role="img" aria-labelledby="title desc">
   <title id="title">LandOS</title>
-  <desc id="desc">Survey grid symbol and LandOS wordmark</desc>
-  <g transform="translate(8 8)">
-    <path fill="#0B302D" d="M15 0h50l15 15v50L65 80H15L0 65V15z"/>
-    <path fill="none" stroke="#F4F3E9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="m20 55 7-31 25-7 9 17-8 25-24 3z"/>
-    <path fill="none" stroke="#A8CB71" stroke-width="5" stroke-linecap="round" d="m27 24 26 35M20 55l41-21"/>
-    <circle cx="53" cy="59" r="6" fill="#E29A55" stroke="#0B302D" stroke-width="2"/>
+  <desc id="desc">Spatial data layer symbol and LandOS wordmark</desc>
+  <g transform="translate(8 8) scale(1.25)">
+    <path fill="#0D131F" d="M12 4h40l8 8v40l-8 8H12l-8-8V12z"/>
+    <path fill="#3B82F6" fill-opacity=".25" stroke="#3B82F6" stroke-opacity=".7" d="m32 34 20 10-20 10-20-10z"/>
+    <path fill="#10B981" fill-opacity=".34" stroke="#10B981" d="m32 26 20 10-20 10-20-10z"/>
+    <path fill="#18253A" stroke="#A3E635" stroke-width="2" d="m32 17 20 10-20 10-20-10-20 10-20-10z"/>
+    <path fill="#D4FC34" d="m32 17 10 5-5 3-5-3-5 3-5-3z"/>
+    <circle cx="32" cy="13" r="3" fill="#D4FC34"/>
   </g>
-  <text x="112" y="62" fill="#0B302D" font-family="Manrope, Inter, system-ui, sans-serif" font-size="56" font-weight="750" letter-spacing="-2">Land<tspan fill="#517A55">OS</tspan></text>
+  <text x="112" y="62" fill="#0D131F" font-family="Manrope, Inter, system-ui, sans-serif" font-size="56" font-weight="750" letter-spacing="-2">Land<tspan fill="#10B981">OS</tspan></text>
 </svg>

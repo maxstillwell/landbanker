@@ -12,9 +12,11 @@ const appIconDir = path.join(
   "Assets.xcassets",
   "AppIcon.appiconset",
 );
+const selectedPreviewDir = path.join(root, "brand", "round-2", "previews");
 
 await mkdir(webDir, { recursive: true });
 await mkdir(appIconDir, { recursive: true });
+await mkdir(selectedPreviewDir, { recursive: true });
 await copyFile(
   path.join(root, "brand", "landos-mark.svg"),
   path.join(webDir, "landos-mark.svg"),
@@ -22,6 +24,10 @@ await copyFile(
 await copyFile(
   path.join(root, "brand", "landos-logo.svg"),
   path.join(webDir, "landos-logo.svg"),
+);
+await copyFile(
+  master,
+  path.join(root, "brand", "round-2", "concept-b-spatial-data-overlay-v2.svg"),
 );
 
 async function render(destination, size) {
@@ -43,6 +49,23 @@ for (const size of [16, 32, 180, 192, 512]) {
   await render(path.join(webDir, name), size);
 }
 await render(path.join(webDir, "icon-512-maskable.png"), 512);
+
+for (const size of [32, 60, 120, 1024]) {
+  await render(
+    path.join(selectedPreviewDir, `selected-spatial-data-overlay-${size}.png`),
+    size,
+  );
+}
+const iosMask = Buffer.from(
+  '<svg width="512" height="512"><rect width="512" height="512" rx="112" fill="white"/></svg>',
+);
+await sharp(master, { density: 144 })
+  .resize(512, 512)
+  .composite([{ input: iosMask, blend: "dest-in" }])
+  .png({ compressionLevel: 9, palette: true })
+  .toFile(
+    path.join(selectedPreviewDir, "selected-spatial-data-overlay-ios-mask.png"),
+  );
 
 const iosImages = [
   ["iphone", "20x20", "2x", 40, "AppIcon-20@2x.png"],

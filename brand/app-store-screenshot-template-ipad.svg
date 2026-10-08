@@ -2,18 +2,20 @@
   <title id="title">LandOS iPad App Store screenshot template</title>
   <desc id="desc">Editable 2064 by 2752 portrait template with screenshot safe area</desc>
   <rect width="2064" height="2752" fill="#F4F3E9"/>
-  <path d="M0 0h2064v720L0 1160z" fill="#0B302D"/>
+  <path d="M0 0h2064v720L0 1160z" fill="#0A0F1D"/>
   <g transform="translate(126 104)">
-    <path fill="#F4F3E9" d="M8 0h72l8 8v72l-8 8H8l-8-8V8z"/>
-    <path fill="none" stroke="#0B302D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="m20 62 8-37 31-8 11 20-9 30-29 4z"/>
-    <path fill="none" stroke="#A8CB71" stroke-width="6" d="m28 25 33 42M20 62l50-25"/>
-    <circle cx="61" cy="67" r="8" fill="#E29A55"/>
+    <path fill="#121A2C" d="M8 0h72l8 8v72l-8 8H8l-8-8V8z"/>
+    <path fill="#3B82F6" fill-opacity=".28" stroke="#3B82F6" d="m44 50 30 15-30 15-30-15z"/>
+    <path fill="#10B981" fill-opacity=".35" stroke="#10B981" d="m44 38 30 15-30 15-30-15z"/>
+    <path fill="#18253A" stroke="#A3E635" stroke-width="3" d="m44 24 30 15-30 15-30-15z"/>
+    <path fill="#D4FC34" d="m44 24 13 7-7 3-6-3-7 3-6-3z"/>
+    <circle cx="44" cy="17" r="4.5" fill="#D4FC34"/>
     <text x="120" y="67" fill="#F4F3E9" font-family="system-ui,sans-serif" font-size="64" font-weight="750">LandOS</text>
   </g>
-  <text x="126" y="370" fill="#A8CB71" font-family="system-ui,sans-serif" font-size="42" font-weight="700" letter-spacing="6">[CAPABILITY LABEL]</text>
+  <text x="126" y="370" fill="#D4FC34" font-family="system-ui,sans-serif" font-size="42" font-weight="700" letter-spacing="6">[CAPABILITY LABEL]</text>
   <text x="126" y="480" fill="#F4F3E9" font-family="system-ui,sans-serif" font-size="88" font-weight="750">[Primary benefit headline]</text>
   <text x="126" y="560" fill="#C8D6CE" font-family="system-ui,sans-serif" font-size="40">[One factual supporting line. No unverified claims.]</text>
-  <rect x="126" y="690" width="1812" height="1910" rx="70" fill="#FFFFFF" stroke="#517A55" stroke-width="6" stroke-dasharray="24 20"/>
-  <text x="1032" y="1610" fill="#517A55" text-anchor="middle" font-family="system-ui,sans-serif" font-size="46" font-weight="650">PLACE VERIFIED 2064 × 2752 SCREENSHOT</text>
+  <rect x="126" y="690" width="1812" height="1910" rx="70" fill="#FFFFFF" stroke="#10B981" stroke-width="6" stroke-dasharray="24 20"/>
+  <text x="1032" y="1610" fill="#10B981" text-anchor="middle" font-family="system-ui,sans-serif" font-size="46" font-weight="650">PLACE VERIFIED 2064 × 2752 SCREENSHOT</text>
   <text x="1032" y="1680" fill="#687A73" text-anchor="middle" font-family="system-ui,sans-serif" font-size="32">Use real map data cleared for publication</text>
 </svg>

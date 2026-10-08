@@ -1,26 +1,22 @@
-# LandOS visual identity v1
+# LandOS visual identity v2
 
 LandOS is positioned as a professional GIS and land-intelligence workspace, not a property listing portal or real-estate agency. The system is original, geometric and asset-light: no stock imagery, third-party marks or generated photo assets are used.
 
-## Direction study
+## Selected direction
 
-| Direction     | Core idea                                                                      | Strength                                                                                  | Risk                                                                              | Decision     |
-| ------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------ |
-| Survey Grid   | A cadastral parcel, intersecting analytical axes and a field observation point | Reads as survey/GIS at app-icon and favicon sizes; fits map, planning and field workflows | Requires disciplined spacing so it does not become visually busy                  | **Selected** |
-| Contour Pulse | A topographic contour resolving into an observation point                      | Human, geographic and fluid                                                               | Loses precision at small sizes and leans toward recreation/outdoors               | Not selected |
-| Terrain Axis  | Terrain planes forming a directional analytical arrow                          | Bold and authoritative                                                                    | Can read as an outdoor or civil-engineering brand rather than a spatial workspace | Not selected |
+The owner superseded the first-round Survey Grid direction and selected **Concept B — Spatial Data Overlay / 多维空间数据图层** after Round 2 review. The selected mark uses three perspective data planes, a luminous active parcel and a small connected-node system. It communicates LandOS Layers, parcel/boundary analysis and linked land records without houses, roofs, pins, numbers or surveying clip art.
 
-Comparable boards are in `brand/concepts/`. Survey Grid best matches the existing product because its parcel boundary, layered intersections and point marker map directly to Parcel, Layers/Planning and Field without implying listings, home sales or valuation.
+The first identity remains available in Git history and on `codex/landos-visual-identity-v1`. Round 2 exploratory alternatives remain on `codex/landos-app-icon-round-2-review`. The selected implementation is isolated on `codex/landos-spatial-overlay-icon-v2` until merge approval.
 
 ## Identity system
 
-- **Mark:** the irregular cream parcel is the object of record; lime axes represent layered spatial analysis; the clay point represents an observation or decision. Keep the shapes and proportions unchanged.
-- **Wordmark:** `LandOS`, with `OS` in Mapping Green when colour is available. Use the supplied SVG rather than recreating the lockup for artwork.
-- **Primary colours:** Survey Ink `#0B302D`, Mapping Green `#517A55`, Analysis Lime `#A8CB71`, Field Clay `#E29A55`, Paper `#F4F3E9`.
+- **Mark:** three offset planes represent composable spatial layers; the bright upper parcel represents the active analysis selection; restrained nodes and connectors represent linked records and tools. Keep the layer order and proportions unchanged.
+- **Wordmark:** `LandOS`, with `OS` in Spatial Green when colour is available. Use the supplied SVG rather than recreating the lockup for artwork.
+- **Primary colours:** Night `#0A0F1D`, Deep Slate `#1A253B`, Signature Lime `#D4FC34`, Analysis Lime `#A3E635`, Spatial Green `#10B981`, Data Blue `#3B82F6`.
 - **UI neutrals:** Slate `#687A73`, Line `#D9DED3`, White `#FFFFFF`.
 - **Typography:** Manrope for display/wordmark-like headings and DM Sans for UI/body, with system sans-serif fallbacks. Product function and accessibility take precedence over branding.
 - **Minimum mark size:** 20 px digital. Below 32 px, use the mark alone. Clear space is at least one quarter of the mark width.
-- **Contrast:** use cream on Survey Ink or Survey Ink on cream. Analysis Lime is an accent, not body text on cream. Field Clay is a locator/accent, not a full-surface background.
+- **Contrast:** use cream on Night or Night on cream. Signature Lime is reserved for selected data, nodes and short accents; it is not body text on light surfaces.
 
 ## Product application
 
@@ -43,6 +39,6 @@ Suggested sequence: map/workspace overview, official parcel search, property Pla
 
 ## Human review and rollback
 
-Before merge, review the three concept boards, mark legibility at 16/32 px, the unmasked 1024 px icon, iOS masked previews, landing/login/map/share lockups, launch timing with Reduce Motion, and all App Store copy. Final store screenshots and signed-device acceptance remain manual; no Apple review or approval is implied.
+Before merge, review the selected mark at 16/32/60/120 px, the unmasked 1024 px icon, iOS masked previews, landing/login/map/share lockups, launch timing with Reduce Motion, and all App Store copy. Final store screenshots and signed-device acceptance remain manual; no Apple review or approval is implied.
 
 This identity is isolated from the database and all MaxQI/Supabase configuration. Before merge, rollback is simply to leave or close the branch. After merge, revert the Visual Identity branch merge commit, run the normal Web and four unsigned Simulator jobs, and redeploy the resulting Main commit. Reverting removes the new visual assets/components and restores the prior presentation without a schema, data or credential rollback.
