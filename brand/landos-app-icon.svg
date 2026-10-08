@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LandOS app icon</title>
+  <desc id="desc">An original cadastral survey grid symbol</desc>
+  <rect width="1024" height="1024" fill="#0B302D"/>
+  <path fill="#123E39" d="M0 722 1024 276v748H0z"/>
+  <path fill="none" stroke="#F4F3E9" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" d="m258 700 82-385 312-87 113 207-94 311-305 39z"/>
+  <path fill="none" stroke="#A8CB71" stroke-width="64" stroke-linecap="round" d="m340 315 331 431M258 700l507-265"/>
+  <circle cx="671" cy="746" r="78" fill="#E29A55" stroke="#0B302D" stroke-width="34"/>
+</svg>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { browserClient } from "@/lib/supabase/browser";
+import { BrandLockup } from "@/components/brand-lockup";
 export function AuthForm({
   mode,
   enabled,
@@ -73,9 +74,7 @@ export function AuthForm({
   }
   return (
     <main className="auth-page">
-      <Link className="wordmark" href="/">
-        LandOS
-      </Link>
+      <BrandLockup href="/" tagline="LAND INTELLIGENCE WORKSPACE" />
       <section className="auth-card">
         <p className="eyebrow">YOUR PRIVATE FIELD WORKSPACE</p>
         <h1>{titles[mode]}</h1>

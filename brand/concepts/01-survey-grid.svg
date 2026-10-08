@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Direction one, Survey Grid">
+  <rect width="640" height="360" rx="24" fill="#F4F3E9"/>
+  <g transform="translate(48 50) scale(3.5)">
+    <path fill="#0B302D" d="M12 4h40l8 8v40l-8 8H12l-8-8V12z"/>
+    <path fill="none" stroke="#F4F3E9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="m17 43 5-23 20-5 7 13-6 19-19 2z"/>
+    <path fill="none" stroke="#A8CB71" stroke-width="4" stroke-linecap="round" d="m22 20 21 27M17 43l32-15"/>
+    <circle cx="43" cy="47" r="4.5" fill="#E29A55" stroke="#0B302D" stroke-width="2"/>
+  </g>
+  <text x="320" y="126" fill="#0B302D" font-family="system-ui,sans-serif" font-size="18" font-weight="700" letter-spacing="2">01 · SELECTED</text>
+  <text x="320" y="178" fill="#0B302D" font-family="system-ui,sans-serif" font-size="38" font-weight="750">Survey Grid</text>
+  <text x="320" y="216" fill="#517A55" font-family="system-ui,sans-serif" font-size="18">Cadastral precision + field signal</text>
+  <text x="320" y="256" fill="#62736C" font-family="system-ui,sans-serif" font-size="15">Professional · legible · product-native</text>
+</svg>

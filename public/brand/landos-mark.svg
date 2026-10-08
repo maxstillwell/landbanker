@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">LandOS survey grid mark</title>
+  <path fill="#0B302D" d="M12 4h40l8 8v40l-8 8H12l-8-8V12z"/>
+  <path fill="none" stroke="#F4F3E9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="m17 43 5-23 20-5 7 13-6 19-19 2z"/>
+  <path fill="none" stroke="#A8CB71" stroke-width="4" stroke-linecap="round" d="m22 20 21 27M17 43l32-15"/>
+  <circle cx="43" cy="47" r="4.5" fill="#E29A55" stroke="#0B302D" stroke-width="2"/>
+</svg>

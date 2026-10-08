@@ -7,10 +7,18 @@ import ImageIO
 import UIKit
 
 struct FieldWebView: UIViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    @Binding var isReady: Bool
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onReady: { isReady = true })
+    }
     func makeUIView(context: Context) -> UIView {
         guard let configuration = WebConfiguration() else {
-            let label = UILabel(); label.text = "LandOS preview URL is not configured.\nSet LAND_BANKER_WEB_URL when building."; label.numberOfLines = 0; label.textAlignment = .center; return label
+            let label = UILabel(); label.text = "LandOS preview URL is not configured.\nSet LAND_BANKER_WEB_URL when building."; label.numberOfLines = 0; label.textAlignment = .center
+            label.textColor = UIColor(red: 11 / 255, green: 48 / 255, blue: 45 / 255, alpha: 1)
+            label.backgroundColor = UIColor(red: 244 / 255, green: 243 / 255, blue: 233 / 255, alpha: 1)
+            DispatchQueue.main.async { isReady = true }
+            return label
         }
         let preferences = WKWebViewConfiguration()
         preferences.applicationNameForUserAgent = "LandOS/0.1"
@@ -42,6 +50,17 @@ struct FieldWebView: UIViewRepresentable {
         var photoCount = 0
         var photoFailures = 0
         var observers: [NSObjectProtocol] = []
+        let onReady: () -> Void
+        var hasFinishedInitialLoad = false
+
+        init(onReady: @escaping () -> Void) {
+            self.onReady = onReady
+        }
+        func finishInitialPresentation() {
+            guard !hasFinishedInitialLoad else { return }
+            hasFinishedInitialLoad = true
+            onReady()
+        }
         func attach(_ web: WKWebView, configuration: WebConfiguration) {
             self.web = web; self.configuration = configuration
             locationManager.delegate = self; locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -62,7 +81,13 @@ struct FieldWebView: UIViewRepresentable {
             web.callAsyncJavaScript("window.LandBankerBridge?.receive(message)", arguments: ["message": message], in: nil, in: .page) { _ in }
         }
         func fail(_ message: String) { emit("nativeError", ["message": message]) }
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { emit("nativeReady", ["platform": "ios", "bridgeVersion": 1]); emit("networkStatusChanged", ["online": network.currentPath.status == .satisfied]) }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            emit("nativeReady", ["platform": "ios", "bridgeVersion": 1])
+            emit("networkStatusChanged", ["online": network.currentPath.status == .satisfied])
+            finishInitialPresentation()
+        }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { finishInitialPresentation() }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { finishInitialPresentation() }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             guard let url = navigationAction.request.url, configuration?.permits(url) == true else { decisionHandler(.cancel); return }
             decisionHandler(.allow)
