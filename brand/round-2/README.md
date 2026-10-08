@@ -1,5 +1,18 @@
 # LandOS App Icon Redesign — Round 2
 
+## Spatial Data Overlay v3 — focused icon review
+
+The owner-requested Spatial Data Overlay exploration is isolated in
+`concept-b-spatial-data-overlay-v3.svg`. It follows the supplied visual reference
+with three perspective data planes, bright analytical nodes, connecting paths and
+a dense topographic contour field. The SVG remains a full square; rounded corners
+are applied only in iOS review previews.
+
+Generate the focused review assets with `npm run brand:overlay-review`.
+
+This is design exploration only. It does not replace the production App Icon,
+Web identity, SwiftUI launch screen or App Store assets.
+
 Design exploration only. No winner has been selected, and none of these assets is wired into the app, Web UI, SwiftUI launch experience, manifest or App Store asset catalog.
 
 ## Concepts
