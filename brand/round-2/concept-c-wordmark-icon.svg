@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LandOS Concept C — Wordmark Icon</title>
+  <desc id="desc">The full LandOS name built as a custom two-line typographic icon</desc>
+  <defs>
+    <linearGradient id="c-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB14A"/>
+      <stop offset="1" stop-color="#F0523A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#c-bg)"/>
+  <g fill="#121B35">
+    <!-- LAND: bespoke modular capitals -->
+    <path d="M126 206h70v174h90v74H126z"/>
+    <path fill-rule="evenodd" d="m304 454 64-248h84l64 248h-76l-11-50h-39l-11 50Zm99-112h14l-7-53z"/>
+    <path d="M500 206h70l60 116V206h70v248h-70l-60-116v116h-70z"/>
+    <path fill-rule="evenodd" d="M724 206h75c78 0 115 44 115 124s-37 124-115 124h-75Zm70 72v104h10c28 0 41-16 41-52s-13-52-41-52z"/>
+    <!-- OS: dominant recognition layer -->
+    <g transform="translate(0 24)">
+      <path fill-rule="evenodd" d="M126 560c0-78 48-126 126-126h129c78 0 126 48 126 126v178c0 78-48 126-126 126H252c-78 0-126-48-126-126Zm112 25v128c0 31 17 48 48 48h61c31 0 48-17 48-48V585c0-31-17-48-48-48h-61c-31 0-48 17-48 48Z"/>
+      <path d="M559 562c0-82 53-128 148-128h157v104H711c-27 0-40 10-40 29 0 18 12 27 36 30l69 8c79 9 118 50 118 124 0 87-55 135-155 135H559V758h175c28 0 43-11 43-31 0-18-12-28-37-31l-70-8c-74-9-111-51-111-126Z"/>
+    </g>
+  </g>
+  <rect x="126" y="918" width="768" height="18" rx="9" fill="#FFF4DD"/>
+</svg>
