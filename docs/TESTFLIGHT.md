@@ -22,7 +22,7 @@ Exact manual sequence when the Apple account is available:
 4. Run `xcodegen generate --spec ios/project.yml --project ios`, archive Release for `generic/platform=iOS` with the final team, bundle ID, build number and `https://landbanker.vercel.app/app/map`, then validate the archive before upload.
 5. Upload to App Store Connect, wait for processing, answer export-compliance/App Privacy questions from the actual build behavior, add the build to an Internal Testing group and complete the signed-device matrix before inviting broader testers.
 
-The first App Store Connect record still needs human account access. A production app icon asset and current iPhone/iPad screenshots also remain manual release assets; Simulator artifacts and generated placeholders must not be submitted as final artwork.
+The first App Store Connect record still needs human account access. Visual Identity v1 now supplies the production-intent 1024 px icon and complete AppIcon set, but the icon still needs human brand review before submission. Editable iPhone/iPad App Store templates are supplied; final screenshots must be captured from a signed reviewed build with publishable data. Simulator artifacts and template placeholders must not be submitted as final screenshots.
 
 ## App Store Connect metadata checklist
 
