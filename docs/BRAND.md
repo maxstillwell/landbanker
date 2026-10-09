@@ -47,8 +47,8 @@ Suggested sequence: map/workspace overview, official parcel search, property Pla
 - Web and iOS raster assets are deterministic derivatives. Run `npm run brand:assets` after editing the app-icon master.
 - Do not edit generated PNGs by hand. Review at 16, 32, 60, 120, 180, 512 and 1024 px after regeneration.
 
-## Human review and rollback
+## Release review and rollback
 
-Before merge, review the three concept boards, mark legibility at 16/32 px, the unmasked 1024 px icon, iOS masked previews, landing/login/map/share lockups, launch timing with Reduce Motion, and all App Store copy. Final store screenshots and signed-device acceptance remain manual; no Apple review or approval is implied.
+The owner approved Terrain Layers after review of the concept boards, 16/32 px legibility, the unmasked 1024 px icon, iOS masked previews and the shared Web/iOS identity. Merge `da9c62d` made it the current production identity. Future releases should still check landing/login/map/share lockups, launch timing with Reduce Motion and all App Store copy. Final store screenshots and signed-device acceptance remain manual; no Apple review or approval is implied.
 
-This identity is isolated from the database and all MaxQI/Supabase configuration. Before merge, rollback is simply to leave or close the branch. After merge, revert the Visual Identity branch merge commit, run the normal Web and four unsigned Simulator jobs, and redeploy the resulting Main commit. Reverting removes the new visual assets/components and restores the prior presentation without a schema, data or credential rollback.
+This identity is isolated from the database and all MaxQI/Supabase configuration. Rollback is to revert merge `da9c62d`, run the normal Web and four unsigned Simulator jobs, and redeploy the resulting Main commit. Reverting removes the visual assets/components and restores the prior presentation without a schema, data or credential rollback.
