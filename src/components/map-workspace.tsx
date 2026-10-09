@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-lockup";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
 import type {
@@ -1581,9 +1582,7 @@ export default function MapWorkspace({
         </div>
       ) : null}
       <header className="map-header">
-        <Link href="/app/map" className="wordmark">
-          LandOS
-        </Link>
+        <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
         <Link
           className="icon-button"

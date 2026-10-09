@@ -1,10 +1,9 @@
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-lockup";
 export default function Home() {
   return (
     <main className="landing">
-      <div className="wordmark">
-        LandOS <span>MAP. ANALYSE. MANAGE LAND.</span>
-      </div>
+      <BrandLockup tagline="MAP · ANALYSE · MANAGE LAND" />
       <div className="landing-copy">
         <p className="eyebrow">GROUND YOUR NEXT MOVE</p>
         <h1>

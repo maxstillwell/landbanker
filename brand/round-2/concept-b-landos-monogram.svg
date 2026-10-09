@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LandOS Concept B — LandOS Monogram</title>
+  <desc id="desc">A custom interlocking L and O monogram</desc>
+  <defs>
+    <linearGradient id="b-bg" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#24112F"/>
+      <stop offset="1" stop-color="#6C2E79"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#b-bg)"/>
+  <path fill="#C8F0DE" fill-rule="evenodd" d="M437 164h202c137 0 221 84 221 221v254c0 137-84 221-221 221H437c-137 0-221-84-221-221V385c0-137 84-221 221-221Zm29 171c-51 0-79 28-79 79v196c0 51 28 79 79 79h144c51 0 79-28 79-79V414c0-51-28-79-79-79Z"/>
+  <path fill="#FF9A6B" d="M164 238h174v420h281l-73 202H164z"/>
+  <path fill="#24112F" d="M338 524h138l58 134H338z"/>
+</svg>

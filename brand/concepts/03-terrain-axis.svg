@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Direction three, Terrain Axis">
+  <rect width="640" height="360" rx="24" fill="#EFF2ED"/>
+  <g transform="translate(66 72)">
+    <path fill="#173B4D" d="m0 170 89-170 40 75 40-25 74 120z"/>
+    <path fill="#9EBE67" d="m64 170 65-95 40-25 74 120z"/>
+    <path fill="#F3F1E7" d="m89 0 40 75-21 31-39-45z"/>
+  </g>
+  <text x="340" y="126" fill="#173B4D" font-family="system-ui,sans-serif" font-size="18" font-weight="700" letter-spacing="2">03 · EXPLORATION</text>
+  <text x="340" y="178" fill="#173B4D" font-family="system-ui,sans-serif" font-size="38" font-weight="750">Terrain Axis</text>
+  <text x="340" y="216" fill="#577181" font-family="system-ui,sans-serif" font-size="18">Landscape + analytical direction</text>
+  <text x="340" y="256" fill="#68767B" font-family="system-ui,sans-serif" font-size="15">Confident · broad · risks outdoor-brand cues</text>
+</svg>

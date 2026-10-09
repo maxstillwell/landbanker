@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388 96" role="img" aria-labelledby="title desc">
+  <title id="title">LandOS</title>
+  <desc id="desc">Terrain Layers symbol and LandOS wordmark</desc>
+  <image href="landos-app-icon.svg" x="8" y="8" width="80" height="80"/>
+  <text x="112" y="62" fill="#152130" font-family="Manrope, Inter, system-ui, sans-serif" font-size="56" font-weight="750" letter-spacing="-2">Land<tspan fill="#638A54">OS</tspan></text>
+</svg>

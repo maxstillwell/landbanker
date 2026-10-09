@@ -1,11 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 :root {
-  --ink: #203b34;
-  --green: #294e40;
-  --lime: #d9e7a5;
-  --paper: #f7f7ef;
-  --muted: #7c8a7f;
-  --line: #dfe4d8;
+  --ink: #0b302d;
+  --green: #0b302d;
+  --mapping-green: #517a55;
+  --lime: #a8cb71;
+  --clay: #e29a55;
+  --paper: #f4f3e9;
+  --muted: #687a73;
+  --line: #d9ded3;
 }
 * {
   box-sizing: border-box;
@@ -48,7 +50,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #93b953;
+  outline: 3px solid var(--lime);
   outline-offset: 2px;
 }
 h1,
@@ -104,22 +106,52 @@ small {
   flex-wrap: wrap;
   margin: 16px 0;
 }
-.wordmark {
+.wordmark,
+.brand-lockup {
   font-family: "Manrope", system-ui, sans-serif;
   font-weight: 800;
   font-size: 17px;
-  letter-spacing: 2px;
   white-space: nowrap;
 }
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  width: fit-content;
+  color: var(--ink);
+}
+.brand-lockup.compact {
+  gap: 8px;
+}
+.brand-mark {
+  display: block;
+  flex: 0 0 auto;
+}
+.brand-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  line-height: 1;
+}
+.brand-name > span {
+  color: var(--mapping-green);
+}
+.brand-name small,
 .wordmark span {
   display: block;
   font:
     9px "DM Sans",
     sans-serif;
   font-weight: 500;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 6px;
+}
+.brand-lockup.compact .brand-name {
+  font-size: 17px;
+}
+.brand-lockup.compact .brand-name small {
+  display: none;
 }
 .eyebrow {
   font-size: 10px;
@@ -132,7 +164,15 @@ small {
   min-height: 100dvh;
   padding: 40px 7vw;
   overflow: hidden;
-  background: #eef1e4;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(#0b302d0a 1px, transparent 1px),
+    linear-gradient(90deg, #0b302d0a 1px, transparent 1px),
+    radial-gradient(circle at 78% 34%, #a8cb7128, transparent 30%);
+  background-size:
+    44px 44px,
+    44px 44px,
+    auto;
 }
 .landing-copy {
   position: relative;
@@ -150,7 +190,7 @@ small {
 .landing-copy > p:not(.eyebrow) {
   font-size: 18px;
   line-height: 1.7;
-  color: #6c7e6e;
+  color: var(--muted);
 }
 .landing-copy > small {
   display: block;
@@ -168,7 +208,7 @@ small {
 }
 .contours div {
   position: absolute;
-  border: 1px solid #9aaf8c;
+  border: 1px solid #7c9e78;
   border-radius: 47% 33% 53% 46%;
   inset: calc(var(--i, 0) * 45px);
 }
@@ -184,7 +224,11 @@ small {
 .auth-page {
   min-height: 100dvh;
   padding: 32px 5vw;
-  background: #eef1e4;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(#0b302d0a 1px, transparent 1px),
+    linear-gradient(90deg, #0b302d0a 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 .auth-card {
   max-width: 460px;
@@ -215,7 +259,7 @@ small {
   font-size: 11px;
 }
 .notice {
-  background: #e4eacd;
+  background: #e7edd7;
   padding: 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -654,6 +698,16 @@ small {
   .wordmark {
     font-size: 14px;
     letter-spacing: 1.4px;
+  }
+  .map-header .brand-lockup.compact {
+    gap: 6px;
+  }
+  .map-header .brand-lockup.compact .brand-mark {
+    width: 24px;
+    height: 24px;
+  }
+  .map-header .brand-lockup.compact .brand-name {
+    font-size: 15px;
   }
   .wordmark span {
     font-size: 8px;

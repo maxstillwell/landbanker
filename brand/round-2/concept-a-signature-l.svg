@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LandOS Concept A — Signature L</title>
+  <desc id="desc">A custom geometric L with a subtle diagonal land stratum</desc>
+  <defs>
+    <linearGradient id="a-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111A3F"/>
+      <stop offset="1" stop-color="#3348A5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#a-bg)"/>
+  <path fill="#F4F1E8" d="M210 254 294 170h190v409h327v160l-103 103H210z"/>
+  <path fill="#111A3F" d="m334 442 150-92v229h327v92H423l-89-59z"/>
+  <path fill="#C9F36B" d="m334 442 150-92v62l-150 92z"/>
+  <path fill="#FF8662" d="M708 739h103v103H708z"/>
+</svg>

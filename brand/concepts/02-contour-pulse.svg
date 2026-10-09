@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Direction two, Contour Pulse">
+  <rect width="640" height="360" rx="24" fill="#F6F0E4"/>
+  <g transform="translate(58 64)" fill="none" stroke="#1D4B43" stroke-width="12">
+    <path d="M24 194C-2 120 20 28 102 14c81-14 134 64 111 128-22 62-91 94-147 60-38-23-40-75-7-99 28-20 76-7 79 29 3 28-29 43-52 28"/>
+    <circle cx="86" cy="160" r="13" fill="#D9824B" stroke="none"/>
+  </g>
+  <text x="320" y="126" fill="#1D4B43" font-family="system-ui,sans-serif" font-size="18" font-weight="700" letter-spacing="2">02 · EXPLORATION</text>
+  <text x="320" y="178" fill="#1D4B43" font-family="system-ui,sans-serif" font-size="38" font-weight="750">Contour Pulse</text>
+  <text x="320" y="216" fill="#6C785F" font-family="system-ui,sans-serif" font-size="18">Terrain + live field observation</text>
+  <text x="320" y="256" fill="#776F65" font-family="system-ui,sans-serif" font-size="15">Expressive · organic · less precise at 16 px</text>
+</svg>

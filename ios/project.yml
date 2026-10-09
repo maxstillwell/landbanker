@@ -17,6 +17,7 @@ settings:
     DEVELOPMENT_TEAM: "$(LANDOS_DEVELOPMENT_TEAM)"
     TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGNING_ALLOWED: NO
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     LAND_BANKER_WEB_URL: "https://landbanker.vercel.app/app/map"
   configs:
     Release:

@@ -1,6 +1,10 @@
 # LandOS status
 
-Updated 2026-10-07 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACCEPTANCE and PERFORMANCE. **NEVER BREAK MAXQI.**
+## Final icon selection — 2026-10-09
+
+The owner selected Terrain Layers as the final LandOS icon language. `brand/landos-app-icon.svg` and `brand/landos-mark.svg` now use the selected three-plane, active-parcel and synthetic equal-interval contour artwork; Web favicon/manifest/home-screen PNGs, the native launch mark and the complete iPhone/iPad AppIcon catalog were regenerated from the formal master. The LandOS wordmark and SwiftUI launch presentation use the same icon language. Earlier concepts remain under `brand/round-2/` as design history. The selected vector is reproducible with `brand/round-2/svg-finalists/render-c4-terrain-layers.cjs`; it embeds no third-party raster or geographic dataset. This is an owner design selection, not trademark clearance or Apple review approval. No database, Supabase, MaxQI, map workflow or deployment changed. Rollback: revert the final-icon commit and rerun `npm run brand:assets`.
+
+Updated 2026-10-08 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACCEPTANCE, PERFORMANCE and BRAND. **NEVER BREAK MAXQI.**
 
 ## Completed
 
@@ -14,6 +18,7 @@ Updated 2026-10-07 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACC
 - P4 perimeter: production public sharing now runs through the LandOS server and a capability-protected Postgres gateway. Postgres atomically enforces 120 caller/minute and 60 token/minute budgets across Vercel instances. Hosted synthetic valid/revoke/expiry and 70-request concurrent caller/token acceptance passed; old direct resolver/status anon/auth grants are revoked. Vercel Firewall remains optional defense in depth and still returns HTTP404 `Seawall Config not found`. See SHARE_PERIMETER.md.
 - P5 map identify: Parcel Search can arm a VIC/NSW map tap, reuse the official lookup provider, require an explicit choice for multiple matches, preview the existing official parcel model and Save through the existing idempotent path. No parallel parcel model was added.
 - P7 foundation: fixed-schema official Planning/parcel/address health log events and bounded instance diagnostics; status/last success/failure/latency without geometry/address/user IDs/photo URLs/tokens. API/auth/share/server failure schemas avoid arbitrary exception text. Next instrumentation captures only route pattern/type, release and time. See OBSERVABILITY.md; dashboards/alerts/global retention remain external account work.
+- LandOS Visual Identity v1 established the original system and Survey Grid direction. The owner subsequently selected Terrain Layers on the Round 2 review branch as the final icon language. Editable SVG masters, deterministic Web/iOS raster generation, complete iPhone/iPad AppIcon assets including 1024 marketing art, native SwiftUI launch presentation, Web favicon/manifest/landing/login/map/share lockups, App Store screenshot templates and BRAND.md are included. No database, Supabase, MaxQI, map-data or workflow behaviour changed.
 
 ## In progress / external blockers
 
@@ -30,9 +35,13 @@ Latest final local scale window: 500 parcels, 500 observations, 502 Features, te
 
 Alpha 3 application close candidate **abd4425e0d06265decd2363d69ff380900c21056**: local lint, typecheck and production build pass; 20 core + 10 Planning/sync/health + 3 private-media unit tests pass; disposable PostgreSQL RLS/gateway/grant tests pass; all eleven browser/API/import workflows pass, including map parcel identify, Planning presentation, share gateway hardening and visible-device cross-device reconciliation. Main cloud run [37694830620](https://github.com/maxstillwell/landbanker/actions/runs/37694830620) is SUCCESS: Web lint/type/unit/database/build/all E2E and all four unsigned iPhone/iPad Debug/Release Simulator jobs passed.
 
+Visual Identity implementation **e3982d337ae27b2aa870732f6233ea318e1332b7**: local lint, typecheck, 20 core + 10 Planning/sync/health + 3 private-media unit tests and production build pass. Desktop landing and 390 px login visual captures were reviewed locally. Branch cloud run [37771078367](https://github.com/maxstillwell/landbanker/actions/runs/37771078367) is SUCCESS: the full Web job and all four unsigned iPhone/iPad Debug/Release Simulator jobs passed. This validates compilation and existing automated workflows, not Apple signing, TestFlight processing, physical-device behaviour or App Store approval.
+
 ## Deployment
 
 Main https://landbanker.vercel.app application checkpoint abd4425 is READY at `dpl_9PUWHQXeyTGfjjRGpe6BseMdVDDH`. Production login returns HTTP200; malformed share returns HTTP404 with fixed `Share unavailable`, no-store and no-referrer. Preview https://landbanker-git-preview-maxstillwells-projects.vercel.app is updated from the same tested commit after this status checkpoint. Configured domains/credentials remain independent/environment-based; API publication preserves exact hashes and refuses concurrent/force overwrites. Repo maxstillwell/landbanker source/docs public publication authorized; no secrets/photos/private exports committed. Current agent:agent ownership retained.
+
+Visual Identity v1 is pushed on its branch and has not been described as merged or deployed to Main/Preview. Production and Preview remain at their previously recorded stable checkpoints until a human approves the visual direction and merges/deploys the branch.
 
 ## Database status
 
@@ -48,7 +57,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-The distributed share perimeter, protected gateway cutover, direct-RPC revocation, FSR/Height decision, map identify, Planning readability, privacy-safe observability, production build/deployment and Web plus four unsigned simulator CI jobs are complete. The final docs-only checkpoint records the exact tested application SHA; no application change follows it. The only unexecuted acceptance class is signed physical iPhone/iPad testing, blocked on Apple account/signing access; execute every ACCEPTANCE matrix row when credentials become available. Optional Vercel WAF work may follow dashboard entitlement review and must be staged before an owner explicitly publishes it. Do not re-enable direct RPCs, enable FSR/Height, import MaxQI broadly or perform a cutover.
+The distributed share perimeter, protected gateway cutover, direct-RPC revocation, FSR/Height decision, map identify, Planning readability, privacy-safe observability, production build/deployment and Visual Identity v1 branch CI are complete. Next, a human should review the three direction boards, 1024 px icon, small-size icon, Web landing/login/map header and screenshot-template copy; merge and deploy only after approval. Generate final App Store screenshots from a signed reviewed build with publishable data. The only unexecuted acceptance class is signed physical iPhone/iPad testing, blocked on Apple account/signing access; execute every ACCEPTANCE matrix row when credentials become available. Optional Vercel WAF work may follow dashboard entitlement review and must be staged before an owner explicitly publishes it. Do not re-enable direct RPCs, enable FSR/Height, import MaxQI broadly or perform a cutover.
 
 ## MaxQI safety / migration
 

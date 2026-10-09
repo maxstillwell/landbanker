@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build --webpack",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
+    "brand:round2": "node scripts/generate-round-2-review-assets.mjs",
+    "brand:overlay-review": "node scripts/generate-spatial-overlay-v3-review.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",

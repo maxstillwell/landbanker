@@ -2,6 +2,7 @@ import SharedMap from "@/components/shared-map-loader";
 import { notFound } from "next/navigation";
 import { resolveShare } from "@/lib/share-resolver";
 import { ShareRateLimit } from "@/lib/share-budget";
+import { BrandLockup } from "@/components/brand-lockup";
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Shared land view · LandOS",
@@ -20,7 +21,7 @@ export default async function Page({
     if (!(e instanceof ShareRateLimit)) throw e;
     return (
       <main className="shared-page">
-        <h1>LandOS</h1>
+        <BrandLockup href="/" />
         <p>{e.message}</p>
       </main>
     );
@@ -30,7 +31,7 @@ export default async function Page({
     if (status === "expired")
       return (
         <main className="shared-page">
-          <h1>LandOS</h1>
+          <BrandLockup href="/" />
           <p>This shared view has expired.</p>
         </main>
       );
@@ -39,7 +40,7 @@ export default async function Page({
   return (
     <main className="shared-page">
       <header>
-        <strong>LandOS</strong>
+        <BrandLockup href="/" compact />
         <span>Shared land view</span>
       </header>
       <h1>{share.view?.name || "Shared land view"}</h1>
