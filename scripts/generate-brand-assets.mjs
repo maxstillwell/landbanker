@@ -12,9 +12,17 @@ const appIconDir = path.join(
   "Assets.xcassets",
   "AppIcon.appiconset",
 );
+const launchMarkDir = path.join(
+  root,
+  "ios",
+  "LandBanker",
+  "Assets.xcassets",
+  "LandOSMark.imageset",
+);
 
 await mkdir(webDir, { recursive: true });
 await mkdir(appIconDir, { recursive: true });
+await mkdir(launchMarkDir, { recursive: true });
 await copyFile(
   path.join(root, "brand", "landos-mark.svg"),
   path.join(webDir, "landos-mark.svg"),
@@ -23,6 +31,7 @@ await copyFile(
   path.join(root, "brand", "landos-logo.svg"),
   path.join(webDir, "landos-logo.svg"),
 );
+await copyFile(master, path.join(webDir, "landos-app-icon.svg"));
 
 async function render(destination, size) {
   await sharp(master, { density: 144 })
@@ -43,6 +52,22 @@ for (const size of [16, 32, 180, 192, 512]) {
   await render(path.join(webDir, name), size);
 }
 await render(path.join(webDir, "icon-512-maskable.png"), 512);
+await render(path.join(launchMarkDir, "LandOSMark.png"), 512);
+await writeFile(
+  path.join(launchMarkDir, "Contents.json"),
+  `${JSON.stringify(
+    {
+      images: [
+        { filename: "LandOSMark.png", idiom: "universal", scale: "1x" },
+        { idiom: "universal", scale: "2x" },
+        { idiom: "universal", scale: "3x" },
+      ],
+      info: { author: "xcode", version: 1 },
+    },
+    null,
+    2,
+  )}\n`,
+);
 
 const iosImages = [
   ["iphone", "20x20", "2x", 40, "AppIcon-20@2x.png"],

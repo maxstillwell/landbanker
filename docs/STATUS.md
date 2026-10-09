@@ -1,5 +1,9 @@
 # LandOS status
 
+## Final icon selection — 2026-10-09
+
+The owner selected Terrain Layers as the final LandOS icon language. `brand/landos-app-icon.svg` and `brand/landos-mark.svg` now use the selected three-plane, active-parcel and synthetic equal-interval contour artwork; Web favicon/manifest/home-screen PNGs, the native launch mark and the complete iPhone/iPad AppIcon catalog were regenerated from the formal master. The LandOS wordmark and SwiftUI launch presentation use the same icon language. Earlier concepts remain under `brand/round-2/` as design history. The selected vector is reproducible with `brand/round-2/svg-finalists/render-c4-terrain-layers.cjs`; it embeds no third-party raster or geographic dataset. This is an owner design selection, not trademark clearance or Apple review approval. No database, Supabase, MaxQI, map workflow or deployment changed. Rollback: revert the final-icon commit and rerun `npm run brand:assets`.
+
 Updated 2026-10-08 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACCEPTANCE, PERFORMANCE and BRAND. **NEVER BREAK MAXQI.**
 
 ## Completed
@@ -14,7 +18,7 @@ Updated 2026-10-08 UTC. Resume with STATUS, ARCHITECTURE, PRODUCT, SECURITY, ACC
 - P4 perimeter: production public sharing now runs through the LandOS server and a capability-protected Postgres gateway. Postgres atomically enforces 120 caller/minute and 60 token/minute budgets across Vercel instances. Hosted synthetic valid/revoke/expiry and 70-request concurrent caller/token acceptance passed; old direct resolver/status anon/auth grants are revoked. Vercel Firewall remains optional defense in depth and still returns HTTP404 `Seawall Config not found`. See SHARE_PERIMETER.md.
 - P5 map identify: Parcel Search can arm a VIC/NSW map tap, reuse the official lookup provider, require an explicit choice for multiple matches, preview the existing official parcel model and Save through the existing idempotent path. No parallel parcel model was added.
 - P7 foundation: fixed-schema official Planning/parcel/address health log events and bounded instance diagnostics; status/last success/failure/latency without geometry/address/user IDs/photo URLs/tokens. API/auth/share/server failure schemas avoid arbitrary exception text. Next instrumentation captures only route pattern/type, release and time. See OBSERVABILITY.md; dashboards/alerts/global retention remain external account work.
-- LandOS Visual Identity v1 is implemented on `codex/landos-visual-identity-v1`: three original GIS/land-intelligence directions were compared and Survey Grid selected. Editable SVG masters, deterministic Web/iOS raster generation, complete iPhone/iPad AppIcon assets including 1024 marketing art, native SwiftUI launch presentation, Web favicon/manifest/landing/login/map/share lockups, App Store screenshot templates and BRAND.md are included. No database, Supabase, MaxQI, map-data or workflow behaviour changed.
+- LandOS Visual Identity v1 established the original system and Survey Grid direction. The owner subsequently selected Terrain Layers on the Round 2 review branch as the final icon language. Editable SVG masters, deterministic Web/iOS raster generation, complete iPhone/iPad AppIcon assets including 1024 marketing art, native SwiftUI launch presentation, Web favicon/manifest/landing/login/map/share lockups, App Store screenshot templates and BRAND.md are included. No database, Supabase, MaxQI, map-data or workflow behaviour changed.
 
 ## In progress / external blockers
 

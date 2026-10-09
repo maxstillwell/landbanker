@@ -1,5 +1,11 @@
 # LandOS App Icon Redesign — Round 2
 
+## Final selection — Terrain Layers
+
+The owner selected `svg-finalists/landos-c4-terrain-layers.svg` on 2026-10-09 as the final LandOS icon language. It combines three translucent analytical planes, an asymmetric active parcel and original equal-interval synthetic terrain contours. `svg-finalists/render-c4-terrain-layers.cjs` is the reproducible vector generator. The selected artwork is promoted to `brand/landos-app-icon.svg` and `brand/landos-mark.svg`; generated Web and iOS icon assets derive from that master.
+
+The earlier concepts remain in this directory as design history and rollback references. They are not current LandOS identity assets.
+
 ## Spatial Data Overlay v3 — focused icon review
 
 The owner-requested Spatial Data Overlay exploration is isolated in
@@ -10,10 +16,7 @@ are applied only in iOS review previews.
 
 Generate the focused review assets with `npm run brand:overlay-review`.
 
-This is design exploration only. It does not replace the production App Icon,
-Web identity, SwiftUI launch screen or App Store assets.
-
-Design exploration only. No winner has been selected, and none of these assets is wired into the app, Web UI, SwiftUI launch experience, manifest or App Store asset catalog.
+The round began as design exploration. The final selection above now supplies the formal App Icon, Web icon/mark and iOS asset catalog. Broader interface restyling remains separate from this icon decision.
 
 ## Concepts
 
@@ -49,4 +52,4 @@ Light and dark iPhone home-screen simulations are included on the comparison boa
 
 All geometry is original and repository-native. No third-party marks, type artwork, stock assets, map symbols, houses, roofs or location pins are used. Existing Visual Identity v1 assets remain unchanged as reference/rollback material. No MaxQI, Supabase, database or LandOS business code is touched.
 
-Regenerate all PNG review derivatives with `npm run brand:round2`. Do not implement a concept until the owner explicitly selects it.
+Regenerate the selected source with `node brand/round-2/svg-finalists/render-c4-terrain-layers.cjs`, promote it to the formal vector masters, then run `npm run brand:assets`. Regenerate the older comparison assets with `npm run brand:round2` only when reviewing the archived concepts.
