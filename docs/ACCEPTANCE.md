@@ -13,6 +13,19 @@ Use the independent LandOS app only: https://landbanker.vercel.app. Preview may 
 7. On iPad landscape confirm map/inspector approximately 70/30; portrait uses floating inspector. Exercise peek/half/full phone sheet and ensure map resizes.
 8. Save a named View; Share it; open in a separate logged-out browser. Only explicit scope should appear. Add a new Feature to the original layer and ensure the old View link does not expand. Revoke: public link must become unavailable.
 
+## MapLibre 3D evaluation route (branch-only)
+
+The parallel route is `/app/map-3d`; it is not a replacement for `/app/map` and it never changes MaxQI. In a non-production fixture or explicitly approved preview, verify on desktop, iPhone-width and iPad landscape:
+
+1. Streets, Light, Dark and Terrain base styles load with visible OpenFreeMap/OpenMapTiles/OpenStreetMap attribution.
+2. 2D/3D, compass/reset-north, Locate and Follow controls have clear active states and retain safe-area access.
+3. Building extrusion appears only where the current style provides source height data. Do not treat source-derived extrusion as survey-grade height.
+4. A saved parcel boundary, observation and saved user feature appear; selecting a property opens the matching basic inspector and Fit property works.
+5. Parcel search previews an official VIC/NSW boundary. Use the established Leaflet route for map-tap identify, save, drawing/editing, official planning overlays, Saved Views and sharing until their MapLibre migration gates pass.
+6. If a reviewed `NEXT_PUBLIC_LANDOS_TERRAIN_TILEJSON_URL` is configured, check terrain enable/disable and attribution. With no such configuration, the UI must clearly say terrain is not configured rather than imply terrain.
+
+Record screenshots and WebGL/browser version. This is WebGL browser validation, not a native MapKit rewrite or signed-device acceptance.
+
 ## Signed physical iPhone/iPad app (not tested)
 
 Requires Apple signing/TestFlight. Use the configured LandOS URL; never MaxQI /land. Check login/session/logout/relaunch/expired session, When In Use GPS denial/grant/accuracy/Follow, native Camera, PhotosPicker multi-select, JPEG/PNG/HEIC/large originals, capture time, photo GPS not overriding observation coordinates, lock/background/foreground/close during selection/upload, network timeout/reconnect and desktop sync. Native photos normalize to bounded JPEG before transfer. Raw Web HEIC preview depends on browser codec support; cross-browser preview conversion remains work.

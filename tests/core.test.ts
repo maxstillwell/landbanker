@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import type { GeoJsonObject } from "geojson";
 import { assertIndependentBackend, safeNext } from "../src/lib/config";
 import {
   planImport,
@@ -19,7 +20,76 @@ import {
   clientFailureInput,
   reportClientFailure,
 } from "../src/lib/client-failure";
+import {
+  isMapLibreBasemap,
+  scopedMapLibrePreference,
+  terrainTileJsonUrl,
+} from "../src/lib/map/maplibre-config";
+import {
+  observationsGeoJson,
+  parcelsGeoJson,
+} from "../src/lib/map/maplibre-geojson";
 const w = "11111111-1111-4111-8111-111111111111";
+test("MapLibre preview configuration is scoped and only accepts secure terrain configuration", () => {
+  assert.equal(isMapLibreBasemap("dark"), true);
+  assert.equal(isMapLibreBasemap("satellite"), false);
+  assert.notEqual(
+    scopedMapLibrePreference("owner-a", w),
+    scopedMapLibrePreference("owner-b", w),
+  );
+  assert.equal(terrainTileJsonUrl("http://example.test/dem.json"), null);
+  assert.equal(
+    terrainTileJsonUrl("https://example.test/dem.json"),
+    "https://example.test/dem.json",
+  );
+});
+test("MapLibre workspace overlays do not synthesize geometry for incomplete records", () => {
+  const parcels = parcelsGeoJson([
+    {
+      id: "saved-with-boundary",
+      workspace_id: w,
+      title: "Boundary",
+      latitude: null,
+      longitude: null,
+      geometry: {
+        type: "Polygon",
+        coordinates: [[[143, -37], [144, -37], [144, -38], [143, -37]]],
+      } as GeoJsonObject,
+      notes: null,
+      status: "saved",
+      metadata: {},
+    },
+    {
+      id: "no-boundary",
+      workspace_id: w,
+      title: "No boundary",
+      latitude: -37,
+      longitude: 143,
+      geometry: null,
+      notes: null,
+      status: "saved",
+      metadata: {},
+    },
+  ]);
+  assert.equal(parcels.features.length, 1);
+  const observations = observationsGeoJson([
+    {
+      id: "field-note",
+      workspace_id: w,
+      title: "Field note",
+      latitude: -37,
+      longitude: 143,
+      notes: null,
+      observed_at: "2026-01-01T00:00:00.000Z",
+      metadata: {},
+      field_observation_media: [],
+    },
+  ]);
+  assert.deepEqual(observations.features[0].geometry, {
+    type: "Point",
+    coordinates: [143, -37],
+  });
+});
 test("client failure telemetry allows only fixed categories and sends no private payload", async () => {
   assert(clientFailureInput.safeParse({ event: "frontend_fatal" }).success);
   assert(
