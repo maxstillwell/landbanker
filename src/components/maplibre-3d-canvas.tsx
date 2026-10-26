@@ -22,17 +22,20 @@ type Props = {
 const OSM_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    osm: {
+    carto: {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      // The volunteer OSM tile endpoint blocks the direct WebGL tile path used
+      // by MapLibre. CARTO supplies the same OpenStreetMap-derived base with
+      // CORS enabled, so the in-place 3D renderer always has a visible base.
+      tiles: ["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
+      attribution: "© OpenStreetMap contributors © CARTO",
       maxzoom: 19,
     },
   },
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#d8dfca" } },
-    { id: "osm", type: "raster", source: "osm" },
+    { id: "carto", type: "raster", source: "carto" },
   ],
 };
 
@@ -232,7 +235,10 @@ export default function MapLibre3DCanvas({
     map.on("style.load", ready);
     map.on("click", click);
     map.on("moveend", reportView);
-    map.on("error", () => setNotice("Some 3D source data is unavailable. The base map is still usable."));
+    // OpenFreeMap buildings are an optional enhancement. Do not replace a
+    // working base map with a generic error notice when a building tile lacks
+    // coverage or temporarily fails.
+    map.on("error", () => undefined);
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(node.current);
     return () => {
