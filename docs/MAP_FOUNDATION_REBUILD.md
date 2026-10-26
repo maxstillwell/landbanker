@@ -75,7 +75,9 @@ On 27 October 2026 AEDT, direct checks from the LandOS development environment f
 | Check | Result |
 |---|---|
 | OSM public raster tile | HTTP 200 carrying `x-blocked: Access denied` — unsuitable for LandOS |
-| CARTO OSM-derived raster sample | HTTP 200 with `Access-Control-Allow-Origin: *`; candidate only, licence/capacity review pending |
+| OpenFreeMap Liberty vector style | HTTP 200; valid MapLibre style, 2 sources, 111 layers and a `building` source-layer |
+| OpenFreeMap terms | The provider states public-instance use is free and commercial use is allowed; attribution is required through the included OpenMapTiles/OSM style attribution. It is as-is with no SLA or personalised support, so a future self-hosting/alternative-host plan remains mandatory. Terms reviewed 27 October 2026 AEDT. |
+| CARTO OSM-derived raster sample | HTTP 200 with `Access-Control-Allow-Origin: *`; not selected for the rebuild and no licence/capacity conclusion is recorded |
 | VIC planning overlays MapServer | reachable; `Map,Query,Data`; 36 layers |
 | NSW EPI planning MapServer | reachable; `Map,Query,Data`; 7 layers |
 | VIC dynamic export sample | HTTP 200, about 1.49 s for a 256px sample |

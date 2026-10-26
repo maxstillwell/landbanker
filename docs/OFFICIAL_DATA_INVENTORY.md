@@ -29,6 +29,10 @@ Repeat the minimum Gate A verification with `npm run verify:map-sources`. It is 
 - NSW parcels: <https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/MapServer/8>
 - NSW EPI: <https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer>
 
+## Basemap candidate (separate from official data)
+
+OpenFreeMap Liberty `<https://tiles.openfreemap.org/styles/liberty>` is the Gate A free-first candidate. On 27 October 2026 AEDT its documented public style returned a valid MapLibre style with 111 layers and a `building` source-layer. OpenFreeMap's published site states that public-instance use is free and commercial use is allowed; its terms state that it is supplied as-is without SLA or personalised support. The style contains the required OpenMapTiles/OpenStreetMap attribution. LandOS must expose that attribution, handle source errors and retain an environment-configured self-host/alternate-host path. This is a provisional basemap decision, not a guarantee of provider capacity.
+
 ## Gate B acceptance matrix
 
 For each enabled entry, record a dated test with a real location proving: service response, correct MapLibre placement, visibility toggle, source/attribution display, error-versus-empty state, and parcel selection/identification where applicable. Attach a browser screenshot and bounded network timing. Do not mark a layer complete from REST metadata alone.
