@@ -34,7 +34,9 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
     },
   },
   layers: [
-    { id: "background", type: "background", paint: { "background-color": "#d8dfca" } },
+    // Keep the canvas transparent until raster tiles actually arrive. The
+    // established Leaflet map remains underneath as a safe rendering fallback.
+    { id: "background", type: "background", paint: { "background-opacity": 0 } },
     { id: "carto", type: "raster", source: "carto" },
   ],
 };
@@ -153,6 +155,8 @@ export default function MapLibre3DCanvas({
   const initialViewRef = useRef(initialView);
   const callbacksRef = useRef({ onSelectParcel, onSelectObservation, onSelectFeature, onViewChange });
   const [notice, setNotice] = useState("");
+  const [baseUnavailable, setBaseUnavailable] = useState(false);
+  const [baseReady, setBaseReady] = useState(false);
   const collections = useMemo(() => mapLibreCollections(data), [data]);
   useEffect(() => {
     dataRef.current = data;
@@ -194,10 +198,15 @@ export default function MapLibre3DCanvas({
       });
     } catch {
       setNotice("3D is unavailable in this browser. Switch back to 2D.");
+      setBaseUnavailable(true);
       return;
     }
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-left");
+    const baseTimeout = window.setTimeout(() => {
+      setBaseUnavailable(true);
+      setNotice("3D tiles did not load in time. Your 2D workspace map is still ready to use.");
+    }, 7000);
     const ready = () => {
       try {
         if (!map.getSource("landos-parcels")) addWorkspaceLayers(map);
@@ -233,25 +242,41 @@ export default function MapLibre3DCanvas({
       callbacksRef.current.onViewChange({ latitude: center.lat, longitude: center.lng, zoom: map.getZoom() });
     };
     map.on("style.load", ready);
+    map.once("idle", () => {
+      window.clearTimeout(baseTimeout);
+      setBaseReady(true);
+    });
     map.on("click", click);
     map.on("moveend", reportView);
-    // OpenFreeMap buildings are an optional enhancement. Do not replace a
-    // working base map with a generic error notice when a building tile lacks
-    // coverage or temporarily fails.
-    map.on("error", () => undefined);
+    // OpenFreeMap buildings are optional. Only a failed visible base activates
+    // the Leaflet fallback; missing building coverage must not hide the map.
+    map.on("error", (event) => {
+      const sourceId = (event as unknown as { sourceId?: string }).sourceId;
+      if (sourceId === "carto") {
+        setBaseUnavailable(true);
+        setNotice("3D tiles are unavailable here. Your 2D workspace map is still ready to use.");
+      }
+    });
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(node.current);
     return () => {
       reportView();
+      window.clearTimeout(baseTimeout);
       observer.disconnect();
       map.remove();
       mapRef.current = null;
     };
   }, []);
   return (
-    <div className="map-3d-surface">
+    <div className={`map-3d-surface${baseUnavailable || !baseReady ? " map-3d-fallback" : ""}`}>
       <div ref={node} className="map-3d-canvas" aria-label="LandOS 3D map" />
-      <p className="map-3d-status">3D buildings are approximate OpenStreetMap/OpenFreeMap data. Switch to 2D to draw or edit.</p>
+      <p className="map-3d-status">
+        {baseUnavailable
+          ? "3D renderer unavailable. Your workspace map is still usable in 2D."
+          : baseReady
+            ? "3D buildings are approximate OpenStreetMap/OpenFreeMap data. Switch to 2D to draw or edit."
+            : "Preparing 3D view. Your workspace map remains available."}
+      </p>
       {notice ? <p className="map-3d-error" role="status">{notice}</p> : null}
     </div>
   );

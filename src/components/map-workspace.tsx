@@ -1519,7 +1519,7 @@ export default function MapWorkspace({
       ) : null}
       <div
         ref={mapNode}
-        className={`map-canvas${mapMode === "3d" ? " map-canvas-hidden" : ""}`}
+        className="map-canvas"
         aria-label="Land workspace map"
       />
       {mapMode === "3d" ? (

@@ -280,15 +280,14 @@ small {
   inset: 0 360px 0 0;
   background: #d8dfca;
 }
-.map-canvas-hidden {
-  visibility: hidden;
-  pointer-events: none;
-}
 .map-3d-surface {
   position: absolute;
   z-index: 400;
   inset: 0 360px 0 0;
-  background: #d8dfca;
+  background: transparent;
+}
+.map-3d-fallback {
+  pointer-events: none;
 }
 .map-3d-canvas {
   position: absolute;
