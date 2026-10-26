@@ -308,6 +308,20 @@ small {
   min-width: 44px;
   min-height: 44px;
 }
+.map-3d-link {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #b9ca9f;
+  border-radius: 7px;
+  background: #edf3e4;
+  color: #29483c;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.map-3d-link:hover {
+  background: #dfeccd;
+}
 .map-topline {
   position: absolute;
   top: 112px;
@@ -959,6 +973,11 @@ small {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .map-3d-link {
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 10px;
   }
   .map-topline {
     top: 92px;
