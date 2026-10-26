@@ -1584,9 +1584,6 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
-        <Link className="map-3d-link" href="/app/map-3d">
-          3D Preview
-        </Link>
         <Link
           className="icon-button"
           href="/app/settings"
