@@ -10,6 +10,7 @@
     "brand:overlay-review": "node scripts/generate-spatial-overlay-v3-review.mjs",
     "start": "next start",
     "lint": "eslint .",
+    "verify:map-sources": "node scripts/verify-map-sources.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx tests/core.test.ts && node --import tsx tests/planning.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts",
     "db:test": "bash scripts/test-database.sh",

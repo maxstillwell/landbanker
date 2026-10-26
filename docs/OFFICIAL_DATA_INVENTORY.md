@@ -6,6 +6,8 @@ Updated 27 October 2026 AEDT. This is an evidence inventory, not a claim that ev
 
 Each ArcGIS REST layer below was queried on 27 October 2026 AEDT using its official `?f=pjson` endpoint. The listed geometry, spatial reference, capabilities and record limit are returned service metadata. Point-intersection queries were also run against representative VIC (Bunninyong) and NSW (Dunoon) locations where noted. Provider licensing remains **pending formal source-terms review** unless explicitly documented by the provider; a reachable public endpoint is not commercial-reuse approval.
 
+Repeat the minimum Gate A verification with `npm run verify:map-sources`. It is read-only: it checks one VIC planning service plus NSW parcel/planning services and emits metadata, intersecting feature counts and timing without writing LandOS or provider data.
+
 | ID | State | Official provider / dataset | REST layer | Geometry / CRS | Service methods | Coverage / update / reuse status | Gate A result |
 |---|---|---|---|---|---|---|---|
 | `vic-parcels` | VIC | Victorian Government — VicPlan Property and Parcel / Parcel | `VicPlan_PropertyAndParcel/MapServer/4` | Polygon / EPSG:4283 | Map, Query, Data; max 1,000 | Victoria; update & commercial-reuse terms pending review | Metadata reachable. The Bunninyong test point was not inside a parcel, so a saved-parcel test coordinate is still required. |
