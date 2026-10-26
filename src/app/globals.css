@@ -280,6 +280,44 @@ small {
   inset: 0 360px 0 0;
   background: #d8dfca;
 }
+.map-canvas-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+.map-3d-surface {
+  position: absolute;
+  z-index: 400;
+  inset: 0 360px 0 0;
+  background: #d8dfca;
+}
+.map-3d-canvas {
+  position: absolute;
+  inset: 0;
+}
+.map-3d-loading,
+.map-3d-status,
+.map-3d-error {
+  position: absolute;
+  z-index: 1;
+  left: 22px;
+  max-width: 360px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #fafbf6eb;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.map-3d-loading {
+  top: 112px;
+}
+.map-3d-status {
+  bottom: 20px;
+}
+.map-3d-error {
+  bottom: 72px;
+  color: #86451f;
+}
 .map-header {
   position: absolute;
   top: max(18px, env(safe-area-inset-top));
@@ -299,6 +337,26 @@ small {
   margin-left: auto;
   font-size: 11px;
   color: #778467;
+}
+.map-mode-toggle {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #b8cda0;
+  border-radius: 7px;
+  background: #edf3e4;
+  color: #23473b;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.map-mode-toggle.active {
+  border-color: var(--green);
+  background: var(--green);
+  color: #faffec;
+}
+.map-mode-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 .icon-button {
   display: grid;
@@ -927,6 +985,21 @@ small {
   .map-canvas {
     inset: 0;
   }
+  .map-3d-surface {
+    inset: 0;
+  }
+  .map-3d-status {
+    right: 10px;
+    bottom: calc(var(--sheet-height) + 12px);
+    left: 10px;
+    max-width: none;
+  }
+  .map-3d-error {
+    right: 10px;
+    bottom: calc(var(--sheet-height) + 65px);
+    left: 10px;
+    max-width: none;
+  }
   .map-header {
     top: max(10px, env(safe-area-inset-top));
     left: 10px;
@@ -959,6 +1032,11 @@ small {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .map-mode-toggle {
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 10px;
   }
   .map-topline {
     top: 92px;

@@ -53,6 +53,7 @@ import { SavedViewPreview } from "./saved-view-preview";
 import type { SavedViewInput } from "@/lib/map/view-input";
 import { PropertyWorkspace } from "./property-workspace";
 import { PhotoPreview } from "./photo-preview";
+import MapLibre3DCanvas from "./maplibre-3d-loader";
 import { useViewport } from "@/lib/hooks/use-viewport";
 import type { MapChange } from "@/lib/map/change-feed";
 import { ShapeDraft } from "./shape-draft";
@@ -181,6 +182,12 @@ export default function MapWorkspace({
   const [sheet, setSheet] = useState<"collapsed" | "medium" | "expanded">(
     "medium",
   );
+  const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
+  const [threeDView, setThreeDView] = useState({
+    latitude: -37.5622,
+    longitude: 143.8503,
+    zoom: 11,
+  });
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -1482,6 +1489,27 @@ export default function MapWorkspace({
           (f) => String(f.id) === selection.featureId,
         )
       : null;
+  function toggleMapMode() {
+    if (mapMode === "2d" && drawMode) {
+      setNotice("Finish or cancel the current drawing before switching to 3D.");
+      return;
+    }
+    if (mapMode === "3d") {
+      map.current?.setView(
+        [threeDView.latitude, threeDView.longitude],
+        threeDView.zoom,
+      );
+      setMapMode("2d");
+      return;
+    }
+    const center = map.current?.getCenter();
+    setThreeDView({
+      latitude: center?.lat || -37.5622,
+      longitude: center?.lng || 143.8503,
+      zoom: map.current?.getZoom() || 11,
+    });
+    setMapMode("3d");
+  }
   return (
     <main className={`map-app sheet-${sheet}`}>
       {viewport.error ? (
@@ -1491,9 +1519,32 @@ export default function MapWorkspace({
       ) : null}
       <div
         ref={mapNode}
-        className="map-canvas"
+        className={`map-canvas${mapMode === "3d" ? " map-canvas-hidden" : ""}`}
         aria-label="Land workspace map"
       />
+      {mapMode === "3d" ? (
+        <MapLibre3DCanvas
+          data={renderedData}
+          initialView={threeDView}
+          location={fix}
+          onViewChange={setThreeDView}
+          onSelectParcel={(record) => {
+            setSelection({ kind: "parcel", record });
+            setTab("parcels");
+            setSheet("medium");
+          }}
+          onSelectObservation={(record) => {
+            setSelected(record);
+            setTab("observations");
+            setSheet("expanded");
+          }}
+          onSelectFeature={(record, featureId) => {
+            setSelection({ kind: "drawing", record, featureId });
+            setTab("layers");
+            setSheet("medium");
+          }}
+        />
+      ) : null}
       {session.found && !drawMode ? (
         <div className="drawing-recovery" role="status">
           <strong>Unfinished drawing found</strong>
@@ -1584,6 +1635,15 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
+        <button
+          className={`map-mode-toggle${mapMode === "3d" ? " active" : ""}`}
+          onClick={toggleMapMode}
+          aria-pressed={mapMode === "3d"}
+          disabled={mapMode === "2d" && Boolean(drawMode)}
+          title={mapMode === "3d" ? "Return to 2D editing" : "View this map in 3D"}
+        >
+          {mapMode === "3d" ? "2D edit" : "3D view"}
+        </button>
         <Link
           className="icon-button"
           href="/app/settings"
