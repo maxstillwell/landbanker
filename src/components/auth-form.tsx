@@ -13,6 +13,7 @@ export function AuthForm({
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState("");
   const titles = {
     login: "Welcome back.",
     signup: "Your workspace starts here.",
@@ -39,17 +40,28 @@ export function AuthForm({
         });
         if (error) throw error;
         if (data.session) location.assign("/app/map");
-        else
+        else {
+          setPendingConfirmationEmail(email);
           setMessage(
-            "Check your email to confirm your account. Your personal workspace is ready.",
+            "Confirm your email to activate your account. If the email is not in your inbox, use Resend confirmation below after a minute.",
           );
+        }
       }
       if (mode === "login") {
         const { error } = await client.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.toLowerCase().includes("email not confirmed")) {
+            setPendingConfirmationEmail(email);
+            setMessage(
+              "This account still needs email confirmation. You can resend the confirmation email below.",
+            );
+            return;
+          }
+          throw error;
+        }
         location.assign("/app/map");
       }
       if (mode === "forgot-password") {
@@ -68,6 +80,30 @@ export function AuthForm({
       }
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resendConfirmation() {
+    if (!pendingConfirmationEmail) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await browserClient().auth.resend({
+        type: "signup",
+        email: pendingConfirmationEmail,
+        options: { emailRedirectTo: `${location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      setMessage(
+        "If confirmation is required for this address, a new email has been requested. Check spam/junk too; Supabase limits repeat sends.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to request a new confirmation email.",
+      );
     } finally {
       setBusy(false);
     }
@@ -127,6 +163,16 @@ export function AuthForm({
           <p role="status" className="notice">
             {message}
           </p>
+        ) : null}
+        {pendingConfirmationEmail && mode !== "forgot-password" ? (
+          <button
+            type="button"
+            className="secondary auth-resend"
+            disabled={busy || !enabled}
+            onClick={() => void resendConfirmation()}
+          >
+            Resend confirmation email
+          </button>
         ) : null}
         <nav>
           {mode === "login" ? (
