@@ -241,6 +241,7 @@ export default function MapLibreWorkspace({
   const locationRef = useRef(location);
   const selectionRef = useRef(selection);
   const mode3dRef = useRef(mode3d);
+  const appliedStyleRef = useRef<MapLibreBasemap>("streets");
   useEffect(() => {
     dataRef.current = data;
     collectionsRef.current = collections;
@@ -356,69 +357,81 @@ export default function MapLibreWorkspace({
 
   useEffect(() => {
     if (!container.current) return;
-    const map = new maplibregl.Map({
-      container: container.current,
-      style: MAPLIBRE_BASEMAPS.streets.styleUrl,
-      center: INITIAL_CENTER,
-      zoom: INITIAL_ZOOM,
-      maxPitch: 70,
-    });
+    let map: Map;
+    try {
+      map = new maplibregl.Map({
+        container: container.current,
+        style: MAPLIBRE_BASEMAPS.streets.styleUrl,
+        center: INITIAL_CENTER,
+        zoom: INITIAL_ZOOM,
+        maxPitch: 70,
+      });
+    } catch {
+      setNotice("The 3D map engine could not start in this browser.");
+      return;
+    }
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-left");
     if (typeof document !== "undefined" && !window.matchMedia("(max-width: 767px)").matches)
       map.addControl(new maplibregl.FullscreenControl(), "bottom-left");
     const styleReady = () => {
-      addWorkspaceSources(map);
-      const foundBuildings = installBuildings(map);
-      setBuildingsAvailable(foundBuildings);
-      if (!mode3dRef.current && map.getLayer("landos-3d-buildings"))
-        map.setLayoutProperty("landos-3d-buildings", "visibility", "none");
-      setGeoJson(map, "landos-parcels", collectionsRef.current.parcels);
-      setGeoJson(map, "landos-observations", collectionsRef.current.observations);
-      setGeoJson(
-        map,
-        "landos-workspace-features",
-        collectionsRef.current.workspace.collection,
-      );
-      const currentLocation = locationRef.current;
-      setGeoJson(
-        map,
-        "landos-location",
-        currentLocation
-          ? {
-              type: "FeatureCollection",
-              features: [
-                {
-                  type: "Feature",
-                  properties: { accuracy: currentLocation.accuracy },
-                  geometry: {
-                    type: "Point",
-                    coordinates: [currentLocation.longitude, currentLocation.latitude],
+      try {
+        // A style can finish after a user switches base maps. Never add the
+        // same source twice if MapLibre emits a second completion event.
+        if (!map.getSource("landos-parcels")) addWorkspaceSources(map);
+        const foundBuildings = installBuildings(map);
+        setBuildingsAvailable(foundBuildings);
+        if (!mode3dRef.current && map.getLayer("landos-3d-buildings"))
+          map.setLayoutProperty("landos-3d-buildings", "visibility", "none");
+        setGeoJson(map, "landos-parcels", collectionsRef.current.parcels);
+        setGeoJson(map, "landos-observations", collectionsRef.current.observations);
+        setGeoJson(
+          map,
+          "landos-workspace-features",
+          collectionsRef.current.workspace.collection,
+        );
+        const currentLocation = locationRef.current;
+        setGeoJson(
+          map,
+          "landos-location",
+          currentLocation
+            ? {
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    properties: { accuracy: currentLocation.accuracy },
+                    geometry: {
+                      type: "Point",
+                      coordinates: [currentLocation.longitude, currentLocation.latitude],
+                    },
                   },
-                },
-              ],
-            }
-          : emptyCollection(),
-      );
-      const currentSelection = selectionRef.current;
-      const official =
-        currentSelection?.kind === "official" ? currentSelection.parcel : null;
-      setGeoJson(
-        map,
-        "landos-official-parcel",
-        official
-          ? {
-              type: "FeatureCollection",
-              features: [
-                {
-                  type: "Feature",
-                  properties: { title: official.address },
-                  geometry: official.geometry,
-                },
-              ],
-            }
-          : emptyCollection(),
-      );
+                ],
+              }
+            : emptyCollection(),
+        );
+        const currentSelection = selectionRef.current;
+        const official =
+          currentSelection?.kind === "official" ? currentSelection.parcel : null;
+        setGeoJson(
+          map,
+          "landos-official-parcel",
+          official
+            ? {
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    properties: { title: official.address },
+                    geometry: official.geometry,
+                  },
+                ],
+              }
+            : emptyCollection(),
+        );
+      } catch {
+        setNotice("The 3D basemap loaded with limited workspace overlays.");
+      }
     };
     const click = (event: maplibregl.MapMouseEvent) => {
       const results = map.queryRenderedFeatures(event.point, {
@@ -498,7 +511,10 @@ export default function MapLibreWorkspace({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (map.getStyle().sprite) map.setStyle(MAPLIBRE_BASEMAPS[basemap].styleUrl);
+    if (appliedStyleRef.current !== basemap) {
+      appliedStyleRef.current = basemap;
+      map.setStyle(MAPLIBRE_BASEMAPS[basemap].styleUrl);
+    }
     window.localStorage.setItem(preferenceKey, basemap);
   }, [basemap, preferenceKey]);
 
