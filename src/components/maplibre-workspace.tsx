@@ -15,7 +15,6 @@ import {
   OPENFREEMAP_ATTRIBUTION,
   isMapLibreBasemap,
   scopedMapLibrePreference,
-  terrainTileJsonUrl,
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
@@ -24,6 +23,14 @@ import type { MapData, Observation, Parcel } from "@/lib/types";
 import { formatArea } from "@/lib/map/measurement";
 import { locationFromPayload, sendNative, subscribeNative } from "@/lib/native-bridge";
 import { mergeMapPages, type MapPage } from "@/lib/map/data-pages";
+import {
+  OFFICIAL_MAP_LAYERS,
+  emptyOfficialCollection,
+  queryOfficialLayer,
+  type OfficialLayerId,
+  type OfficialLayerState,
+  type OfficialMapLayer,
+} from "@/lib/map/official-map-catalog";
 
 type Props = {
   userId: string;
@@ -37,7 +44,16 @@ type Selection =
   | { kind: "official"; parcel: OfficialParcel }
   | { kind: "observation"; observation: Observation }
   | { kind: "workspace-feature"; title: string; layerName: string }
+  | {
+      kind: "official-feature";
+      layer: OfficialMapLayer;
+      properties: Record<string, unknown>;
+    }
   | null;
+
+type OfficialLayerStatus =
+  | { state: "idle" | "loading" | "ready" | "empty" | "zoom" }
+  | { state: "error"; message: string };
 
 const EMPTY_DATA: MapData = {
   parcels: [],
@@ -47,9 +63,24 @@ const EMPTY_DATA: MapData = {
 };
 const INITIAL_CENTER: [number, number] = [143.8503, -37.5622];
 const INITIAL_ZOOM = 10.5;
-const TERRAIN_TILEJSON = terrainTileJsonUrl(
-  process.env.NEXT_PUBLIC_LANDOS_TERRAIN_TILEJSON_URL,
-);
+const OFFICIAL_LAYER_IDS = Object.keys(OFFICIAL_MAP_LAYERS) as OfficialLayerId[];
+const INITIAL_OFFICIAL_VISIBILITY: Record<OfficialLayerId, boolean> = {
+  "vic-parcels": true,
+  "vic-zoning": true,
+  "nsw-parcels": true,
+  "nsw-zoning": true,
+};
+const STATE_COVERAGE: Record<OfficialLayerState, [number, number, number, number]> = {
+  VIC: [140.7, -39.3, 150.1, -33.8],
+  NSW: [140.9, -37.7, 154.1, -28.0],
+};
+
+function bboxOverlaps(
+  a: [number, number, number, number],
+  b: [number, number, number, number],
+) {
+  return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+}
 
 function mapSource(map: Map, name: string) {
   return map.getSource(name) as GeoJSONSource | undefined;
@@ -158,40 +189,37 @@ function addWorkspaceSources(map: Map) {
   });
 }
 
-function installBuildings(map: Map) {
-  if (map.getLayer("landos-3d-buildings")) return true;
-  const base = map
-    .getStyle()
-    .layers?.find(
-      (layer) =>
-        layer.type === "fill" &&
-        "source" in layer &&
-        "source-layer" in layer &&
-        layer["source-layer"] === "building",
-    ) as maplibregl.FillLayerSpecification | undefined;
-  if (!base?.source || !base["source-layer"]) return false;
-  map.addLayer({
-    id: "landos-3d-buildings",
-    type: "fill-extrusion",
-    source: base.source,
-    "source-layer": base["source-layer"],
-    minzoom: 13,
-    paint: {
-      "fill-extrusion-color": "#b7ad9a",
-      "fill-extrusion-height": [
-        "coalesce",
-        ["to-number", ["get", "render_height"], 0],
-        ["to-number", ["get", "height"], 0],
-      ],
-      "fill-extrusion-base": [
-        "coalesce",
-        ["to-number", ["get", "render_min_height"], 0],
-        ["to-number", ["get", "min_height"], 0],
-      ],
-      "fill-extrusion-opacity": 0.78,
-    },
-  });
-  return true;
+function officialSourceId(id: OfficialLayerId) {
+  return `landos-official-${id}`;
+}
+
+function officialFillId(id: OfficialLayerId) {
+  return `${officialSourceId(id)}-fill`;
+}
+
+function officialLineId(id: OfficialLayerId) {
+  return `${officialSourceId(id)}-line`;
+}
+
+function addOfficialSources(map: Map) {
+  for (const id of OFFICIAL_LAYER_IDS) {
+    const layer = OFFICIAL_MAP_LAYERS[id];
+    const source = officialSourceId(id);
+    if (map.getSource(source)) continue;
+    map.addSource(source, { type: "geojson", data: emptyOfficialCollection() });
+    map.addLayer({
+      id: officialFillId(id),
+      type: "fill",
+      source,
+      paint: { "fill-color": layer.color, "fill-opacity": layer.fillOpacity },
+    });
+    map.addLayer({
+      id: officialLineId(id),
+      type: "line",
+      source,
+      paint: { "line-color": layer.color, "line-width": id.endsWith("parcels") ? 1.2 : 1.8 },
+    });
+  }
 }
 
 function boundsForGeometry(map: Map, geometry: Geometry) {
@@ -222,9 +250,6 @@ export default function MapLibreWorkspace({
   const watchId = useRef<number | null>(null);
   const [data, setData] = useState<MapData>(EMPTY_DATA);
   const [basemap, setBasemap] = useState<MapLibreBasemap>("streets");
-  const [mode3d, setMode3d] = useState(false);
-  const [buildingsAvailable, setBuildingsAvailable] = useState(false);
-  const [terrainEnabled, setTerrainEnabled] = useState(false);
   const [selection, setSelection] = useState<Selection>(null);
   const [parcelState, setParcelState] = useState<SupportedState>("VIC");
   const [notice, setNotice] = useState("");
@@ -234,14 +259,21 @@ export default function MapLibreWorkspace({
     accuracy: number;
   } | null>(null);
   const [following, setFollowing] = useState(false);
+  const [officialVisibility, setOfficialVisibility] = useState(
+    INITIAL_OFFICIAL_VISIBILITY,
+  );
+  const [officialStatus, setOfficialStatus] = useState<
+    Partial<Record<OfficialLayerId, OfficialLayerStatus>>
+  >({});
+  const [viewportRevision, setViewportRevision] = useState(0);
 
   const collections = useMemo(() => mapLibreCollections(data), [data]);
   const dataRef = useRef(data);
   const collectionsRef = useRef(collections);
   const locationRef = useRef(location);
   const selectionRef = useRef(selection);
-  const mode3dRef = useRef(mode3d);
   const appliedStyleRef = useRef<MapLibreBasemap>("streets");
+  const officialAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     dataRef.current = data;
     collectionsRef.current = collections;
@@ -252,9 +284,6 @@ export default function MapLibreWorkspace({
   useEffect(() => {
     selectionRef.current = selection;
   }, [selection]);
-  useEffect(() => {
-    mode3dRef.current = mode3d;
-  }, [mode3d]);
   const preferenceKey = useMemo(
     () => scopedMapLibrePreference(userId, workspaceId),
     [userId, workspaceId],
@@ -379,10 +408,7 @@ export default function MapLibreWorkspace({
         // A style can finish after a user switches base maps. Never add the
         // same source twice if MapLibre emits a second completion event.
         if (!map.getSource("landos-parcels")) addWorkspaceSources(map);
-        const foundBuildings = installBuildings(map);
-        setBuildingsAvailable(foundBuildings);
-        if (!mode3dRef.current && map.getLayer("landos-3d-buildings"))
-          map.setLayoutProperty("landos-3d-buildings", "visibility", "none");
+        addOfficialSources(map);
         setGeoJson(map, "landos-parcels", collectionsRef.current.parcels);
         setGeoJson(map, "landos-observations", collectionsRef.current.observations);
         setGeoJson(
@@ -410,6 +436,7 @@ export default function MapLibreWorkspace({
               }
             : emptyCollection(),
         );
+        setViewportRevision((current) => current + 1);
         const currentSelection = selectionRef.current;
         const official =
           currentSelection?.kind === "official" ? currentSelection.parcel : null;
@@ -441,12 +468,25 @@ export default function MapLibreWorkspace({
           "landos-workspace-fill",
           "landos-workspace-line",
           "landos-workspace-points",
+          ...OFFICIAL_LAYER_IDS.flatMap((id) => [
+            officialFillId(id),
+            officialLineId(id),
+          ]),
         ].filter((id) => Boolean(map.getLayer(id))),
       });
       const first = results[0];
       if (!first) return;
       const id = String(first.id || "");
-      if (first.properties?.kind === "parcel") {
+      const officialId = first.properties?.officialLayerId as
+        | OfficialLayerId
+        | undefined;
+      if (officialId && OFFICIAL_MAP_LAYERS[officialId]) {
+        setSelection({
+          kind: "official-feature",
+          layer: OFFICIAL_MAP_LAYERS[officialId],
+          properties: first.properties || {},
+        });
+      } else if (first.properties?.kind === "parcel") {
         const parcel = dataRef.current.parcels.find((item) => item.id === id);
         if (parcel) setSelection({ kind: "parcel", parcel });
       } else if (first.properties?.kind === "observation") {
@@ -464,10 +504,12 @@ export default function MapLibreWorkspace({
     };
     map.on("style.load", styleReady);
     map.on("click", click);
+    map.on("moveend", () => setViewportRevision((current) => current + 1));
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(container.current);
     return () => {
       resizeObserver.disconnect();
+      officialAbortRef.current?.abort();
       map.remove();
       mapRef.current = null;
     };
@@ -486,6 +528,66 @@ export default function MapLibreWorkspace({
   useEffect(() => {
     applyOfficialParcel();
   }, [applyOfficialParcel]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    const bounds = map.getBounds();
+    const bbox: [number, number, number, number] = [
+      bounds.getWest(),
+      bounds.getSouth(),
+      bounds.getEast(),
+      bounds.getNorth(),
+    ];
+    const zoom = map.getZoom();
+    officialAbortRef.current?.abort();
+    const controller = new AbortController();
+    officialAbortRef.current = controller;
+    const timer = window.setTimeout(() => {
+      for (const id of OFFICIAL_LAYER_IDS) {
+        const source = mapSource(map, officialSourceId(id));
+        const layer = OFFICIAL_MAP_LAYERS[id];
+        const enabled = officialVisibility[id];
+        if (!enabled || !bboxOverlaps(bbox, STATE_COVERAGE[layer.state])) {
+          source?.setData(emptyOfficialCollection());
+          setOfficialStatus((current) => ({ ...current, [id]: { state: "idle" } }));
+          continue;
+        }
+        if (zoom < layer.minZoom) {
+          source?.setData(emptyOfficialCollection());
+          setOfficialStatus((current) => ({ ...current, [id]: { state: "zoom" } }));
+          continue;
+        }
+        setOfficialStatus((current) => ({ ...current, [id]: { state: "loading" } }));
+        void queryOfficialLayer(layer, bbox, controller.signal)
+          .then((result) => {
+            if (controller.signal.aborted) return;
+            mapSource(map, officialSourceId(id))?.setData(result.collection);
+            setOfficialStatus((current) => ({
+              ...current,
+              [id]: { state: result.featureCount ? "ready" : "empty" },
+            }));
+            if (result.exceededTransferLimit)
+              setNotice(`${layer.label}: zoom in for a complete official result.`);
+          })
+          .catch((error) => {
+            if (controller.signal.aborted) return;
+            mapSource(map, officialSourceId(id))?.setData(emptyOfficialCollection());
+            setOfficialStatus((current) => ({
+              ...current,
+              [id]: {
+                state: "error",
+                message: error instanceof Error ? error.message : "Official service unavailable.",
+              },
+            }));
+          });
+      }
+    }, 240);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [officialVisibility, viewportRevision]);
 
   useEffect(() => {
     const stop = subscribeNative((event) => {
@@ -518,42 +620,10 @@ export default function MapLibreWorkspace({
     window.localStorage.setItem(preferenceKey, basemap);
   }, [basemap, preferenceKey]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    if (mode3d) {
-      map.setPitch(55);
-      if (map.getLayer("landos-3d-buildings"))
-        map.setLayoutProperty("landos-3d-buildings", "visibility", "visible");
-    } else {
-      map.setPitch(0);
-      if (map.getLayer("landos-3d-buildings"))
-        map.setLayoutProperty("landos-3d-buildings", "visibility", "none");
-    }
-  }, [mode3d]);
 
   function changeBasemap(next: MapLibreBasemap) {
     setBasemap(next);
     setNotice(`${MAPLIBRE_BASEMAPS[next].label} basemap selected.`);
-  }
-
-  function toggleTerrain() {
-    const map = mapRef.current;
-    if (!map || !TERRAIN_TILEJSON) return;
-    if (terrainEnabled) {
-      map.setTerrain(null);
-      setTerrainEnabled(false);
-      return;
-    }
-    if (!map.getSource("landos-terrain"))
-      map.addSource("landos-terrain", {
-        type: "raster-dem",
-        url: TERRAIN_TILEJSON,
-        tileSize: 512,
-        maxzoom: 14,
-      });
-    map.setTerrain({ source: "landos-terrain", exaggeration: 1.15 });
-    setTerrainEnabled(true);
   }
 
   function locate(keepFollowing: boolean) {
@@ -609,7 +679,9 @@ export default function MapLibreWorkspace({
           ? selection.observation.title
           : selection?.kind === "workspace-feature"
             ? selection.title
-            : "3D map preview";
+            : selection?.kind === "official-feature"
+              ? selection.layer.label
+              : "LandOS workspace";
 
   return (
     <main className="maplibre-app">
@@ -633,13 +705,6 @@ export default function MapLibreWorkspace({
           ))}
         </div>
         <div className="maplibre-control-group">
-          <button
-            className={mode3d ? "active" : ""}
-            onClick={() => setMode3d((current) => !current)}
-            aria-pressed={mode3d}
-          >
-            {mode3d ? "2D view" : "3D view"}
-          </button>
           <button onClick={() => mapRef.current?.easeTo({ pitch: 0, bearing: 0 })}>Reset north</button>
           <button onClick={() => locate(false)}>Locate</button>
           <button className={following ? "active" : ""} onClick={() => (following ? stopFollow() : locate(true))}>
@@ -650,7 +715,7 @@ export default function MapLibreWorkspace({
       <aside className="maplibre-inspector" aria-live="polite">
         <div className="maplibre-inspector-heading">
           <div>
-            <p className="eyebrow">MAP ENGINE PREVIEW</p>
+            <p className="eyebrow">LANDOS MAP FOUNDATION</p>
             <h1>{selectedTitle}</h1>
           </div>
           {selection ? <button onClick={() => setSelection(null)} aria-label="Clear selection">×</button> : null}
@@ -672,10 +737,23 @@ export default function MapLibreWorkspace({
         ) : null}
         {selection?.kind === "observation" ? <p>Field observation · open the established workspace to view notes and private media.</p> : null}
         {selection?.kind === "workspace-feature" ? <p>My Layer · {selection.layerName}</p> : null}
+        {selection?.kind === "official-feature" ? (
+          <dl className="maplibre-details">
+            <dt>Official layer</dt><dd>{selection.layer.label}</dd>
+            <dt>Provider</dt><dd>{selection.layer.provider}</dd>
+            <dt>Dataset</dt><dd>{selection.layer.dataset}</dd>
+            {selection.layer.fields.slice(0, 4).map((field) => (
+              <span key={field}>
+                <dt>{field}</dt><dd>{String(selection.properties[field] ?? "Not supplied")}</dd>
+              </span>
+            ))}
+            <dt>Source</dt><dd><a href={selection.layer.sourceUrl} target="_blank" rel="noreferrer">Official provenance</a></dd>
+          </dl>
+        ) : null}
         {selectedGeometry ? <button onClick={() => mapRef.current?.fitBounds(boundsForGeometry(mapRef.current, selectedGeometry), { padding: 72, maxZoom: 18 })}>Fit property</button> : null}
         {!selection ? (
           <>
-            <p className="maplibre-summary">A parallel MapLibre/WebGL experiment for this {role} workspace. Saved properties, observations and My Layers are read from the existing secure workspace; drawing, official overlays and sharing remain in the established Leaflet workspace during this validation stage.</p>
+            <p className="maplibre-summary">Single MapLibre foundation for this {role} workspace. Official sources load only for the current map viewport. Empty coverage, zoom limits and provider failures are shown separately.</p>
             <ParcelSearch
               key={`${userId}:${workspaceId}`}
               userId={userId}
@@ -689,15 +767,48 @@ export default function MapLibreWorkspace({
             />
           </>
         ) : null}
+        <section className="maplibre-official-layers" aria-label="Official layers">
+          <strong>Official layers</strong>
+          {OFFICIAL_LAYER_IDS.map((id) => {
+            const layer = OFFICIAL_MAP_LAYERS[id];
+            const status = officialStatus[id];
+            const label =
+              status?.state === "loading"
+                ? "Loading"
+                : status?.state === "ready"
+                  ? "Ready"
+                  : status?.state === "empty"
+                    ? "No coverage here"
+                    : status?.state === "zoom"
+                      ? `Zoom to ${layer.minZoom}+`
+                      : status?.state === "error"
+                        ? "Service unavailable"
+                        : "Off / outside state";
+            return (
+              <label key={id} className="maplibre-official-row">
+                <input
+                  type="checkbox"
+                  checked={officialVisibility[id]}
+                  onChange={() =>
+                    setOfficialVisibility((current) => ({
+                      ...current,
+                      [id]: !current[id],
+                    }))
+                  }
+                />
+                <span>
+                  <b>{layer.label}</b>
+                  <small>{label} · {layer.provider}</small>
+                </span>
+              </label>
+            );
+          })}
+        </section>
         <div className="maplibre-engine-status">
-          <strong>3D status</strong>
-          <span>{buildingsAvailable ? "Building extrusion data is available where the basemap supplies heights." : "This basemap has no building source for extrusion."}</span>
-          <button disabled={!TERRAIN_TILEJSON} onClick={toggleTerrain} aria-pressed={terrainEnabled}>
-            {terrainEnabled ? "Terrain on" : TERRAIN_TILEJSON ? "Enable terrain" : "Terrain source not configured"}
-          </button>
-          <small>Building heights are source-derived and approximate. Terrain requires a reviewed raster-DEM TileJSON; no third-party paid service is configured.</small>
+          <strong>Map foundation status</strong>
+          <span>OpenFreeMap basemap with direct, viewport-bounded official source queries.</span>
+          <small>3D buildings and terrain are deliberately deferred until Gate D source and device validation.</small>
         </div>
-        <Link className="maplibre-workflow-link" href="/app/map">Open full LandOS workspace</Link>
       </aside>
       {location ? <div className="maplibre-accuracy">Accuracy ±{Math.round(location.accuracy)} m</div> : null}
       {notice ? <div className="maplibre-notice" role="status">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></div> : null}
