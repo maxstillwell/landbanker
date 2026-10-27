@@ -289,7 +289,7 @@ try {
   await page.screenshot({ path: "artifacts/landos-drawing-phone.png" });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: phone polygon draw, measurement, name/layer/note save, reopen, stable identity, invalid-coordinate rejection, catalog add/toggle persistence, iPad 70/30, explicit shared view, private-note/future-feature exclusion and revoke.",
+    "PASS: phone polygon draw, measurement, name/layer/note save, reopen, stable identity, invalid-coordinate rejection, catalog add/toggle persistence, iPad adaptive layout, explicit shared view, private-note/future-feature exclusion and revoke.",
   );
 } finally {
   await browser.close();

@@ -1695,3 +1695,4 @@ fieldset {
 @media (max-width:767px) { .map-app .maplibre-attribution,.map-app.inspector-compact .maplibre-attribution { left:calc(var(--dock-width) + 8px); right:54px; bottom:calc(var(--sheet-height) + 4px); }.map-app.workspace-right-closed .maplibre-attribution { right:54px; bottom:max(4px,env(safe-area-inset-bottom)); } }
 .map-app .accuracy { left:calc(var(--dock-width) + 12px); top:calc(var(--header-height) + 96px); bottom:auto; background:#102326ee; color:#eef7f4; border:1px solid #ffffff20; }
 @media (max-width:767px) { .map-app.workspace-right-closed .maplibre-attribution { bottom:max(36px,calc(env(safe-area-inset-bottom) + 28px)); } }
+@media (max-width:767px) { .map-app .maplibre-attribution,.map-app.inspector-compact .maplibre-attribution { left:calc(var(--dock-width) + 54px); } }

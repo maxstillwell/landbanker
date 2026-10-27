@@ -1,5 +1,10 @@
 # LandOS status
 
+## Workspace UI V2 release candidate — 28 October 2026
+
+The V2 workspace adds the compact header, tool dock, optional library drawer and collapsible Inspector while retaining the MapLibre and existing GIS flows. Lint, typecheck, 40 unit tests, production build and independent local workflow regressions passed. The original software-rendering map performance assertion failed at 2,489 ms against its unchanged 2,000 ms limit; remaining assertions in that test file did not execute. See WORKSPACE_UI_V2_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md for evidence, visual-review scope and remaining real-device/provider limitations. Production deployment must be verified against the final pushed SHA.
+
+
 ## Map quality upgrade — 27 October 2026 AEDT
 
 Implementation is on `codex/landos-map-quality-basemaps`, based on main/rollback `7673fec75203a51fc27b3f6ff7738e29869db807`. P0 fractional zoom/API error recovery and stable parcel/workspace picking are fixed; official geometry persists with a contrasting selection halo, Fit/Clear and shared parcel Inspector. P1 zoning display groups/legend/opacity/hover and five OpenFreeMap style swatches are implemented. Satellite research found no live-verified imagery suitable to enable. No MaxQI/Supabase security/Auth/RLS/Storage policy/schema change or paid service is introduced.

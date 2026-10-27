@@ -119,6 +119,9 @@ try {
   await expect(
     page.getByRole("button", { name: "Save to Workspace", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Collapse Inspector", exact: true }).click();
+  await page.getByRole("button", { name: "Open Inspector", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Save to Workspace", exact: true })).toBeVisible();
   await page.reload();
   if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
   await page
