@@ -56,6 +56,8 @@ export function terrainTileJsonUrl(value: string | undefined) {
 export function basemapAttribution(value: MapLibreBasemap) {
   return (
     OPENFREEMAP_ATTRIBUTION +
-    (value === "fiord" ? " · Fiord design © CARTO / Stamen (CC BY 3.0)" : "")
+    (["light", "dark", "fiord"].includes(value)
+      ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
+      : "")
   );
 }
