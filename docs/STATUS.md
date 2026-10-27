@@ -2,9 +2,9 @@
 
 ## MapLibre workflow continuation — 27 October 2026 AEDT
 
-Resumed the verified `0ea31bc` checkpoint on `codex/landos-map-foundation-rebuild`; implementation checkpoint `7fe79b2` is pushed. Drawing/recovery/editing, Field/GPS/private photos/offline queue, Saved Views, viewport/change feed, official catalog/public overlays and Property Planning/Inspector now share one MapLibre renderer. Existing business APIs, Auth/RLS/Storage, public frozen projection and MaxQI remain unchanged. The old 3D experiment redirects to the workspace and Leaflet dependencies/overlay components have been removed.
+Resumed the verified `0ea31bc` checkpoint on `codex/landos-map-foundation-rebuild`; implementation checkpoints through `5cd203f` are pushed. Drawing/recovery/editing, Field/GPS/private photos/offline queue, Saved Views, viewport/change feed, official catalog/public overlays and Property Planning/Inspector now share one MapLibre renderer. Existing business APIs, Auth/RLS/Storage, public frozen projection and MaxQI remain unchanged. The old 3D experiment redirects to the workspace and Leaflet dependencies/overlay components have been removed.
 
-Owner authorization now includes completion, safe main integration, GitHub push and deployment without intermediate approvals. Final regression/release evidence and exact resume tasks are in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). Earlier renderer and approval-limit entries below are historical. Production verification currently faces network-policy denials for Vercel/API GitHub hosts; do not infer a deployed revision from the local implementation.
+Owner authorization now includes completion, safe main integration, GitHub push and deployment without intermediate approvals. Local lint/typecheck/37 unit tests/production build, disposable database security/concurrency checks and all twelve production-build browser/API/import workflows PASS. Independent cloud verification of the tested-image fix is pending. Full regression/release evidence and exact resume tasks are in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). Earlier renderer and approval-limit entries below are historical. Production verification currently faces network-policy denials for Vercel/API GitHub hosts; do not infer a deployed revision from the local implementation.
 
 
 ## Final icon selection — 2026-10-09
@@ -71,7 +71,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-After the published in-place 3D switch is visually accepted in a real browser, verify: same viewport on switch, OSM base display, building extrusion at a dense built-up zoom, 2D return, parcel/observation selection, and mobile/iPad layout. Keep `/app/map-3d` unlinked; do not alter Supabase/MaxQI or claim a full MapLibre workflow cutover. Then verify the auth-resend flow with the owner’s existing account.
+Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.md. All local critical workflow checks pass. Await independent cloud CI for the test-stack image fix, safely merge/push main under the owner's existing authorization, and verify the Vercel production revision. The saved environment network draft requires user publication before blocked Vercel/live-source endpoints become reachable. Do not repeat the architecture work or apply hosted database/security changes.
 
 ## MaxQI safety / migration
 
