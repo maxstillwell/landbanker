@@ -4,6 +4,9 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 const swatches: Record<MapLibreBasemap, string> = {
+  hybrid: "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
+  satellite:
+    "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   streets:
     "linear-gradient(135deg,#dce8c5 25%,#f4ddaa 25%,#f4ddaa 40%,#a8cbdf 40%,#a8cbdf 47%,#eee6d5 47%)",
   light:
@@ -59,8 +62,9 @@ export function BasemapSelector({
         </div>
         <small>
           Style swatches are illustrative. Bright is a vector basemap, without
-          DEM terrain. Satellite is unavailable pending source/licence
-          verification.
+          DEM terrain. Satellite uses the 2025 DEA annual Landsat composite at
+          approximately 30 m resolution, with Australian coverage. Hybrid adds
+          OpenStreetMap place and road labels.
         </small>
       </div>
     </details>

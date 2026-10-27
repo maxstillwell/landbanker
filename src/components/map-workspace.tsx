@@ -16,6 +16,7 @@ import { installOfficialRasters } from "@/lib/map/maplibre-official";
 import {
   MAPLIBRE_BASEMAPS,
   basemapAttribution,
+  basemapStyle,
   isMapLibreBasemap,
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
@@ -23,6 +24,7 @@ import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
+import { FloatingMapWidget } from "./floating-map-widget";
 import { BasemapSelector } from "./basemap-selector";
 import { BrandLockup } from "@/components/brand-lockup";
 import * as exifr from "exifr";
@@ -100,11 +102,9 @@ function centerFieldPoint(
   zoom: number,
 ) {
   if (!map) return;
-  const sheet = window.matchMedia("(max-width: 767px)").matches
-    ? map
-        .getContainer()
-        .parentElement?.querySelector(".inspector")
-        ?.getBoundingClientRect().height || 0
+  const inspector = map.getContainer().parentElement?.querySelector(".inspector");
+  const sheet = window.matchMedia("(max-width: 767px)").matches && inspector?.getAttribute("aria-hidden") !== "true"
+    ? inspector?.getBoundingClientRect().height || 0
     : 0;
   map.jumpTo({
     center: [longitude, latitude],
@@ -132,6 +132,8 @@ export default function MapWorkspace({
   const watch = useRef<number | null>(null);
   const followRef = useRef(false);
   const locateRequested = useRef(false);
+  const [locating, setLocating] = useState(false);
+  const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploading = useRef(false);
   const importInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -210,6 +212,32 @@ export default function MapWorkspace({
   const [sheet, setSheet] = useState<"collapsed" | "medium" | "expanded">(
     "medium",
   );
+  const layoutKey = `landos:workspace-layout:v1:${userId}:${workspaceId}`;
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [layoutScope, setLayoutScope] = useState("");
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(layoutKey) || "null");
+      if (typeof saved?.leftOpen === "boolean") setLeftOpen(saved.leftOpen);
+      if (typeof saved?.rightOpen === "boolean") setRightOpen(saved.rightOpen);
+    } catch {
+      /* Device preference is optional. */
+    }
+    setLayoutScope(layoutKey);
+  }, [layoutKey]);
+  useEffect(() => {
+    if (layoutScope !== layoutKey) return;
+    try {
+      localStorage.setItem(layoutKey, JSON.stringify({ leftOpen, rightOpen }));
+    } catch {
+      /* Device preference is optional. */
+    }
+  }, [layoutKey, layoutScope, leftOpen, rightOpen]);
+  useEffect(() => {
+    const id = window.setTimeout(() => map.current?.resize(), 320);
+    return () => clearTimeout(id);
+  }, [leftOpen, rightOpen]);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
@@ -223,6 +251,9 @@ export default function MapWorkspace({
       : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
   const selectedPropertyId = selectedParcel?.id;
+  useEffect(() => {
+    if (selection || draft) setRightOpen(true);
+  }, [selection, draft]);
   useEffect(() => {
     function changed(event: Event) {
       const detail = (
@@ -399,6 +430,7 @@ export default function MapWorkspace({
   const inspectOfficial = useCallback(() => {
     setSelection(null);
     setTab("layers");
+    setRightOpen(true);
     setSheet("medium");
   }, []);
   const officialLayers = useOfficialMapLayers({
@@ -598,6 +630,8 @@ export default function MapWorkspace({
     [reloadQueue],
   );
   const updateLocation = useCallback((location: LocationFix) => {
+    setLocating(false);
+    if (locationTimer.current) clearTimeout(locationTimer.current);
     setFix(location);
     if (map.current && (followRef.current || locateRequested.current))
       centerFieldPoint(
@@ -693,7 +727,7 @@ export default function MapWorkspace({
         const restoredBasemap: MapLibreBasemap = stored.basemap;
         setBasemap(restoredBasemap);
         basemapRef.current = restoredBasemap;
-        m.setStyle(MAPLIBRE_BASEMAPS[restoredBasemap].styleUrl);
+        m.setStyle(basemapStyle(restoredBasemap));
       }
     } catch {
       /* Device storage restrictions must not prevent map use. */
@@ -713,16 +747,19 @@ export default function MapWorkspace({
       }
     });
     m.on("error", (event) => {
-      if (basemapRef.current === "fiord") {
+      const source = (event as { sourceId?: string }).sourceId;
+      if (
+        (basemapRef.current === "fiord" && !source) ||
+        ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite")
+      ) {
         basemapRef.current = "light";
         setBasemap("light");
         m.setStyle(MAPLIBRE_BASEMAPS.light.styleUrl);
         setNotice(
-          "Fiord is unavailable. Showing Light; your workspace selection and drafts are preserved.",
+          "The selected basemap is unavailable. Showing Light; your workspace selection and drafts are preserved.",
         );
         return;
       }
-      const source = (event as { sourceId?: string }).sourceId;
       if (source?.startsWith("landos-reference-"))
         setNotice(
           "An official reference source is unavailable. Check coverage or retry later; no result is not no restriction.",
@@ -808,15 +845,29 @@ export default function MapWorkspace({
         const l = locationFromPayload(e.payload);
         if (l) updateLocation(l);
       }
-      if (e.type === "nativeError")
+      if (e.type === "nativeError") {
+        if (locateRequested.current) {
+          setLocating(false);
+          if (locationTimer.current) clearTimeout(locationTimer.current);
+          locateRequested.current = false;
+          followRef.current = false;
+          setFollow(false);
+        }
         setNotice(String(e.payload.message || "Native action failed"));
+      }
       if (
         e.type === "locationPermissionChanged" &&
         e.payload.status === "denied"
-      )
+      ) {
+        setLocating(false);
+        if (locationTimer.current) clearTimeout(locationTimer.current);
+        locateRequested.current = false;
+        followRef.current = false;
+        setFollow(false);
         setNotice(
           "Location access denied. Enable it in Settings or choose a map point.",
         );
+      }
       if (
         e.type === "photoSelectionStarted" ||
         e.type === "photoSelectionFinished"
@@ -883,6 +934,7 @@ export default function MapWorkspace({
     });
     return () => {
       clearInterval(timer);
+      if (locationTimer.current) clearTimeout(locationTimer.current);
       stop();
       window.removeEventListener("online", active);
       window.removeEventListener("offline", active);
@@ -1172,6 +1224,19 @@ export default function MapWorkspace({
   }, [sheet]);
   function locate(keepFollowing = false) {
     locateRequested.current = true;
+    setLocating(true);
+    if (locationTimer.current) clearTimeout(locationTimer.current);
+    locationTimer.current = setTimeout(() => {
+      setLocating(false);
+      locateRequested.current = false;
+      setFollow(false);
+      followRef.current = false;
+      if (watch.current !== null)
+        navigator.geolocation.clearWatch(watch.current);
+      watch.current = null;
+      sendNative("stopLocationFollow");
+      setNotice("Location request timed out. Check permissions and try again.");
+    }, 22000);
     setFollow(keepFollowing);
     followRef.current = keepFollowing;
     if (
@@ -1181,6 +1246,11 @@ export default function MapWorkspace({
     )
       return;
     if (!navigator.geolocation) {
+      setLocating(false);
+      if (locationTimer.current) clearTimeout(locationTimer.current);
+      locateRequested.current = false;
+      setFollow(false);
+      followRef.current = false;
       setNotice("Location is unavailable on this device.");
       return;
     }
@@ -1195,7 +1265,23 @@ export default function MapWorkspace({
       if (!keepFollowing)
         centerFieldPoint(map.current, l.latitude, l.longitude, 16);
     };
-    const failed = (e: GeolocationPositionError) => setNotice(e.message);
+    const failed = (e: GeolocationPositionError) => {
+      setLocating(false);
+      if (locationTimer.current) clearTimeout(locationTimer.current);
+      locateRequested.current = false;
+      followRef.current = false;
+      setFollow(false);
+      if (watch.current !== null)
+        navigator.geolocation.clearWatch(watch.current);
+      watch.current = null;
+      setNotice(
+        e.code === 1
+          ? "Location permission denied. Enable location access and try again."
+          : e.code === 3
+            ? "Location request timed out. Try again."
+            : "Location is unavailable. Check your device and try again.",
+      );
+    };
     if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
     if (keepFollowing)
       watch.current = navigator.geolocation.watchPosition(success, failed, {
@@ -1210,6 +1296,9 @@ export default function MapWorkspace({
       });
   }
   function stopFollow() {
+    setLocating(false);
+    if (locationTimer.current) clearTimeout(locationTimer.current);
+    locateRequested.current = false;
     followRef.current = false;
     setFollow(false);
     sendNative("stopLocationFollow");
@@ -1616,7 +1705,9 @@ export default function MapWorkspace({
     setMapMode(next);
   }
   return (
-    <main className={`map-app sheet-${sheet}`}>
+    <main
+      className={`map-app sheet-${sheet} ${leftOpen ? "workspace-left-open" : ""} ${rightOpen ? "" : "workspace-right-closed"} ${drawMode ? "workspace-drawing" : ""}`}
+    >
       <div className="maplibre-attribution">{basemapAttribution(basemap)}</div>
       {viewport.error && dismissedMapError !== viewport.error ? (
         <div className="map-update-error" role="alert">
@@ -1735,7 +1826,7 @@ export default function MapWorkspace({
             if (!isMapLibreBasemap(next)) return;
             setBasemap(next);
             basemapRef.current = next;
-            map.current?.setStyle(MAPLIBRE_BASEMAPS[next].styleUrl);
+            map.current?.setStyle(basemapStyle(next));
             const current = map.current;
             if (current) {
               try {
@@ -1784,9 +1875,147 @@ export default function MapWorkspace({
           {queue.filter((q) => q.status !== "draft").length} items pending
         </div>
       ) : null}
-      <div className="map-controls">
+      <aside
+        inert={!leftOpen}
+        className={`workspace-library ${leftOpen ? "open" : ""}`}
+        aria-label="Workspace library"
+        aria-hidden={!leftOpen}
+      >
+        <div className="workspace-library-head">
+          <strong>LANDOS · WORKSPACE</strong>
+          <button
+            onClick={() => setLeftOpen(false)}
+            aria-label="Collapse library"
+          >
+            ‹
+          </button>
+        </div>
+        <p>Tools and library</p>
+        {(
+          [
+            ["layers", "Official planning & My Layers"],
+            ["parcels", "Parcels & property search"],
+            ["observations", "Field observations"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => {
+              setTab(id);
+              setSelection(null);
+              setRightOpen(true);
+              setSheet("medium");
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <button
+          onClick={() => {
+            setTab("layers");
+            setToolsOpen(true);
+            setRightOpen(true);
+            setSheet("medium");
+          }}
+        >
+          Draw &amp; spatial tools
+        </button>
+        <button
+          onClick={() => {
+            setLeftOpen(false);
+            setRightOpen(true);
+            window.dispatchEvent(new Event("landos:reset-layout"));
+          }}
+        >
+          Reset Layout
+        </button>
+      </aside>
+      <button
+        className="workspace-left-toggle"
+        onClick={() => setLeftOpen((v) => !v)}
+        aria-label={leftOpen ? "Collapse library" : "Open library"}
+        aria-expanded={leftOpen}
+      >
+        {leftOpen ? "‹" : "›"}
+      </button>
+      <button
+        className="workspace-right-toggle"
+        onClick={() => setRightOpen((v) => !v)}
+        aria-label={rightOpen ? "Collapse Inspector" : "Open Inspector"}
+        aria-expanded={rightOpen}
+      >
+        {rightOpen ? "›" : "‹"}
+      </button>
+      <FloatingMapWidget
+        title="Layers"
+        storageKey={`${layoutKey}:layers`}
+        initialPosition={{ x: 230, y: 84 }}
+      >
+        <div className="floating-layer-list">
+          {activeLayers.map((item) => {
+            const layer = catalog.find((entry) => entry.id === item.catalog_id);
+            if (!layer) return null;
+            return <div key={item.catalog_id}>
+              <label><input type="checkbox" checked={item.visible} aria-label={`Show ${layer.name}`} onChange={(event) => void changeOfficialLayer({ ...item, visible: event.target.checked })} /> {layer.name}</label>
+              <label>Opacity <input type="range" min="0" max="1" step=".05" defaultValue={item.opacity} key={`${item.catalog_id}:${item.opacity}`} aria-label={`Widget ${layer.name} opacity`} onPointerUp={(event) => void changeOfficialLayer({ ...item, opacity: Number(event.currentTarget.value) })} onKeyUp={(event) => void changeOfficialLayer({ ...item, opacity: Number(event.currentTarget.value) })} /></label>
+              <small>{layer.provider} · {layer.state}</small>
+            </div>;
+          })}
+        </div>
+        <button
+          onClick={() => {
+            setTab("layers");
+            setRightOpen(true);
+            setSheet("medium");
+          }}
+        >
+          Open layer library
+        </button>
+      </FloatingMapWidget>
+      <FloatingMapWidget
+        title="Spatial Tools"
+        storageKey={`${layoutKey}:spatial`}
+        initialPosition={{ x: 230, y: 380 }}
+      >
+        <div className="spatial-widget-tools">
+          {(
+            [
+              ["Point", "Point"],
+              ["LineString", "Line / distance"],
+              ["Polygon", "Polygon / area"],
+              ["Rectangle", "Rectangle"],
+            ] as [DrawingKind, string][]
+          ).map(([type, label]) => (
+            <button
+              key={type}
+              disabled={!canWrite || drawMode}
+              onClick={() => startDrawing(type)}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setTab("layers");
+              setRightOpen(true);
+              setSheet("medium");
+            }}
+          >
+            Radius &amp; import
+          </button>
+          <small>
+            {drawMode ? `Active: ${kind}` : "Select a tool to begin"}
+          </small>
+        </div>
+      </FloatingMapWidget>
+      <FloatingMapWidget
+        title="Location"
+        storageKey={`${layoutKey}:location`}
+        initialPosition={{ x: 12, y: 560 }}
+        initiallyExpanded
+      >
         <button onClick={() => locate()} aria-label="Locate Me">
-          Locate
+          {locating ? "Locating…" : "Locate"}
         </button>
         <button
           className={follow ? "active" : ""}
@@ -1795,7 +2024,12 @@ export default function MapWorkspace({
         >
           {follow ? "Following" : "Follow"}
         </button>
-      </div>
+        <div className="floating-navigation" aria-label="Map controls">
+          <button onClick={() => map.current?.zoomIn()} aria-label="Zoom in">+</button>
+          <button onClick={() => map.current?.zoomOut()} aria-label="Zoom out">−</button>
+          <button onClick={() => map.current?.resetNorth()} aria-label="Reset bearing">North</button>
+        </div>
+      </FloatingMapWidget>
       {fix ? (
         <div className="accuracy">
           Accuracy ±{Math.round(fix.accuracy)} m{follow ? " · Following" : ""}
@@ -1820,7 +2054,11 @@ export default function MapWorkspace({
           </button>
         </div>
       ) : null}
-      <aside className={`inspector ${sheet}`}>
+      <aside
+        inert={!rightOpen}
+        className={`inspector ${sheet}`}
+        aria-hidden={!rightOpen}
+      >
         <div className="sheet-handle">
           <button
             onClick={() =>

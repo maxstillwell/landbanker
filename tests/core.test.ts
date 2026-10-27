@@ -21,6 +21,7 @@ import {
   reportClientFailure,
 } from "../src/lib/client-failure";
 import {
+  basemapStyle,
   isMapLibreBasemap,
   scopedMapLibrePreference,
   terrainTileJsonUrl,
@@ -32,7 +33,22 @@ import {
 const w = "11111111-1111-4111-8111-111111111111";
 test("MapLibre preview configuration is scoped and only accepts secure terrain configuration", () => {
   assert.equal(isMapLibreBasemap("dark"), true);
-  assert.equal(isMapLibreBasemap("satellite"), false);
+  assert.equal(isMapLibreBasemap("satellite"), true);
+  const satellite = basemapStyle("satellite");
+  assert.equal(typeof satellite, "object");
+  if (typeof satellite !== "string") {
+    const source = satellite.sources["dea-satellite"];
+    assert(source && source.type === "raster");
+    assert.match(source.tiles?.[0] || "", /ga_ls8cls9c_gm_cyear_3/);
+    assert.match(source.attribution || "", /Geoscience Australia/);
+  }
+  const hybrid = basemapStyle("hybrid");
+  assert.notEqual(typeof hybrid, "string");
+  if (typeof hybrid !== "string") {
+    assert.equal(hybrid.sources.openmaptiles?.type, "vector");
+    assert(hybrid.layers.some((layer) => layer.id === "hybrid-place-labels"));
+    assert(hybrid.layers.some((layer) => layer.id === "hybrid-road-labels"));
+  }
   assert.notEqual(
     scopedMapLibrePreference("owner-a", w),
     scopedMapLibrePreference("owner-b", w),

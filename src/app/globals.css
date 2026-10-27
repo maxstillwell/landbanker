@@ -1611,3 +1611,46 @@ fieldset {
 .floating-map-widget-handle { cursor:grab; touch-action:none; font-size:20px; }
 .floating-map-widget-handle:active { cursor:grabbing; }
 .floating-map-widget-content { padding:6px; }
+
+/* Single-scene workspace chrome. */
+.workspace-library { position:absolute; z-index:650; inset:0 auto 0 0; width:210px; padding:16px 12px; overflow-y:auto; transform:translateX(-100%); transition:transform .25s ease; background:#0d1d1f; color:#eef7f4; border-right:1px solid #355052; }
+.workspace-library.open { transform:translateX(0); }
+.workspace-library-head { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:10px; letter-spacing:.09em; color:#d8ff43; }
+.workspace-library button { width:100%; text-align:left; margin:4px 0; background:#122528; color:#eef7f4; border:1px solid #355052; border-radius:7px; padding:10px; }
+.workspace-library-head button { width:auto; }
+.workspace-left-toggle,.workspace-right-toggle { position:absolute; z-index:700; top:50%; border:1px solid #355052; color:#eef7f4; background:#0d1d1f; border-radius:7px; min-width:30px; min-height:42px; }
+.workspace-left-toggle { left:0; }.workspace-left-open .workspace-left-toggle { left:210px; }
+.workspace-right-toggle { right:360px; }.workspace-right-closed .workspace-right-toggle { right:0; }
+.workspace-right-closed .inspector { visibility:hidden; pointer-events:none; transform:translateX(100%); }
+.workspace-right-closed .map-canvas { right:0 !important; }
+.workspace-left-open .map-canvas { left:210px; }
+.workspace-left-open .map-header { left:232px; }.workspace-right-closed .map-header { right:22px; }
+.inspector { transition:transform .25s ease, visibility .25s; }
+.floating-map-widget-content button { background:#122528; color:#eef7f4; border:1px solid #355052; border-radius:6px; padding:7px; }
+.spatial-widget-tools { display:grid; gap:5px; }.spatial-widget-tools small { color:#b6cbc5; }
+@media (max-width:767px) { .workspace-library { width:min(290px,85vw); }.workspace-left-open .map-canvas { left:0; }.workspace-left-open .map-header { left:10px; }.workspace-left-open .workspace-left-toggle { left:min(290px,85vw); }.workspace-right-toggle { right:0; top:90px; }.workspace-right-closed .inspector { transform:translateY(100%); }.floating-map-widget { max-width:180px; } }
+.workspace-library p { color:#a8bfba; font-size:12px; }
+.map-app .inspector { background:#0d1d1f; color:#eef7f4; border-color:#355052; }
+.map-app .inspector h2,.map-app .inspector h3,.map-app .inspector strong,.map-app .inspector label { color:#eef7f4; }
+.map-app .inspector small,.map-app .inspector p { color:#b5cbc5; }
+.map-app .inspector button,.map-app .inspector summary { color:#eef7f4; background:#122528; border-color:#355052; }
+.map-app .inspector input,.map-app .inspector select,.map-app .inspector textarea { background:#071315; color:#eef7f4; border-color:#355052; }
+.map-app .inspector .tabs button.active { color:#d8ff43; border-color:#d8ff43; }
+.map-app .inspector .primary { background:#d8ff43; color:#071315; }
+.map-app .inspector a { color:#6de4cc; }
+.map-app .map-header { background:#0d1d1ff2; border-color:#355052; color:#eef7f4; }
+.map-app .map-header button,.map-app .map-header summary { color:#eef7f4; }
+.map-app .map-header .map-mode-toggle { background:#122528; border-color:#355052; }
+.map-app .map-header .basemap-options { background:#0d1d1f; color:#eef7f4; }
+.map-app .map-header .basemap-options button { background:#122528; color:#eef7f4; border-color:#355052; }
+.map-app .map-header .basemap-options button[aria-pressed="true"] { border-color:#d8ff43; color:#d8ff43; }
+.map-app .map-header .basemap-options small { color:#b5cbc5; }
+.map-app .map-header .brand-name { color:#eef7f4; }
+.map-app .map-header .workspace-pill { background:#122528; color:#eef7f4; border:1px solid #355052; }
+.floating-navigation { display:flex; gap:4px; margin-top:5px; }
+.workspace-drawing .floating-map-widget { visibility:hidden; pointer-events:none; }
+.floating-layer-list { max-height:240px; max-width:220px; overflow:auto; }
+.floating-layer-list > div { display:grid; gap:4px; padding:6px 0; border-bottom:1px solid #355052; }
+.floating-layer-list label { display:block; font-size:12px; }
+.floating-layer-list small { color:#b5cbc5; }
+@media (min-width:768px) and (orientation:landscape) and (max-width:1400px) { .workspace-right-toggle { right:30vw; } .workspace-right-closed .workspace-right-toggle { right:0; } }

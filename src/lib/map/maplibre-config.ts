@@ -1,10 +1,21 @@
 export type MapLibreBasemap =
-  "streets" | "light" | "dark" | "terrain" | "fiord";
+  "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid";
 
 export const MAPLIBRE_BASEMAPS: Record<
   MapLibreBasemap,
   { label: string; styleUrl: string; description: string }
 > = {
+  hybrid: {
+    label: "Hybrid",
+    styleUrl: "https://ows.dea.ga.gov.au/",
+    description: "DEA 2025 satellite composite with OpenStreetMap place and road labels",
+  },
+  satellite: {
+    label: "Satellite",
+    styleUrl: "https://ows.dea.ga.gov.au/",
+    description:
+      "DEA Landsat 8/9 2025 annual composite, approximately 30 m; Australian coverage",
+  },
   streets: {
     label: "Streets",
     styleUrl: "https://tiles.openfreemap.org/styles/liberty",
@@ -55,9 +66,48 @@ export function terrainTileJsonUrl(value: string | undefined) {
 
 export function basemapAttribution(value: MapLibreBasemap) {
   return (
-    OPENFREEMAP_ATTRIBUTION +
+    (value === "satellite" || value === "hybrid"
+      ? "© Commonwealth of Australia (Geoscience Australia) · DEA GeoMAD 2025 · CC BY 4.0"
+      : OPENFREEMAP_ATTRIBUTION) +
+    (value === "hybrid" ? ` · ${OPENFREEMAP_ATTRIBUTION}` : "") +
     (["light", "dark", "fiord"].includes(value)
       ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
       : "")
   );
+}
+
+/** Reviewed DEA annual true-colour composite; its annual date is deliberately explicit. */
+export function basemapStyle(
+  value: MapLibreBasemap,
+): string | import("maplibre-gl").StyleSpecification {
+  if (value !== "satellite" && value !== "hybrid") return MAPLIBRE_BASEMAPS[value].styleUrl;
+  return {
+    version: 8,
+    ...(value === "hybrid" ? { glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf" } : {}),
+    sources: {
+      ...(value === "hybrid" ? { openmaptiles: { type: "vector" as const, url: "https://tiles.openfreemap.org/planet", attribution: OPENFREEMAP_ATTRIBUTION } } : {}),
+      "dea-satellite": {
+        type: "raster",
+        tiles: [
+          "https://ows.dea.ga.gov.au/?service=WMS&version=1.1.1&request=GetMap&layers=ga_ls8cls9c_gm_cyear_3&styles=simple_rgb&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256&format=image/png&time=2025-01-01",
+        ],
+        tileSize: 256,
+        bounds: [111.53, -44.34, 155.08, -8.51],
+        attribution:
+          "© Commonwealth of Australia (Geoscience Australia), DEA GeoMAD 2025 · CC BY 4.0",
+      },
+    },
+    layers: [
+      {
+        id: "dea-satellite-background",
+        type: "background",
+        paint: { "background-color": "#26383a" },
+      },
+      { id: "dea-satellite-raster", type: "raster", source: "dea-satellite" },
+      ...(value === "hybrid" ? [
+        { id: "hybrid-road-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "transportation_name", minzoom: 12, layout: { "symbol-placement": "line" as const, "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 11 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
+        { id: "hybrid-place-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "place", layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
+      ] : []),
+    ],
+  };
 }

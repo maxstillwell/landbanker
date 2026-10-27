@@ -9,10 +9,14 @@ export function FloatingMapWidget({
   title,
   storageKey,
   children,
+  initialPosition = { x: 20, y: 180 },
+  initiallyExpanded = false,
 }: {
   title: string;
   storageKey: string;
   children: ReactNode;
+  initialPosition?: Position;
+  initiallyExpanded?: boolean;
 }) {
   const node = useRef<HTMLDivElement>(null);
   const drag = useRef<{
@@ -21,8 +25,10 @@ export function FloatingMapWidget({
     y: number;
     origin: Position;
   } | null>(null);
-  const [position, setPosition] = useState<Position>({ x: 12, y: 90 });
-  const [expanded, setExpanded] = useState(true);
+  const [position, setPosition] = useState<Position>(initialPosition);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
+  const initial = useRef(initialPosition);
+  const [loadedKey, setLoadedKey] = useState("");
   const clamp = (p: Position): Position => {
     const el = node.current,
       parent = el?.parentElement;
@@ -34,12 +40,16 @@ export function FloatingMapWidget({
       bounds && sheet && sheet.top > bounds.top && sheet.top < bounds.bottom
         ? sheet.top - bounds.top
         : (bounds?.height ?? parent.clientHeight);
+    const offset = bounds
+      ? bounds.left - parent.getBoundingClientRect().left
+      : 0;
     return {
       x: Math.max(
-        0,
+        offset,
         Math.min(
           p.x,
-          Math.max(0, (bounds?.width ?? parent.clientWidth) - el.offsetWidth),
+          offset +
+            Math.max(0, (bounds?.width ?? parent.clientWidth) - el.offsetWidth),
         ),
       ),
       y: Math.max(0, Math.min(p.y, Math.max(0, height - el.offsetHeight))),
@@ -54,11 +64,36 @@ export function FloatingMapWidget({
     } catch {
       /* Local preference storage is optional. */
     }
-    const resize = () => setPosition((p) => clamp(p));
+    setLoadedKey(storageKey);
+    const resize = () =>
+      setPosition((p) => {
+        const next = clamp(p);
+        return next.x === p.x && next.y === p.y ? p : next;
+      });
+    const reset = () => {
+      setPosition(clamp(initial.current));
+      setExpanded(initiallyExpanded);
+    };
+    window.addEventListener("landos:reset-layout", reset);
+    const observer = new ResizeObserver(resize);
+    const parent = node.current?.parentElement;
+    if (parent) {
+      observer.observe(parent);
+      const canvas = parent.querySelector(".map-canvas");
+      const inspector = parent.querySelector(".inspector");
+      if (canvas) observer.observe(canvas);
+      if (inspector) observer.observe(inspector);
+    }
+    if (node.current) observer.observe(node.current);
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [storageKey]);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("landos:reset-layout", reset);
+      observer.disconnect();
+    };
+  }, [storageKey, initiallyExpanded]);
   useEffect(() => {
+    if (loadedKey !== storageKey) return;
     try {
       localStorage.setItem(
         storageKey,
@@ -67,7 +102,7 @@ export function FloatingMapWidget({
     } catch {
       /* Keep controls usable without device storage. */
     }
-  }, [storageKey, position, expanded]);
+  }, [storageKey, position, expanded, loadedKey]);
   return (
     <div
       ref={node}
@@ -102,6 +137,9 @@ export function FloatingMapWidget({
             );
           }}
           onPointerUp={() => {
+            drag.current = null;
+          }}
+          onLostPointerCapture={() => {
             drag.current = null;
           }}
           onPointerCancel={() => {

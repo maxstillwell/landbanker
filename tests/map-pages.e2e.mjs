@@ -328,7 +328,7 @@ try {
         requestAnimationFrame(frame);
       }),
   );
-  assert(frameMs < 2000, "ten frames remain responsive during scale pan");
+  assert(frameMs < 2000, `ten frames remain responsive during scale pan (measured ${frameMs.toFixed(0)} ms)`);
   await page.getByRole("button", { name: "layers", exact: true }).click();
   await page
     .locator(".saved-layer summary")
