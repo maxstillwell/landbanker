@@ -1,65 +1,36 @@
 "use client";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { useEffect, useRef } from "react";
+import "maplibre-gl/dist/maplibre-gl.css";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
+import * as maplibregl from "maplibre-gl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MAPLIBRE_BASEMAPS, OPENFREEMAP_ATTRIBUTION } from "@/lib/map/maplibre-config";
 import type { SharedProjection } from "@/lib/map/share-types";
-import { createArcGisExportLayer } from "@/lib/map/arcgis-export-layer";
+
+function resources(share: SharedProjection): FeatureCollection {
+  const features: Feature[] = [];
+  for (const item of share.resources) {
+    const value = item.geometry || item.geojson;
+    if (value?.type === "FeatureCollection") features.push(...(value as FeatureCollection).features);
+    else if (value && "type" in value) features.push({ type: "Feature", properties: { title: item.title || item.name || "Shared property" }, geometry: value as Geometry });
+    else if (item.latitude != null && item.longitude != null) features.push({ type: "Feature", properties: { title: item.title || item.name || "Shared property" }, geometry: { type: "Point", coordinates: [item.longitude, item.latitude] } });
+  }
+  return { type: "FeatureCollection", features };
+}
 export default function SharedMap({ share }: { share: SharedProjection }) {
-  const node = useRef<HTMLDivElement>(null);
+  const node = useRef<HTMLDivElement>(null); const [notice, setNotice] = useState("");
+  const data = useMemo(() => resources(share), [share]);
   useEffect(() => {
     if (!node.current) return;
-    const m = L.map(node.current).setView(
-      share.view ? [share.view.latitude, share.view.longitude] : [-37, 144],
-      share.view?.zoom || 7,
-    );
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      referrerPolicy: "origin",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(m);
-    const group = L.featureGroup().addTo(m);
-    for (const resource of share.resources) {
-      try {
-        const geometry = resource.geometry || resource.geojson;
-        if (geometry)
-          L.geoJSON(geometry, {
-            style: { color: "#526f4b", weight: 2, fillOpacity: 0.18 },
-            pointToLayer: (_f, p) =>
-              L.circleMarker(p, { radius: 7, color: "#526f4b" }),
-          }).addTo(group);
-        else if (resource.latitude != null && resource.longitude != null)
-          L.circleMarker([resource.latitude, resource.longitude], {
-            radius: 7,
-            color: "#526f4b",
-          }).addTo(group);
-      } catch {
-        /* Preserve remaining explicit shared resources if legacy geometry is invalid. */
-      }
-    }
-    for (const official of share.official_layers || []) {
-      if (official.renderer === "arcgis_export")
-        createArcGisExportLayer(official.service_url, official.layer_ids, {
-          opacity: Number(official.opacity),
-          minZoom: official.min_zoom,
-          attribution: official.attribution,
-          referrerPolicy: "origin",
-        }).addTo(m);
-    }
-    if (!share.view && group.getBounds().isValid())
-      m.fitBounds(group.getBounds(), { padding: [24, 24], maxZoom: 17 });
-    const observer = new ResizeObserver(() => m.invalidateSize({ pan: false }));
-    observer.observe(node.current);
-    return () => {
-      observer.disconnect();
-      m.remove();
-    };
-  }, [share]);
-  return (
-    <div
-      ref={node}
-      className="shared-map"
-      aria-label="Read-only shared land map"
-    />
-  );
+    const map = new maplibregl.Map({ container: node.current, style: MAPLIBRE_BASEMAPS.streets.styleUrl, center: share.view ? [share.view.longitude, share.view.latitude] : [144, -37], zoom: share.view?.zoom || 7 });
+    map.on("style.load", () => {
+      map.addSource("shared-resources", { type: "geojson", data });
+      map.addLayer({ id: "shared-fill", type: "fill", source: "shared-resources", paint: { "fill-color": "#526f4b", "fill-opacity": 0.18 } });
+      map.addLayer({ id: "shared-line", type: "line", source: "shared-resources", paint: { "line-color": "#526f4b", "line-width": 2 } });
+      map.addLayer({ id: "shared-point", type: "circle", source: "shared-resources", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 7, "circle-color": "#526f4b", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+    });
+    map.on("error", () => setNotice("Map source unavailable. Shared items remain protected."));
+    const observer = new ResizeObserver(() => map.resize()); observer.observe(node.current);
+    return () => { observer.disconnect(); map.remove(); };
+  }, [data, share.view]);
+  return <><div ref={node} className="shared-map" aria-label="Read-only shared land map" /><p className="shared-map-attribution">{OPENFREEMAP_ATTRIBUTION}</p>{notice ? <p role="status">{notice}</p> : null}</>;
 }
