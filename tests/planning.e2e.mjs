@@ -308,7 +308,7 @@ try {
   await page.getByRole("button", { name: "My Analysis", exact: true }).click();
   await page.getByText("Linked distant analysis", { exact: true }).waitFor();
   await page.getByText("Intersecting analysis", { exact: true }).waitFor();
-  await page.getByText("Property review view", { exact: true }).waitFor();
+  await page.getByLabel("Property relationships").getByText("Property review view", { exact: true }).waitFor();
   await page.goto(origin + "/app/settings");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await page.goto(origin + "/signup");
