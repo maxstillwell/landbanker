@@ -83,6 +83,8 @@ try {
     .getByRole("region", { name: "Official layers" })
     .or(page.getByLabel("Official layers", { exact: true }));
   await expect(sources).toContainText("Ready");
+  // Official layers remain live while another Inspector tab is open.
+  await page.getByRole("button", { name: "observations", exact: true }).click();
   await expect
     .poll(async () => {
       await page.mouse.click(450, 350);

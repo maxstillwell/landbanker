@@ -22,7 +22,7 @@ import {
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { OfficialMapLayers } from "./official-map-layers";
+import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
 import { BrandLockup } from "@/components/brand-lockup";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
@@ -390,6 +390,16 @@ export default function MapWorkspace({
     };
   }, [userId, workspaceId]);
   const session = useDrawingSession(userId, workspaceId);
+  const inspectOfficial = useCallback(() => {
+    setTab("layers");
+    setSheet("medium");
+  }, []);
+  const officialLayers = useOfficialMapLayers({
+    map,
+    revision: styleRevision,
+    blocked: Boolean(session.active || draft || identifyState),
+    onPick: inspectOfficial,
+  });
   const drawMode = Boolean(session.active);
   const kind: DrawingKind = session.active?.kind || "Polygon";
   const drawPoints = useMemo(
@@ -2610,7 +2620,7 @@ export default function MapWorkspace({
                   ) : null}
                 </div>
               ) : null}
-              <OfficialMapLayers map={map} revision={styleRevision} />
+              <OfficialMapLayers controller={officialLayers} />
               <div className="section-label">SAVED VIEWS</div>
               {data.savedViews.map((v) => (
                 <div key={v.id} className="saved-view">

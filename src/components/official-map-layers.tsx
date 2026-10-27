@@ -12,12 +12,16 @@ const coverage = {
   VIC: [140.7, -39.3, 150.1, -33.8],
   NSW: [140.9, -37.7, 154.1, -28.0],
 };
-export function OfficialMapLayers({
+export function useOfficialMapLayers({
   map,
   revision,
+  blocked,
+  onPick,
 }: {
   map: RefObject<Map | null>;
   revision: number;
+  blocked: boolean;
+  onPick: () => void;
 }) {
   const [visible, setVisible] = useState<Record<string, boolean>>(
     Object.fromEntries(ids.map((id) => [id, true])),
@@ -128,19 +132,16 @@ export function OfficialMapLayers({
           "landos-features-point",
         ].filter((id) => !!m!.getLayer(id)),
       });
-      if (
-        workspace.length ||
-        document.querySelector(".map-drawing-bar") ||
-        document.querySelector(".field-form")
-      )
-        return;
+      if (workspace.length || blocked) return;
       const hit = m!.queryRenderedFeatures(event.point, {
         layers: ids.map((id) => `official-${id}-fill`),
       })[0];
       const id = hit?.properties?.officialLayerId as
         OfficialLayerId | undefined;
-      if (id && OFFICIAL_MAP_LAYERS[id])
+      if (id && OFFICIAL_MAP_LAYERS[id]) {
         setSelected({ id, properties: hit.properties });
+        onPick();
+      }
     }
     m.on("moveend", schedule);
     m.on("click", select);
@@ -151,7 +152,15 @@ export function OfficialMapLayers({
       m.off("moveend", schedule);
       m.off("click", select);
     };
-  }, [map, revision, visible]);
+  }, [map, revision, visible, blocked, onPick]);
+  return { visible, setVisible, status, selected, setSelected };
+}
+export function OfficialMapLayers({
+  controller,
+}: {
+  controller: ReturnType<typeof useOfficialMapLayers>;
+}) {
+  const { visible, setVisible, status, selected, setSelected } = controller;
   return (
     <section aria-label="Official layers" className="maplibre-official-layers">
       <strong>Official parcels and zones</strong>

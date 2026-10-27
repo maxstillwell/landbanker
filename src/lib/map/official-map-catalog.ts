@@ -1,3 +1,4 @@
+import { timeoutFetch } from "../network";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { esriRingsGeometry } from "./esri-rings";
 
@@ -126,7 +127,7 @@ export async function queryOfficialLayer(
   bbox: [number, number, number, number],
   signal?: AbortSignal,
 ): Promise<OfficialLayerResult> {
-  const response = await fetch(queryUrl(layer, bbox), { signal });
+  const response = await timeoutFetch(queryUrl(layer, bbox), { signal }, 12000);
   if (!response.ok) throw new Error(`${layer.label} returned HTTP ${response.status}.`);
   const payload = (await response.json()) as {
     error?: { message?: string };
