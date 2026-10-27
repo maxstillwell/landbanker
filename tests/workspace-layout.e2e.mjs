@@ -46,6 +46,15 @@ try {
  await expect(page.locator(".maplibre-attribution")).toContainText("Geoscience Australia"); await page.screenshot({path:"artifacts/workspace-satellite.png"});
  await page.getByLabel("Basemap",{exact:true}).selectOption("hybrid");
  await expect(page.locator(".maplibre-attribution")).toContainText("OpenFreeMap");
- await page.setViewportSize({width:390,height:844}); await page.screenshot({path:"artifacts/workspace-phone.png"});
- assert.deepEqual(errors,[]); console.log("PASS: collapsible panels, resize, mouse dragging, persistence/reset, GPS/follow updates and satellite selection with isolated fixtures.");
+ await page.getByLabel("Basemap previews").click();
+ await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(400);
+ const touchHandle=page.getByRole("button",{name:"Move Spatial Tools"}); const touchStart=await touchHandle.boundingBox();
+ const cdp=await context.newCDPSession(page); await cdp.send("Emulation.setTouchEmulationEnabled",{enabled:true});
+ const touchPoint={x:touchStart.x+touchStart.width/2,y:touchStart.y+touchStart.height/2};
+ await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[touchPoint]});
+ await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:touchPoint.x-40,y:touchPoint.y-35}]});
+ await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
+ const touchMoved=await touchHandle.boundingBox(); assert(touchMoved.x<touchStart.x-20,`touch start ${touchStart.x}, end ${touchMoved.x}`);
+ await page.screenshot({path:"artifacts/workspace-phone.png"});
+ assert.deepEqual(errors,[]); console.log("PASS: collapsible panels, resize, mouse, keyboard and touch dragging, persistence/reset, GPS/follow/denied updates and satellite/Hybrid selection with isolated fixtures.");
 } finally { await browser.close(); }

@@ -71,7 +71,9 @@ export function FloatingMapWidget({
         return next.x === p.x && next.y === p.y ? p : next;
       });
     const reset = () => {
-      setPosition(clamp(initial.current));
+      // The sidebar may be closing in the same React update. Clamp after its
+      // resize, rather than against the stale, narrower map bounds.
+      setPosition(initial.current);
       setExpanded(initiallyExpanded);
     };
     window.addEventListener("landos:reset-layout", reset);
