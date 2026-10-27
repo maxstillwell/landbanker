@@ -9,3 +9,9 @@ An initial `FloatingMapWidget` component and dark widget styles are staged as a 
 The source/licence research and current HTTP403 network blocker from `MAP_QUALITY_PROGRESS.md` and `SATELLITE_RESEARCH.md` remain relevant. A network-only LandOS Development draft was saved but requires publication. Do not fabricate satellite imagery, claim real-provider/browser testing, merge, or deploy before the explicitly required checks pass. Owner has already authorized deployment when ready; no intermediate application approval is needed.
 
 Exact next step: inspect the workspace UI and current main, then integrate/test the widget and independent panels without remounting the map; add the Layers and Spatial tool controls to existing workflows, device-scoped restore/reset, responsive behavior, GPS states and screenshots. Complete live source/imagery licence and placement verification once network access is active, then run the existing full regression suite and safe main/deployment workflow.
+
+## Main continuation checkpoint
+
+Latest GitHub main was fetched at `1e32bab7a16ab9274fafdee4e449a148bea8b96d`. The existing checkpoint `00d45dc` was merged locally into `main` as `6acdbeab228cca3477431e8bbeaef52af7f18f3d`; the fetched main is an ancestor of that merge. This local merge is deliberately not pushed because the workspace redesign is incomplete. `1e32bab7a16ab9274fafdee4e449a148bea8b96d` is the pre-redesign rollback reference. Continue on local `main` from this merge, preserve unrelated changes, and do not create another feature branch.
+
+No UI widget is yet integrated into the map. Complete every section above, test, and push only the finished result. Live imagery/production access must be rechecked against the actual environment; do not assume either success or failure from a Git push.
