@@ -15,3 +15,7 @@ Exact next step: inspect the workspace UI and current main, then integrate/test 
 Latest GitHub main was fetched at `1e32bab7a16ab9274fafdee4e449a148bea8b96d`. The existing checkpoint `00d45dc` was merged locally into `main` as `6acdbeab228cca3477431e8bbeaef52af7f18f3d`; the fetched main is an ancestor of that merge. This local merge is deliberately not pushed because the workspace redesign is incomplete. `1e32bab7a16ab9274fafdee4e449a148bea8b96d` is the pre-redesign rollback reference. Continue on local `main` from this merge, preserve unrelated changes, and do not create another feature branch.
 
 No UI widget is yet integrated into the map. Complete every section above, test, and push only the finished result. Live imagery/production access must be rechecked against the actual environment; do not assume either success or failure from a Git push.
+
+## Automatic continuation
+
+The local main continuation was inspected; the existing widget is not integrated and the requested redesign, responsive tests, satellite verification and deployment remain unfinished. The current runtime still reports no configured additional allowed hosts. Continue on local main from the existing checkpoint; preserve the widget and map-quality code and do not push an incomplete build. The exact execution continuation is to wire the widget and both panel controls into `src/components/map-workspace.tsx`, preserving the existing inspector and map instance, then complete the remaining requirements and tests listed above.
