@@ -1,4 +1,5 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
@@ -106,7 +107,7 @@ try {
     .click();
   await expect(page.getByText("Tap the map to identify")).toBeVisible();
   await page
-    .locator(".leaflet-container")
+    .locator(".maplibregl-canvas")
     .click({ position: { x: 300, y: 350 } });
   await expect(
     page.getByRole("heading", { name: "Choose the parcel at this point" }),

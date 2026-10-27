@@ -275,6 +275,9 @@ small {
   inset: 0;
   overflow: hidden;
 }
+.map-app .map-canvas {
+  position: absolute;
+}
 .map-canvas {
   position: absolute;
   inset: 0 360px 0 0;

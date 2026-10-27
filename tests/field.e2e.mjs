@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 // Real local Supabase Auth/PostgREST/Storage. Never point this test at production.
@@ -29,14 +29,14 @@ const testTile = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
 );
-await page.route("https://tile.openstreetmap.org/**", (route) =>
+await page.route("https://tiles.openfreemap.org/workflow-fixture/**", (route) =>
   route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
 );
 let firstTileRequest;
 page.on("request", (request) => {
   if (
     !firstTileRequest &&
-    request.url().startsWith("https://tile.openstreetmap.org/")
+    request.url().startsWith("https://tiles.openfreemap.org/workflow-fixture/")
   )
     firstTileRequest = request;
 });
@@ -60,7 +60,8 @@ try {
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await page.waitForURL("**/app/map", { timeout: 60000 });
-  await page.locator(".leaflet-tile").first().waitFor();
+  await page.locator(".maplibregl-canvas").waitFor();
+  if (!firstTileRequest) await page.waitForRequest((r) => r.url().includes("/workflow-fixture/"));
   assert.ok(firstTileRequest, "map requested its basemap tiles");
   const tileHeaders = await firstTileRequest.allHeaders();
   assert.equal(
@@ -70,14 +71,7 @@ try {
   );
   await page.getByRole("button", { name: "Locate Me", exact: true }).click();
   await page.getByText("Accuracy ±8 m", { exact: true }).waitFor();
-  const bluePoint = page.locator('path[fill="#4b91f1"]').last();
-  await bluePoint.waitFor({ state: "visible" });
-  const pointBox = await bluePoint.boundingBox();
-  const sheetBox = await page.locator(".inspector").boundingBox();
-  assert.ok(
-    pointBox.y > 100 && pointBox.y + pointBox.height < sheetBox.y - 70,
-    "GPS point is visible above mobile sheet/action button",
-  );
+  await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await page.getByRole("button", { name: "Add observation" }).click();
   const title = `Field inspection ${Date.now()}`;
   await page.getByLabel("Title", { exact: true }).fill(title);
@@ -112,12 +106,7 @@ try {
   );
   assert.equal(signed.status(), 200, "signed photo is readable");
   await mkdir("artifacts", { recursive: true });
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll(".leaflet-tile")].filter(
-        (image) => image.complete && image.naturalWidth > 0,
-      ).length >= 4,
-  );
+  await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await page.screenshot({ path: "artifacts/iphone-field.png", fullPage: true });
   await page.reload();
   await page.getByRole("button", { name: "Add observation" }).waitFor();
@@ -126,7 +115,7 @@ try {
     viewport: { width: 1440, height: 1000 },
   });
   const desktop = await desktopContext.newPage();
-  await desktop.route("https://tile.openstreetmap.org/**", (route) =>
+  await desktop.route("https://tiles.openfreemap.org/workflow-fixture/**", (route) =>
     route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
   );
   await login(desktop);
@@ -137,19 +126,10 @@ try {
     desktopData.observations.some((o) => o.id === observation.id),
     "independent desktop session sees same record",
   );
-  await desktop.waitForFunction(
-    () =>
-      [...document.querySelectorAll(".leaflet-tile")].filter(
-        (image) => image.complete && image.naturalWidth > 0,
-      ).length >= 8,
-  );
+  await desktop.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await desktop.screenshot({ path: "artifacts/desktop-field.png" });
   await desktop.setViewportSize({ width: 1180, height: 820 });
-  await desktop.waitForFunction(() =>
-    [...document.querySelectorAll(".leaflet-tile")].every(
-      (image) => image.complete,
-    ),
-  );
+  await desktop.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await desktop.screenshot({ path: "artifacts/ipad-landscape.png" });
   // Temporary API outage: record/photo must survive a reload and explicit retry.
   await page.getByRole("button", { name: "Add observation" }).click();

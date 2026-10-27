@@ -30,12 +30,25 @@ export function parcelsGeoJson(parcels: Parcel[]): FeatureCollection {
               source: parcel.source || "",
             }),
           ]
-        : [],
+        : parcel.latitude != null && parcel.longitude != null
+          ? [
+              feature(
+                parcel.id,
+                {
+                  type: "Point",
+                  coordinates: [parcel.longitude, parcel.latitude],
+                },
+                { kind: "parcel", title: parcel.title },
+              ),
+            ]
+          : [],
     ),
   };
 }
 
-export function observationsGeoJson(observations: Observation[]): FeatureCollection {
+export function observationsGeoJson(
+  observations: Observation[],
+): FeatureCollection {
   return {
     type: "FeatureCollection",
     features: observations.map((observation) =>
@@ -65,9 +78,16 @@ export function workspaceFeaturesGeoJson(layers: SpatialLayer[]): {
         kind: "workspace-feature",
         layerId: layer.id,
         layerName: layer.name,
-        title: String(input.properties?.name || input.properties?.title || layer.name),
+        title: String(
+          input.properties?.name || input.properties?.title || layer.name,
+        ),
       });
-      index.set(id, { id, layerId: layer.id, layerName: layer.name, feature: input });
+      index.set(id, {
+        id,
+        layerId: layer.id,
+        layerName: layer.name,
+        feature: input,
+      });
       features.push(output);
     }
   }
