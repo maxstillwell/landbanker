@@ -192,6 +192,7 @@ export function useOfficialMapLayers({
         const parcel = parcelFromOfficialFeature(
           OFFICIAL_MAP_LAYERS[id],
           feature,
+          [event.lngLat.lng, event.lngLat.lat],
         );
         if (parcel) {
           setSelected(null);

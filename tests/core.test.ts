@@ -1006,6 +1006,9 @@ test("official parcel picks retain provider geometry/identifiers and never inven
   assert(selected);
   assert.equal(selected.geometry, feature.geometry);
   assert.equal(selected.sourceId, "123");
+  const tapped = parcelFromOfficialFeature(layer, feature, [145.185, -37.852]);
+  assert.equal(tapped?.longitude, 145.185);
+  assert.equal(tapped?.latitude, -37.852);
   assert.equal(selected.lot, "7");
   assert.equal(selected.plan, "PS42");
   assert(selected.areaM2 > 0);

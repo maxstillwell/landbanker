@@ -26,6 +26,7 @@ export function officialFeatureKey(
 export function parcelFromOfficialFeature(
   layer: OfficialMapLayer,
   feature: Feature,
+  tappedPoint?: [number, number],
 ): OfficialParcel | null {
   if (
     !layer.id.endsWith("parcels") ||
@@ -37,7 +38,9 @@ export function parcelFromOfficialFeature(
   const sourceId = p[layer.state === "VIC" ? "PARCEL_PFI" : "cadid"];
   if (sourceId == null) return null; // An unidentified polygon is never invented into a Property.
   const geometry = feature.geometry as Polygon | MultiPolygon;
-  const centre = propertyCentroid(geometry);
+  // The existing save API re-verifies at this point. A centroid can lie in a
+  // parcel hole or outside a concave parcel; retain the actual picked ground point.
+  const centre = tappedPoint || propertyCentroid(geometry);
   if (!centre) return null;
   const lot = p[layer.state === "VIC" ? "PARCEL_LOT_NUMBER" : "lotnumber"];
   const plan = p[layer.state === "VIC" ? "PARCEL_PLAN_NUMBER" : "planlabel"];
