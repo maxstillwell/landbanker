@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";

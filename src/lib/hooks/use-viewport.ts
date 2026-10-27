@@ -6,7 +6,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import type L from "leaflet";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import type { Feature } from "geojson";
 import type { Parcel, Observation } from "../types";
 import { timeoutFetch } from "../network";
@@ -23,7 +23,7 @@ export type ViewportRows = {
 };
 const empty: ViewportRows = { parcels: [], observations: [], features: [] };
 export function useViewport(
-  map: RefObject<L.Map | null>,
+  map: RefObject<MapLibreMap | null>,
   scope: string,
   enabled: boolean,
 ) {
@@ -47,7 +47,7 @@ export function useViewport(
     let cancelled = false,
       sequence = 0,
       timer: ReturnType<typeof setTimeout> | undefined;
-    let currentMap: L.Map | null = null;
+    let currentMap: MapLibreMap | null = null;
     let syncing = false;
     let sync: {
       key: string;

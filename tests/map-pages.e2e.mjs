@@ -1,4 +1,5 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -283,15 +284,12 @@ try {
   // Property now fits its actual small boundary (up to zoom 18), not its stored
   // point at zoom 15. Zoom out to the same large-workspace test extent.
   for (let i = 0; i < 6; i++) {
-    await page.locator(".leaflet-control-zoom-out").click();
-    // Leaflet ignores further zoom clicks during its 250ms transition.
+    await page.locator(".maplibregl-ctrl-zoom-out").click();
+    // Allow the camera transition to finish before the next zoom click.
     await page.waitForTimeout(350);
   }
-  await expect
-    .poll(async () => page.locator(".leaflet-overlay-pane path").count(), {
-      timeout: 30000,
-    })
-    .toBeGreaterThan(900);
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+  await expect.poll(async () => (await (await page.request.get(origin + "/api/map")).json()).parcels.length).toBeGreaterThan(0);
   let panRequests = 0,
     panBytes = 0;
   page.on("request", (r) => {

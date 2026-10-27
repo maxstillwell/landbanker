@@ -1,6 +1,6 @@
 // Optional live provider contract test. Local Auth/data only; public official GIS reads.
 // Not part of deterministic CI: upstream government availability varies.
-import { chromium } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 const origin = "http://localhost:3000";
 const b = await chromium.launch({

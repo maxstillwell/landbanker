@@ -1,4 +1,4 @@
-import MapWorkspace from "@/components/map-loader";
+import MapLibreWorkspace from "@/components/maplibre-loader";
 import { workspaceContext } from "@/lib/workspace";
 export default async function Page() {
   const c = await workspaceContext();
@@ -8,7 +8,7 @@ export default async function Page() {
       ? w[0]?.name
       : (w as unknown as { name?: string } | null)?.name) || "Your Workspace";
   return (
-    <MapWorkspace
+    <MapLibreWorkspace
       userId={c.user.id}
       workspaceId={c.workspaceId}
       workspaceName={name}

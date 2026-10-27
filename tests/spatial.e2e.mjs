@@ -1,4 +1,5 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 import { readFile, mkdir } from "node:fs/promises";
 const origin = process.env.E2E_APP_URL || "http://localhost:3000";

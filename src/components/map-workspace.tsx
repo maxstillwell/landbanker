@@ -1,8 +1,28 @@
 "use client";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import * as maplibregl from "maplibre-gl";
+import type { Map as MapLibreMap } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import {
+  geometryBounds,
+  latLng,
+  setView,
+  installScene,
+  setSceneData,
+  circleFeature,
+  geometryFeature,
+  type LatLng,
+} from "@/lib/map/maplibre-scene";
+import { installOfficialRasters } from "@/lib/map/maplibre-official";
+import {
+  MAPLIBRE_BASEMAPS,
+  OPENFREEMAP_ATTRIBUTION,
+  isMapLibreBasemap,
+  type MapLibreBasemap,
+} from "@/lib/map/maplibre-config";
+import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
 import { BrandLockup } from "@/components/brand-lockup";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
@@ -39,7 +59,6 @@ import { timeoutFetch } from "@/lib/network";
 import { mergeMapPages, type MapPage } from "@/lib/map/data-pages";
 import { WorkspaceSelector } from "./workspace-selector";
 import { LayerLibrary } from "./layer-library";
-import { createArcGisExportLayer } from "@/lib/map/arcgis-export-layer";
 import type { CatalogLayer, ActiveLayer } from "@/lib/map/catalog-types";
 import {
   safeSimple,
@@ -53,7 +72,6 @@ import { SavedViewPreview } from "./saved-view-preview";
 import type { SavedViewInput } from "@/lib/map/view-input";
 import { PropertyWorkspace } from "./property-workspace";
 import { PhotoPreview } from "./photo-preview";
-import MapLibre3DCanvas from "./maplibre-3d-loader";
 import { useViewport } from "@/lib/hooks/use-viewport";
 import type { MapChange } from "@/lib/map/change-feed";
 import { ShapeDraft } from "./shape-draft";
@@ -75,19 +93,23 @@ const emptyData: MapData = {
   savedViews: [],
 };
 function centerFieldPoint(
-  map: L.Map | null,
+  map: MapLibreMap | null,
   latitude: number,
   longitude: number,
   zoom: number,
 ) {
   if (!map) return;
-  const center = map.project([latitude, longitude], zoom);
-  // Put the fix in the visible map above the iPhone sheet and action button.
-  if (window.matchMedia("(max-width: 767px)").matches) {
-    const sheet = map.getContainer().parentElement?.querySelector(".inspector");
-    center.y += (sheet?.getBoundingClientRect().height || 0) / 2;
-  }
-  map.setView(map.unproject(center, zoom), zoom);
+  const sheet = window.matchMedia("(max-width: 767px)").matches
+    ? map
+        .getContainer()
+        .parentElement?.querySelector(".inspector")
+        ?.getBoundingClientRect().height || 0
+    : 0;
+  map.jumpTo({
+    center: [longitude, latitude],
+    zoom,
+    padding: { top: 0, bottom: sheet, left: 0, right: 0 },
+  });
 }
 type Props = {
   userId: string;
@@ -102,9 +124,9 @@ export default function MapWorkspace({
   role,
 }: Props) {
   const mapNode = useRef<HTMLDivElement>(null);
-  const map = useRef<L.Map | null>(null);
-  const features = useRef<L.FeatureGroup | null>(null);
-  const gps = useRef<L.LayerGroup | null>(null);
+  const map = useRef<MapLibreMap | null>(null);
+  const [styleRevision, setStyleRevision] = useState(0);
+  const [basemap, setBasemap] = useState<MapLibreBasemap>("streets");
   const watch = useRef<number | null>(null);
   const followRef = useRef(false);
   const locateRequested = useRef(false);
@@ -183,11 +205,6 @@ export default function MapWorkspace({
     "medium",
   );
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
-  const [threeDView, setThreeDView] = useState({
-    latitude: -37.5622,
-    longitude: 143.8503,
-    zoom: 11,
-  });
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -315,9 +332,9 @@ export default function MapWorkspace({
             : current,
         );
         if (property.geometry && map.current) {
-          const bounds = L.geoJSON(property.geometry).getBounds();
-          if (bounds.isValid())
-            map.current.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 });
+          const bounds = geometryBounds(property.geometry);
+          if (!bounds.isEmpty())
+            map.current.fitBounds(bounds, { padding: 30, maxZoom: 18 });
         }
       })
       .catch(() => {
@@ -328,21 +345,6 @@ export default function MapWorkspace({
       });
     return () => controller.abort();
   }, [selectedPropertyId, workspaceId, userId]);
-  useEffect(() => {
-    if (!map.current || !selectedParcel?.geometry) return;
-    const highlight = L.geoJSON(selectedParcel.geometry, {
-      interactive: false,
-      style: {
-        color: "#fff3b0",
-        weight: 4,
-        fillColor: "#bed86a",
-        fillOpacity: 0.18,
-      },
-    }).addTo(map.current);
-    return () => {
-      highlight.remove();
-    };
-  }, [selectedParcel?.geometry]);
   const officialParcel =
     selection?.kind === "official-parcel" ? selection.record : null;
   function setSelected(record: Observation | null) {
@@ -353,9 +355,9 @@ export default function MapWorkspace({
     setTab("parcels");
     setSheet("medium");
     if (map.current) {
-      const boundary = L.geoJSON(record.geometry);
-      map.current.fitBounds(boundary.getBounds(), {
-        padding: [30, 30],
+      const boundary = geometryBounds(record.geometry);
+      map.current.fitBounds(boundary, {
+        padding: 30,
         maxZoom: 18,
       });
     }
@@ -388,22 +390,32 @@ export default function MapWorkspace({
     };
   }, [userId, workspaceId]);
   const session = useDrawingSession(userId, workspaceId);
+  const inspectOfficial = useCallback(() => {
+    setTab("layers");
+    setSheet("medium");
+  }, []);
+  const officialLayers = useOfficialMapLayers({
+    map,
+    revision: styleRevision,
+    blocked: Boolean(session.active || draft || identifyState),
+    onPick: inspectOfficial,
+  });
   const drawMode = Boolean(session.active);
   const kind: DrawingKind = session.active?.kind || "Polygon";
   const drawPoints = useMemo(
-    () => session.active?.points.map((p) => L.latLng(p[1], p[0])) || [],
+    () => session.active?.points.map((p) => latLng(p[1], p[0])) || [],
     [session.active?.points],
   );
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const changeSession = session.change;
   const sessionRef = session.ref;
   const setDrawPoints = useCallback(
-    (value: L.LatLng[] | ((points: L.LatLng[]) => L.LatLng[])) => {
+    (value: LatLng[] | ((points: LatLng[]) => LatLng[])) => {
       const current = sessionRef.current;
       if (!current) return;
       const points =
         typeof value === "function"
-          ? value(current.points.map((p) => L.latLng(p[1], p[0])))
+          ? value(current.points.map((p) => latLng(p[1], p[0])))
           : value;
       if (points.length > 200) {
         setNotice(
@@ -427,8 +439,6 @@ export default function MapWorkspace({
   const drawing = useRef(false);
   const drawKind = useRef<DrawingKind>("Polygon");
   const [toolsOpen, setToolsOpen] = useState(false);
-  const drawingVertices = useRef<L.LayerGroup | null>(null);
-  const polygonDraft = useRef<L.Polyline | null>(null);
   const canWrite = ["owner", "admin", "editor"].includes(role);
   const reload = useCallback(async () => {
     const generation = ++requestGeneration.current;
@@ -489,39 +499,21 @@ export default function MapWorkspace({
   }, [reloadLibrary]);
   useEffect(() => {
     const m = map.current;
-    if (!m) return;
-    const layers: L.TileLayer[] = [];
-    for (const item of activeLayers) {
-      const source = catalog.find((l) => l.id === item.catalog_id && l.enabled);
-      if (!source || !item.visible) continue;
-      const layer =
-        source.renderer === "arcgis_export"
-          ? createArcGisExportLayer(
-              source.service_url,
-              source.layer_ids || "0",
-              {
-                minZoom: source.min_zoom,
-                opacity: Number(item.opacity),
-                attribution: source.attribution,
-                zIndex: 300 - item.position,
-                referrerPolicy: "strict-origin-when-cross-origin",
-              },
-            )
-          : L.tileLayer(source.service_url, {
-              attribution: source.attribution,
-              opacity: Number(item.opacity),
-              zIndex: 300 - item.position,
-            });
-      layer.on("tileerror", () =>
-        setNotice(
-          `${source.name}: source unavailable or outside coverage. Try again later.`,
-        ),
-      );
-      layer.addTo(m);
-      layers.push(layer);
-    }
-    return () => layers.forEach((l) => l.remove());
-  }, [catalog, activeLayers]);
+    if (!m?.getSource("landos-parcels")) return;
+    return installOfficialRasters(
+      m,
+      [...activeLayers]
+        .sort((a, b) => b.position - a.position)
+        .flatMap((item) => {
+          const source = catalog.find(
+            (l) => l.id === item.catalog_id && l.enabled,
+          );
+          return source && item.visible
+            ? [{ ...source, opacity: Number(item.opacity) }]
+            : [];
+        }),
+    );
+  }, [catalog, activeLayers, styleRevision]);
   async function changeOfficialLayer(item: ActiveLayer, remove = false) {
     const previous = activeLayers;
     setActiveLayers((current) =>
@@ -645,27 +637,86 @@ export default function MapWorkspace({
   );
   useEffect(() => {
     if (!mapNode.current) return;
-    const m = L.map(mapNode.current, {
-      zoomControl: false,
-    }).setView([-37.5622, 143.8503], 11);
+    let m: MapLibreMap;
+    try {
+      m = new maplibregl.Map({
+        container: mapNode.current,
+        style: MAPLIBRE_BASEMAPS.streets.styleUrl,
+        center: [143.8503, -37.5622],
+        zoom: 11,
+        maxPitch: 70,
+      });
+    } catch {
+      setNotice(
+        "MapLibre could not start. Your device drafts are preserved; use a browser with WebGL enabled.",
+      );
+      return;
+    }
     map.current = m;
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-      referrerPolicy: "strict-origin-when-cross-origin",
-    }).addTo(m);
-    L.control.zoom({ position: "bottomleft" }).addTo(m);
-    features.current = L.featureGroup().addTo(m);
-    gps.current = L.layerGroup().addTo(m);
-    m.on("click", (e: L.LeafletMouseEvent) => {
+    m.addControl(new maplibregl.NavigationControl(), "bottom-left");
+    m.on("style.load", () => {
+      installScene(m);
+      setStyleRevision((n) => n + 1);
+    });
+    const storageKey = `landos:map-camera:v1:${userId}:${workspaceId}`;
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (
+        stored &&
+        Array.isArray(stored.center) &&
+        stored.center.length === 2 &&
+        stored.center.every(Number.isFinite) &&
+        Math.abs(stored.center[0]) <= 180 &&
+        Math.abs(stored.center[1]) <= 85 &&
+        Number.isFinite(stored.zoom)
+      ) {
+        m.jumpTo({
+          center: stored.center,
+          zoom: Math.max(1, Math.min(20, stored.zoom)),
+          pitch: 0,
+        });
+      }
+      if (isMapLibreBasemap(stored?.basemap)) {
+        const restoredBasemap: MapLibreBasemap = stored.basemap;
+        setBasemap(restoredBasemap);
+        m.setStyle(MAPLIBRE_BASEMAPS[restoredBasemap].styleUrl);
+      }
+    } catch {
+      /* Device storage restrictions must not prevent map use. */
+    }
+    m.on("moveend", () => {
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            center: m.getCenter().toArray(),
+            zoom: m.getZoom(),
+            basemap: m.getContainer().dataset.basemap || "streets",
+          }),
+        );
+      } catch {
+        /* Camera persistence is optional; drawing recovery is separate. */
+      }
+    });
+    m.on("error", (event) => {
+      const source = (event as { sourceId?: string }).sourceId;
+      if (source?.startsWith("landos-reference-"))
+        setNotice(
+          "An official reference source is unavailable. Check coverage or retry later; no result is not no restriction.",
+        );
+      else if (!source?.startsWith("landos-"))
+        setNotice(
+          "Basemap source unavailable. Your saved work and device drafts are preserved.",
+        );
+    });
+    m.on("click", (e: maplibregl.MapMouseEvent) => {
       if (drawing.current) {
         setDrawPoints((points) =>
           drawKind.current === "Point"
-            ? [e.latlng]
+            ? [e.lngLat]
             : drawKind.current === "Rectangle" && points.length >= 2
-              ? [e.latlng]
-              : [...points, e.latlng],
+              ? [e.lngLat]
+              : [...points, e.lngLat],
         );
         return;
       }
@@ -675,8 +726,8 @@ export default function MapWorkspace({
           ...current,
           input: {
             ...current.input,
-            latitude: e.latlng.lat,
-            longitude: e.latlng.lng,
+            latitude: e.lngLat.lat,
+            longitude: e.lngLat.lng,
             metadata: { location_source: "map" },
           },
           updatedAt: Date.now(),
@@ -687,14 +738,36 @@ export default function MapWorkspace({
       if (state) {
         identifyStateRef.current = null;
         setIdentifyState(null);
-        void identifyParcelAt(state, e.latlng.lat, e.latlng.lng);
+        void identifyParcelAt(state, e.lngLat.lat, e.lngLat.lng);
+        return;
       }
+      const hits = m.queryRenderedFeatures(e.point, {
+        layers: [
+          "landos-observations-point",
+          "landos-features-point",
+          "landos-features-line",
+          "landos-features-fill",
+          "landos-parcels-fill",
+          "landos-parcels-point",
+        ].filter((id) => !!m.getLayer(id)),
+      });
+      const hit = hits[0];
+      if (hit)
+        window.dispatchEvent(
+          new CustomEvent("landos:select-rendered", {
+            detail: {
+              scope: `${userId}:${workspaceId}`,
+              id: String(hit.id || ""),
+              ...hit.properties,
+            },
+          }),
+        );
     });
     return () => {
       m.remove();
       map.current = null;
     };
-  }, [identifyParcelAt, saveDraft, setDrawPoints]);
+  }, [identifyParcelAt, saveDraft, setDrawPoints, userId, workspaceId]);
   useEffect(() => {
     void reloadQueue();
     const active = () => {
@@ -798,181 +871,205 @@ export default function MapWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload, reloadQueue, updateLocation]);
   useEffect(() => {
-    const group = features.current;
-    if (!group) return;
-    group.clearLayers();
-    for (const parcel of renderedData.parcels) {
-      if (visibleParcelIds && !visibleParcelIds.has(parcel.id)) continue;
-      if (parcel.geometry) {
-        L.geoJSON(parcel.geometry, {
-          style: { color: "#bed86a", weight: 2, fillOpacity: 0.12 },
-        })
-          .on("click", () => {
-            setSelection({ kind: "parcel", record: parcel });
-            setTab("parcels");
-            setSheet("medium");
-          })
-          .addTo(group);
-      }
-      if (parcel.latitude !== null && parcel.longitude !== null) {
-        const node = document.createElement("div");
-        node.textContent = parcel.title;
-        L.circleMarker([parcel.latitude, parcel.longitude], {
-          radius: 5,
-          color: "#b9d66a",
-        })
-          .bindTooltip(node)
-          .addTo(group);
-      }
-    }
-    for (const observation of renderedData.observations) {
-      const node = document.createElement("div");
-      node.textContent = observation.title;
-      L.circleMarker([observation.latitude, observation.longitude], {
-        radius: 8,
-        color: "#f5f1db",
-        fillColor: "#e58e64",
-        fillOpacity: 1,
-        weight: 2,
-      })
-        .bindTooltip(node)
-        .on("click", () => {
-          setSelected(observation);
-          setSheet("expanded");
-          setTab("observations");
-        })
-        .addTo(group);
-    }
-    for (const layer of renderedData.layers) {
-      if (visibleUserLayerIds && !visibleUserLayerIds.has(layer.id)) continue;
-      try {
-        if (layer.geojson)
-          L.geoJSON(layer.geojson, {
-            style: { color: "#86bccc", weight: 2, fillOpacity: 0.13 },
-            pointToLayer: (_f, latlng) =>
-              L.circleMarker(latlng, { radius: 7, color: "#86bccc" }),
-            onEachFeature: (feature, shape) =>
-              shape.on("click", (event) => {
-                if (drawing.current) return;
-                L.DomEvent.stopPropagation(event);
-                setSelection({
-                  kind: "drawing",
-                  record: layer,
-                  featureId: String(feature.id),
-                });
-                setTab("layers");
-                setSheet("medium");
-              }),
-          }).addTo(group);
-        else if (layer.layer_kind === "radius") {
-          const centre = layer.layer_data.centre as number[];
-          const rings = layer.layer_data.rings as {
-            kilometres: number;
-            colour: string;
-          }[];
-          if (centre && rings)
-            rings.forEach((r) =>
-              L.circle([centre[0], centre[1]], {
-                radius: r.kilometres * 1000,
-                color: r.colour,
-                fillOpacity: 0.03,
-              }).addTo(group),
-            );
+    function select(event: Event) {
+      const detail = (event as CustomEvent).detail;
+      if (detail.scope !== `${userId}:${workspaceId}`) return;
+      if (detail.kind === "parcel") {
+        const record = renderedData.parcels.find((p) => p.id === detail.id);
+        if (record) {
+          setSelection({ kind: "parcel", record });
+          setTab("parcels");
+          setSheet("medium");
         }
-      } catch {
-        /* One invalid imported geometry must not hide other data. */
+      } else if (detail.kind === "observation") {
+        const record = renderedData.observations.find(
+          (o) => o.id === detail.id,
+        );
+        if (record) {
+          setSelection({ kind: "observation", record });
+          setTab("observations");
+          setSheet("expanded");
+        }
+      } else if (detail.kind === "workspace-feature") {
+        const record = renderedData.layers.find((l) => l.id === detail.layerId);
+        const feature = mapLibreCollections(renderedData).workspace.index.get(
+          detail.id,
+        )?.feature;
+        if (record && feature) {
+          setSelection({
+            kind: "drawing",
+            record,
+            featureId: String(feature.id),
+          });
+          setTab("layers");
+          setSheet("medium");
+        }
       }
     }
-    if (localLayer)
-      L.geoJSON(localLayer.geojson, {
-        style: { color: "#ffa65a", dashArray: "6 4" },
-      }).addTo(group);
-    if (draft)
-      L.circleMarker([draft.input.latitude, draft.input.longitude], {
-        radius: 9,
-        color: "#eab268",
-        dashArray: "3",
-      }).addTo(group);
-  }, [renderedData, draft, localLayer, visibleParcelIds, visibleUserLayerIds]);
+    window.addEventListener("landos:select-rendered", select);
+    return () => window.removeEventListener("landos:select-rendered", select);
+  }, [renderedData, userId, workspaceId]);
   useEffect(() => {
-    if (!map.current || !officialParcel) return;
-    const layer = L.geoJSON(officialParcel.geometry, {
-      style: { color: "#e3a049", weight: 3, fillOpacity: 0.15 },
-    }).addTo(map.current);
-    return () => {
-      layer.remove();
+    const m = map.current;
+    if (!m?.getSource("landos-parcels")) return;
+    const visible = {
+      ...renderedData,
+      parcels: renderedData.parcels.filter(
+        (p) => !visibleParcelIds || visibleParcelIds.has(p.id),
+      ),
+      layers: renderedData.layers.filter(
+        (l) => !visibleUserLayerIds || visibleUserLayerIds.has(l.id),
+      ),
     };
-  }, [officialParcel]);
+    const collections = mapLibreCollections(visible);
+    setSceneData(m, "parcels", collections.parcels.features);
+    setSceneData(m, "observations", collections.observations.features);
+    const rings: Feature[] = [];
+    for (const layer of visible.layers.filter(
+      (l) => l.layer_kind === "radius",
+    )) {
+      const centre = layer.layer_data.centre as number[] | undefined;
+      const values = layer.layer_data.rings as
+        { kilometres: number; colour: string }[] | undefined;
+      if (centre && values)
+        for (const r of values)
+          rings.push(
+            circleFeature(centre[0], centre[1], r.kilometres * 1000, r.colour),
+          );
+    }
+    setSceneData(m, "features", [
+      ...collections.workspace.collection.features,
+      ...rings,
+    ]);
+    setSceneData(m, "local", localLayer?.geojson.features || []);
+    setSceneData(
+      m,
+      "draft",
+      draft
+        ? [
+            geometryFeature({
+              type: "Point",
+              coordinates: [draft.input.longitude, draft.input.latitude],
+            }),
+          ]
+        : [],
+    );
+    setSceneData(
+      m,
+      "selected",
+      selectedParcel?.geometry
+        ? [
+            geometryFeature(
+              selectedParcel.geometry as import("geojson").Geometry,
+            ),
+          ]
+        : [],
+    );
+    setSceneData(
+      m,
+      "official",
+      officialParcel ? [geometryFeature(officialParcel.geometry)] : [],
+    );
+    setSceneData(
+      m,
+      "gps",
+      fix
+        ? [circleFeature(fix.latitude, fix.longitude, fix.accuracy, "#4b91f1")]
+        : [],
+    );
+  }, [
+    renderedData,
+    visibleParcelIds,
+    visibleUserLayerIds,
+    localLayer,
+    draft,
+    selectedParcel,
+    officialParcel,
+    fix,
+    styleRevision,
+  ]);
   useEffect(() => {
-    const group = gps.current;
-    if (!group || !fix) return;
-    group.clearLayers();
-    L.circle([fix.latitude, fix.longitude], {
-      radius: fix.accuracy,
-      color: "#4b91f1",
-      fillOpacity: 0.14,
-      weight: 1,
-    }).addTo(group);
-    L.circleMarker([fix.latitude, fix.longitude], {
-      radius: 7,
-      color: "white",
-      weight: 3,
-      fillColor: "#4b91f1",
-      fillOpacity: 1,
-    }).addTo(group);
+    const m = map.current;
+    if (!m || !fix) return;
+    const node = document.createElement("div");
+    node.className = "gps-location";
+    node.setAttribute("role", "img");
+    node.setAttribute(
+      "aria-label",
+      `Current GPS location, accuracy ${Math.round(fix.accuracy)} metres`,
+    );
+    const marker = new maplibregl.Marker({ element: node })
+      .setLngLat([fix.longitude, fix.latitude])
+      .addTo(m);
+    return () => {
+      marker.remove();
+    };
   }, [fix]);
   useEffect(() => {
-    polygonDraft.current?.remove();
-    drawingVertices.current?.remove();
     const m = map.current;
-    if (!m || !drawMode) return;
-    const geometry = drawingGeometry(
-      kind,
-      drawPoints.map((p) => [p.lng, p.lat]),
-    );
-    if (geometry) {
-      const group = L.geoJSON(geometry, {
-        style: { color: "#ffa65a", dashArray: "5 4" },
-        pointToLayer: (_f, p) =>
-          L.circleMarker(p, { radius: 7, color: "#ffa65a" }),
-      }).addTo(m);
-      drawingVertices.current = group;
+    if (!m?.getSource("landos-parcels")) return;
+    const geometry = drawMode
+      ? drawingGeometry(
+          kind,
+          drawPoints.map((p) => [p.lng, p.lat]),
+        )
+      : null;
+    setSceneData(m, "drawing", geometry ? [geometryFeature(geometry)] : []);
+    if (!drawMode) return;
+    // Editing takes place on the ground plane; the same MapLibre instance stays alive.
+    m.jumpTo({ pitch: 0, bearing: 0 });
+    const markers: maplibregl.Marker[] = [];
+    function marker(
+      position: number[],
+      className: string,
+      label: string,
+      text: string,
+      draggable: boolean,
+    ) {
+      const node = document.createElement("button");
+      node.type = "button";
+      node.className = className;
+      node.style.width = "44px";
+      node.style.height = "44px";
+      const icon = document.createElement("span");
+      icon.setAttribute("role", "img");
+      icon.setAttribute("aria-label", label);
+      icon.textContent = text;
+      node.append(icon);
+      const value = new maplibregl.Marker({ element: node, draggable })
+        .setLngLat([position[0], position[1]])
+        .addTo(m!);
+      node.addEventListener("click", (event) => event.stopPropagation());
+      node.addEventListener("dblclick", (event) => event.stopPropagation());
+      markers.push(value);
+      return { node, value };
     }
-    const vertices = L.layerGroup().addTo(m);
-    drawPoints.forEach((point, index) =>
-      L.marker(point, {
-        draggable: true,
-        icon: L.divIcon({
-          className: "drawing-vertex",
-          iconSize: [44, 44],
-          iconAnchor: [22, 22],
-          html: `<span role="img" aria-label="Vertex ${index + 1}"></span>`,
-        }),
-      })
-        .on("click", (event) => {
-          L.DomEvent.stopPropagation(event.originalEvent);
-          setSelectedVertex(index);
-        })
-        .on("dragend", (event) => {
-          const p = event.target.getLatLng();
-          const current = session.ref.current;
-          if (!current) return;
-          const next = current.points.map((v, i) =>
-            i === index ? [p.lng, p.lat] : v,
-          );
-          const min =
-            current.kind === "Polygon" ? 3 : current.kind === "Point" ? 1 : 2;
-          if (next.length >= min && !safeSimple(current.kind, next)) {
-            event.target.setLatLng(point);
-            setNotice("This vertex move would make the shape invalid.");
-            return;
-          }
-          setDrawPoints((points) =>
-            points.map((v, i) => (i === index ? p : v)),
-          );
-        })
-        .addTo(vertices),
-    );
+    drawPoints.forEach((point, index) => {
+      const { node, value } = marker(
+        [point.lng, point.lat],
+        "drawing-vertex",
+        `Vertex ${index + 1}`,
+        "",
+        true,
+      );
+      node.addEventListener("click", () => setSelectedVertex(index));
+      value.on("dragend", () => {
+        const p = value.getLngLat();
+        const current = session.ref.current;
+        if (!current) return;
+        const next = current.points.map((v, i) =>
+          i === index ? [p.lng, p.lat] : v,
+        );
+        const min =
+          current.kind === "Polygon" ? 3 : current.kind === "Point" ? 1 : 2;
+        if (next.length >= min && !safeSimple(current.kind, next)) {
+          value.setLngLat([point.lng, point.lat]);
+          setNotice("This vertex move would make the shape invalid.");
+          return;
+        }
+        setDrawPoints((points) => points.map((v, i) => (i === index ? p : v)));
+      });
+    });
     const points = session.ref.current?.points || [];
     if (safeSimple(kind, points)) {
       if (kind === "LineString" || kind === "Polygon") {
@@ -980,25 +1077,22 @@ export default function MapWorkspace({
         for (let i = 0; i < count; i++) {
           const a = points[i],
             b = points[(i + 1) % points.length];
-          L.marker([(a[1] + b[1]) / 2, (a[0] + b[0]) / 2], {
-            icon: L.divIcon({
-              className: "drawing-midpoint",
-              iconSize: [44, 44],
-              iconAnchor: [22, 22],
-              html: `<span role="img" aria-label="Add vertex after ${i + 1}">+</span>`,
-            }),
-          })
-            .on("click", (event) => {
-              L.DomEvent.stopPropagation(event.originalEvent);
-              const current = session.ref.current;
-              if (!current) return;
-              const next = insertVertex(current.kind, current.points, i);
-              if (next) {
-                changeSession({ points: next }, true);
-                setSelectedVertex(i + 1);
-              } else setNotice("Cannot safely insert a vertex here.");
-            })
-            .addTo(vertices);
+          const { node } = marker(
+            [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+            "drawing-midpoint",
+            `Add vertex after ${i + 1}`,
+            "+",
+            false,
+          );
+          node.addEventListener("click", () => {
+            const current = session.ref.current;
+            if (!current) return;
+            const next = insertVertex(current.kind, current.points, i);
+            if (next) {
+              changeSession({ points: next }, true);
+              setSelectedVertex(i + 1);
+            } else setNotice("Cannot safely insert a vertex here.");
+          });
         }
       }
       if (kind !== "Point") {
@@ -1006,50 +1100,48 @@ export default function MapWorkspace({
           (a, p) => [a[0] + p[0] / points.length, a[1] + p[1] / points.length],
           [0, 0],
         );
-        L.marker([anchor[1], anchor[0]], {
-          draggable: true,
-          icon: L.divIcon({
-            className: "drawing-move",
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
-            html: '<span role="img" aria-label="Move entire shape">✥</span>',
-          }),
-        })
-          .on("dragend", (event) => {
-            const current = session.ref.current,
-              position = event.target.getLatLng();
-            if (!current) return;
-            const next = translatePoints(current.kind, current.points, [
-              position.lng - anchor[0],
-              position.lat - anchor[1],
-            ]);
-            if (next) changeSession({ points: next }, true);
-            else {
-              setNotice(
-                "Cannot move this shape outside valid map coordinates.",
-              );
-              event.target.setLatLng([anchor[1], anchor[0]]);
-            }
-          })
-          .addTo(vertices);
+        const { value } = marker(
+          anchor,
+          "drawing-move",
+          "Move entire shape",
+          "✥",
+          true,
+        );
+        value.on("dragend", () => {
+          const current = session.ref.current,
+            position = value.getLngLat();
+          if (!current) return;
+          const next = translatePoints(current.kind, current.points, [
+            position.lng - anchor[0],
+            position.lat - anchor[1],
+          ]);
+          if (next) changeSession({ points: next }, true);
+          else {
+            setNotice("Cannot move this shape outside valid map coordinates.");
+            value.setLngLat([anchor[0], anchor[1]]);
+          }
+        });
       }
     }
     return () => {
-      vertices.remove();
-      drawingVertices.current?.remove();
+      markers.forEach((v) => v.remove());
     };
-  }, [drawPoints, drawMode, kind, session.ref, changeSession, setDrawPoints]);
+  }, [
+    drawPoints,
+    drawMode,
+    kind,
+    session.ref,
+    changeSession,
+    setDrawPoints,
+    styleRevision,
+  ]);
+
   useEffect(() => {
     const node = mapNode.current;
     if (!node) return;
-    const observer = new ResizeObserver(() =>
-      map.current?.invalidateSize({ pan: false }),
-    );
+    const observer = new ResizeObserver(() => map.current?.resize());
     observer.observe(node);
-    const timer = window.setTimeout(
-      () => map.current?.invalidateSize({ pan: false }),
-      250,
-    );
+    const timer = window.setTimeout(() => map.current?.resize(), 250);
     return () => {
       observer.disconnect();
       clearTimeout(timer);
@@ -1490,28 +1582,19 @@ export default function MapWorkspace({
         )
       : null;
   function toggleMapMode() {
-    if (mapMode === "2d" && drawMode) {
-      setNotice("Finish or cancel the current drawing before switching to 3D.");
-      return;
-    }
-    if (mapMode === "3d") {
-      map.current?.setView(
-        [threeDView.latitude, threeDView.longitude],
-        threeDView.zoom,
-      );
-      setMapMode("2d");
-      return;
-    }
-    const center = map.current?.getCenter();
-    setThreeDView({
-      latitude: center?.lat || -37.5622,
-      longitude: center?.lng || 143.8503,
-      zoom: map.current?.getZoom() || 11,
+    const next = mapMode === "2d" ? "3d" : "2d";
+    map.current?.easeTo({
+      pitch: next === "3d" ? 50 : 0,
+      bearing: 0,
+      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 0
+        : 350,
     });
-    setMapMode("3d");
+    setMapMode(next);
   }
   return (
     <main className={`map-app sheet-${sheet}`}>
+      <div className="maplibre-attribution">{OPENFREEMAP_ATTRIBUTION}</div>
       {viewport.error ? (
         <div className="drawing-storage-error" role="status">
           Map update failed: {viewport.error}. Your local drafts are preserved.
@@ -1520,31 +1603,9 @@ export default function MapWorkspace({
       <div
         ref={mapNode}
         className="map-canvas"
+        data-basemap={basemap}
         aria-label="Land workspace map"
       />
-      {mapMode === "3d" ? (
-        <MapLibre3DCanvas
-          data={renderedData}
-          initialView={threeDView}
-          location={fix}
-          onViewChange={setThreeDView}
-          onSelectParcel={(record) => {
-            setSelection({ kind: "parcel", record });
-            setTab("parcels");
-            setSheet("medium");
-          }}
-          onSelectObservation={(record) => {
-            setSelected(record);
-            setTab("observations");
-            setSheet("expanded");
-          }}
-          onSelectFeature={(record, featureId) => {
-            setSelection({ kind: "drawing", record, featureId });
-            setTab("layers");
-            setSheet("medium");
-          }}
-        />
-      ) : null}
       {session.found && !drawMode ? (
         <div className="drawing-recovery" role="status">
           <strong>Unfinished drawing found</strong>
@@ -1635,12 +1696,45 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
+        <select
+          aria-label="Basemap"
+          value={basemap}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (!isMapLibreBasemap(next)) return;
+            setBasemap(next);
+            map.current?.setStyle(MAPLIBRE_BASEMAPS[next].styleUrl);
+            const current = map.current;
+            if (current) {
+              try {
+                localStorage.setItem(
+                  `landos:map-camera:v1:${userId}:${workspaceId}`,
+                  JSON.stringify({
+                    center: current.getCenter().toArray(),
+                    zoom: current.getZoom(),
+                    basemap: next,
+                  }),
+                );
+              } catch {
+                /* Optional camera storage. */
+              }
+            }
+          }}
+        >
+          {Object.entries(MAPLIBRE_BASEMAPS).map(([id, item]) => (
+            <option key={id} value={id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
         <button
           className={`map-mode-toggle${mapMode === "3d" ? " active" : ""}`}
           onClick={toggleMapMode}
           aria-pressed={mapMode === "3d"}
           disabled={mapMode === "2d" && Boolean(drawMode)}
-          title={mapMode === "3d" ? "Return to 2D editing" : "View this map in 3D"}
+          title={
+            mapMode === "3d" ? "Return to 2D editing" : "View this map in 3D"
+          }
         >
           {mapMode === "3d" ? "2D edit" : "3D view"}
         </button>
@@ -1968,7 +2062,7 @@ export default function MapWorkspace({
                     onClick={() => {
                       setSelected(o);
                       setSheet("expanded");
-                      map.current?.setView([o.latitude, o.longitude], 16);
+                      setView(map.current, [o.latitude, o.longitude], 16);
                     }}
                   >
                     <span className="record-icon">⌁</span>
@@ -1997,7 +2091,7 @@ export default function MapWorkspace({
                 onIdentify={armParcelIdentify}
                 onSelect={selectOfficialParcel}
                 onAddress={(p) =>
-                  map.current?.setView([p.latitude, p.longitude], 17)
+                  setView(map.current, [p.latitude, p.longitude], 17)
                 }
               />
               {identifyBusy ? <p role="status">Identifying parcel…</p> : null}
@@ -2230,7 +2324,7 @@ export default function MapWorkspace({
                       onClick={() => {
                         setSelection({ kind: "parcel", record: p });
                         if (p.latitude !== null && p.longitude !== null)
-                          map.current?.setView([p.latitude, p.longitude], 15);
+                          setView(map.current, [p.latitude, p.longitude], 15);
                         setNotice(
                           `${p.title} · ${p.status}${p.notes ? " · " + p.notes : ""}`,
                         );
@@ -2313,11 +2407,11 @@ export default function MapWorkspace({
                           record: l,
                           featureId: String(f.id),
                         });
-                        const bounds = L.geoJSON(f).getBounds();
-                        if (bounds.isValid())
+                        const bounds = geometryBounds(f);
+                        if (!bounds.isEmpty())
                           map.current?.fitBounds(bounds, {
                             maxZoom: 17,
-                            padding: [30, 30],
+                            padding: 30,
                           });
                       }}
                     >
@@ -2526,13 +2620,21 @@ export default function MapWorkspace({
                   ) : null}
                 </div>
               ) : null}
+              <OfficialMapLayers controller={officialLayers} />
               <div className="section-label">SAVED VIEWS</div>
               {data.savedViews.map((v) => (
                 <div key={v.id} className="saved-view">
                   <button
                     className="record-row"
                     onClick={async () => {
-                      map.current?.setView(
+                      map.current?.jumpTo({
+                        pitch: 0,
+                        bearing: 0,
+                        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+                      });
+                      setMapMode("2d");
+                      setView(
+                        map.current,
                         [Number(v.view.latitude), Number(v.view.longitude)],
                         Number(v.view.zoom),
                       );
@@ -2626,9 +2728,7 @@ export default function MapWorkspace({
                               try {
                                 return m
                                   .getBounds()
-                                  .intersects(
-                                    L.geoJSON(p.geometry).getBounds(),
-                                  );
+                                  .intersects(geometryBounds(p.geometry));
                               } catch {
                                 return false;
                               }
@@ -2636,7 +2736,7 @@ export default function MapWorkspace({
                             return (
                               p.latitude != null &&
                               p.longitude != null &&
-                              m.getBounds().contains([p.latitude, p.longitude])
+                              m.getBounds().contains([p.longitude, p.latitude])
                             );
                           })
                           .map((p) => p.id),
@@ -2651,7 +2751,7 @@ export default function MapWorkspace({
                             try {
                               return m
                                 .getBounds()
-                                .intersects(L.geoJSON(l.geojson).getBounds());
+                                .intersects(geometryBounds(l.geojson));
                             } catch {
                               return false;
                             }

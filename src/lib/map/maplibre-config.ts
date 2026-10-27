@@ -20,9 +20,9 @@ export const MAPLIBRE_BASEMAPS: Record<
     description: "OpenFreeMap Dark vector base map",
   },
   terrain: {
-    label: "Terrain",
+    label: "Bright",
     styleUrl: "https://tiles.openfreemap.org/styles/bright",
-    description: "OpenFreeMap Bright vector terrain-oriented base map",
+    description: "OpenFreeMap Bright vector basemap (no elevation terrain)",
   },
 };
 

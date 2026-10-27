@@ -13,3 +13,6 @@ ios/Build/
 .vercel/
 playwright-report/
 test-results/
+
+# Generated from the pinned maplibre-gl package before dev/build.
+public/maplibre/
