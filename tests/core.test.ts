@@ -80,6 +80,7 @@ test("MapLibre workspace overlays preserve boundaries and fall back to saved loc
   ]);
   assert.equal(parcels.features.length, 2);
   assert.equal(parcels.features[0].geometry.type, "Polygon");
+  assert.equal(parcels.features[0].properties?.recordId, "saved-with-boundary");
   assert.deepEqual(parcels.features[1].geometry, {
     type: "Point",
     coordinates: [143, -37],
@@ -97,6 +98,7 @@ test("MapLibre workspace overlays preserve boundaries and fall back to saved loc
       field_observation_media: [],
     },
   ]);
+  assert.equal(observations.features[0].properties?.recordId, "field-note");
   assert.deepEqual(observations.features[0].geometry, {
     type: "Point",
     coordinates: [143, -37],

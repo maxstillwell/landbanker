@@ -780,7 +780,7 @@ export default function MapWorkspace({
           new CustomEvent("landos:select-rendered", {
             detail: {
               scope: `${userId}:${workspaceId}`,
-              id: String(hit.id || ""),
+              id: String(hit.properties?.recordId ?? hit.id ?? ""),
               ...hit.properties,
             },
           }),

@@ -13,7 +13,7 @@ function feature<T extends Geometry>(
   geometry: T,
   properties: Record<string, unknown>,
 ): Feature<T> {
-  return { type: "Feature", id, properties, geometry };
+  return { type: "Feature", id, properties: { ...properties, recordId: id }, geometry };
 }
 
 export function parcelsGeoJson(parcels: Parcel[]): FeatureCollection {
