@@ -9,6 +9,7 @@ import {
 import type { Map as MapLibreMap } from "maplibre-gl";
 import type { Feature } from "geojson";
 import type { Parcel, Observation } from "../types";
+import { viewportZoom } from "../map/viewport-input";
 import { timeoutFetch } from "../network";
 import { applyMapChanges, type MapChange } from "../map/change-feed";
 export type ViewportRows = {
@@ -101,7 +102,7 @@ export function useViewport(
         }
         setError("");
       } catch (error) {
-        if (!cancelled)
+        if (!cancelled && sync === current)
           setError(
             error instanceof Error
               ? error.message
@@ -124,7 +125,7 @@ export function useViewport(
       ]
         .map((n) => n.toFixed(5))
         .join(",");
-      const zoom = m.getZoom(),
+      const zoom = viewportZoom.parse(m.getZoom()),
         key = `${scope}:${zoom}:${bbox}`;
       if (activeKey === key) return;
       const generation = ++sequence;
@@ -132,10 +133,12 @@ export function useViewport(
       controller = new AbortController();
       const signal = controller.signal;
       activeKey = key;
+      sync = null;
       const saved = cache.current.get(key);
       if (saved && saved.until > Date.now()) {
         sync = { key, bbox, rows: saved.rows, cursor: saved.cursor };
         setValue({ scope, rows: saved.rows });
+        setError("");
         activeKey = "";
         return;
       }

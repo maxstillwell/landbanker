@@ -85,6 +85,8 @@ export const SCENE_SOURCES = [
   "official",
   "gps",
   "drawing",
+  "zoning-selection",
+  "hover",
 ] as const;
 export function installScene(map: Map) {
   for (const name of SCENE_SOURCES) {
@@ -113,14 +115,34 @@ export function installScene(map: Map) {
         "fill-opacity": 0.14,
       },
     });
+    if (["selected", "official", "zoning-selection"].includes(name))
+      map.addLayer({
+        id: `${id}-halo`,
+        type: "line",
+        source: id,
+        filter: ["!=", ["geometry-type"], "Point"],
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": 8,
+          "line-opacity": 0.95,
+        },
+      });
     map.addLayer({
       id: `${id}-line`,
       type: "line",
       source: id,
       filter: ["!=", ["geometry-type"], "Point"],
       paint: {
-        "line-color": ["coalesce", ["get", "color"], color],
-        "line-width": name === "selected" ? 4 : 2,
+        "line-color": ["selected", "official", "zoning-selection"].includes(
+          name,
+        )
+          ? "#006a86"
+          : ["coalesce", ["get", "color"], color],
+        "line-width": ["selected", "official", "zoning-selection"].includes(
+          name,
+        )
+          ? 4
+          : 2,
       },
     });
     map.addLayer({

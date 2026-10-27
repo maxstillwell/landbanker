@@ -10,19 +10,24 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const checks = [
   {
+    id: "vic-parcels",
+    url: "https://plan-gis.mapshare.vic.gov.au/arcgis/rest/services/Planning/VicPlan_PropertyAndParcel/MapServer/4",
+    point: { longitude: 145.182, latitude: -37.856 },
+  },
+  {
     id: "vic-zoning",
     url: "https://spatial.planning.vic.gov.au/gis/rest/services/planning_scheme_zones/MapServer/0",
-    point: { longitude: 143.8503, latitude: -37.5622 },
+    point: { longitude: 145.182, latitude: -37.856 },
   },
   {
     id: "nsw-parcels",
     url: "https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/MapServer/8",
-    point: { longitude: 153.005, latitude: -28.676 },
+    point: { longitude: 153.2773, latitude: -28.8135 },
   },
   {
     id: "nsw-zoning",
     url: "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer/2",
-    point: { longitude: 153.005, latitude: -28.676 },
+    point: { longitude: 153.2773, latitude: -28.8135 },
   },
 ];
 
@@ -32,7 +37,15 @@ async function request(url) {
   // only the fixed official URLs declared above.
   const { stdout } = await execFileAsync(
     "curl",
-    ["--fail", "--silent", "--show-error", "--location", "--max-time", "30", url],
+    [
+      "--fail",
+      "--silent",
+      "--show-error",
+      "--location",
+      "--max-time",
+      "30",
+      url,
+    ],
     { maxBuffer: 2 * 1024 * 1024 },
   );
   const body = JSON.parse(stdout);
@@ -76,5 +89,7 @@ for (const check of checks) {
   }
 }
 
-console.log(JSON.stringify({ checkedAt: new Date().toISOString(), results }, null, 2));
+console.log(
+  JSON.stringify({ checkedAt: new Date().toISOString(), results }, null, 2),
+);
 if (results.some((result) => result.status === "fail")) process.exitCode = 1;

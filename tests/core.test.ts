@@ -910,3 +910,115 @@ test("MapLibre scene bounds retain multipart geometry and GPS accuracy circles u
   assert.equal(multi.getNorth(), -30);
   assert(geometryBounds({ type: "FeatureCollection", features: [] }).isEmpty());
 });
+
+import { viewportZoom } from "../src/lib/map/viewport-input";
+import {
+  zoneCategory,
+  officialZoneCode,
+  ZONE_CATEGORIES,
+} from "../src/lib/map/zoning-style";
+import {
+  officialFeatureKey,
+  parcelFromOfficialFeature,
+} from "../src/lib/map/official-selection";
+import { OFFICIAL_MAP_LAYERS } from "../src/lib/map/official-map-catalog";
+test("viewport request zoom accepts fractional camera levels, validates bounds before normalization", () => {
+  for (const [input, expected] of [
+    [13.42, 13],
+    ["14.8", 14],
+    [0, 0],
+    [22, 22],
+    [undefined, 12],
+  ] as const)
+    assert.equal(viewportZoom.parse(input), expected);
+  for (const input of [
+    -0.1,
+    22.01,
+    NaN,
+    Infinity,
+    -Infinity,
+    "",
+    " ",
+    "not-a-number",
+    null,
+    true,
+  ])
+    assert.equal(viewportZoom.safeParse(input).success, false, String(input));
+});
+test("zoning visual groups preserve state-specific codes and legacy NSW E-zone ambiguity", () => {
+  for (const [state, code, expected] of [
+    ["VIC", "GRZ1", "residential"],
+    ["VIC", "C1Z", "commercial"],
+    ["VIC", "IN1Z", "industrial"],
+    ["VIC", "FZ2", "rural"],
+    ["VIC", "PCRZ", "conservation"],
+    ["VIC", "PUZ1", "special"],
+    ["NSW", "R1", "residential"],
+    ["NSW", "B2", "commercial"],
+    ["NSW", "IN1", "industrial"],
+    ["NSW", "RU1", "rural"],
+    ["NSW", "C2", "conservation"],
+    ["NSW", "SP2", "special"],
+    ["NSW", "E1", "unknown"],
+    ["VIC", "unreviewed", "unknown"],
+  ] as const)
+    assert.equal(zoneCategory(state, code), expected, `${state} ${code}`);
+  assert.equal(
+    zoneCategory("NSW", "E1", "National Parks and Nature Reserves"),
+    "conservation",
+  );
+  assert.equal(zoneCategory("NSW", "E1", "Local Centre"), "commercial");
+  assert.equal(zoneCategory("NSW", "E4", "General Industrial"), "industrial");
+  assert.equal(
+    officialZoneCode("NSW", { LAY_CLASS: "Land zoning", SYM_CODE: "R2" }),
+    "R2",
+  );
+  assert.equal(
+    new Set(Object.values(ZONE_CATEGORIES).map((v) => v.color)).size,
+    7,
+  );
+});
+test("official parcel picks retain provider geometry/identifiers and never invent unidentified Properties", () => {
+  const layer = OFFICIAL_MAP_LAYERS["vic-parcels"];
+  const feature = {
+    type: "Feature" as const,
+    properties: {
+      PARCEL_PFI: "123",
+      PARCEL_LOT_NUMBER: "7",
+      PARCEL_PLAN_NUMBER: "PS42",
+    },
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        [
+          [145.18, -37.85],
+          [145.19, -37.85],
+          [145.19, -37.86],
+          [145.18, -37.85],
+        ],
+      ],
+    },
+  };
+  assert.equal(officialFeatureKey(layer, feature), "vic-parcels:123");
+  const selected = parcelFromOfficialFeature(layer, feature);
+  assert(selected);
+  assert.equal(selected.geometry, feature.geometry);
+  assert.equal(selected.sourceId, "123");
+  assert.equal(selected.lot, "7");
+  assert.equal(selected.plan, "PS42");
+  assert(selected.areaM2 > 0);
+  assert.equal(
+    parcelFromOfficialFeature(layer, { ...feature, properties: {} }),
+    null,
+  );
+  assert.equal(
+    parcelFromOfficialFeature(OFFICIAL_MAP_LAYERS["vic-zoning"], feature),
+    null,
+  );
+  assert.equal(
+    officialFeatureKey(layer, { ...feature, properties: {} }),
+    officialFeatureKey(layer, { ...feature, properties: {} }),
+  );
+  assert(!isMapLibreBasemap("__proto__"));
+  assert(!isMapLibreBasemap("toString"));
+});
