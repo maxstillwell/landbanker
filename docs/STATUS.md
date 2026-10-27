@@ -71,7 +71,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.md. All local critical workflow checks pass. Independent cloud CI is green. Safely merge/push main under the owner's existing authorization and verify the Vercel production revision. The saved environment network draft requires user publication before blocked Vercel/live-source endpoints become reachable. Do not repeat the architecture work or apply hosted database/security changes.
+Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.md. All local critical workflow checks pass. Independent cloud CI is green. Main integration `7673fec` and rollback tag are pushed and verified; see the rebuild branch integration receipt in MAPLIBRE_PROGRESS.md. Verify the Vercel production revision after network access is enabled; do not repeat the merge. The saved environment network draft requires user publication before blocked Vercel/live-source endpoints become reachable. Do not repeat the architecture work or apply hosted database/security changes.
 
 ## MaxQI safety / migration
 

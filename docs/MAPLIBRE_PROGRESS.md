@@ -48,3 +48,13 @@ Vercel production/API and `api.github.com` are blocked by the enforced network p
 The local test image registry `public.ecr.aws` is blocked. Matching Auth and Storage versions were obtained from `supabase/*` Docker Hub mirrors, PostgREST from its official Docker Hub repository and Kong from the official `kong:2.8.1` image. These tested sources now appear directly in the disposable compose definition; all runtime/security settings are unchanged. This affects only disposable local fixtures.
 
 A network-only environment draft was saved using the supported setup workflow. It adds `api.github.com`, `api.vercel.com`, `landbanker.vercel.app`, `tiles.openfreemap.org` and the four configured VIC/NSW official query hosts. The existing package-manager preset and scripts are preserved. The tool reports `requires_publish: true`; the draft is not active runtime access. The user must publish/apply it in environment settings before blocked deployment/live-source verification can resume. No credential values were requested or saved.
+
+## Main integration receipt — 27 October 2026 AEDT
+
+Main merge **7673fec75203a51fc27b3f6ff7738e29869db807** was pushed normally and verified with `git ls-remote`. Its application/test/infrastructure tree is identical to fully tested `5cd203f`. The rebuild branch was retained. No forced update or hosted database write occurred.
+
+Annotated rollback tag **landos-maplibre-pre-cutover-20261027** was pushed and verified to resolve to **d23121c3c7c5c408d9e159ec362538707d0d64a2**. Application rollback is a normal revert of merge `7673fec` followed by normal deployment; never reset/force-push or roll back user data.
+
+Production target: **https://landbanker.vercel.app**. Deployment execution/state and the live production revision remain **UNVERIFIED**: the running environment still has no active Vercel/GitHub API allowlist or configured Vercel identity. Do not infer a successful Vercel deployment from the Git push. The remaining task is to publish/apply the saved network-only LandOS Development environment draft, recheck access/readiness, inspect main CI/Vercel deployment for `7673fec`, and validate production home/login/map-worker and authenticated workflows using the owner's authorized account. Use existing configured credentials if available; request any missing credential only through secure environment settings. No further application-deployment approval is required.
+
+This integration receipt is committed only on the rebuild branch so production's implementation SHA remains `7673fec`. Resume from this receipt instead of repeating the completed implementation or merging it again.
