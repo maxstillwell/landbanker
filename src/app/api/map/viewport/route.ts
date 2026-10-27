@@ -4,6 +4,7 @@ import { z } from "zod";
 import { workspaceContext } from "@/lib/workspace";
 import { json, apiError } from "@/lib/api";
 import { intersectsViewport, type Bbox } from "@/lib/map/viewport";
+import { viewportZoom } from "@/lib/map/viewport-input";
 import { signedMediaUrls } from "@/lib/media-url-cache";
 const bbox = z
   .tuple([
@@ -32,12 +33,7 @@ export async function GET(request: NextRequest) {
     const bounds = bbox.parse(
       (params.get("bbox") || "").split(",").map(Number),
     ) as Bbox;
-    const zoom = z.coerce
-      .number()
-      .int()
-      .min(0)
-      .max(22)
-      .parse(params.get("zoom") || 12);
+    const zoom = viewportZoom.parse(params.get("zoom") ?? undefined);
     const kind = z
       .enum(["parcels", "observations", "features"])
       .parse(params.get("kind") || "parcels");

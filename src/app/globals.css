@@ -1585,3 +1585,29 @@ fieldset {
   box-shadow: 0 1px 6px #0006;
   pointer-events: none;
 }
+
+.map-update-error { position:absolute; z-index:1100; top:78px; left:12px; max-width:min(480px,calc(100vw - 24px)); display:flex; gap:8px; align-items:center; padding:8px 12px; background:#fff5e5; border:1px solid #b76b21; border-radius:9px; font-size:12px; box-shadow:0 2px 10px #0002; }
+.map-update-error span { max-height:5em; overflow:auto; }
+.map-update-error button { flex-shrink:0; min-height:32px; padding:4px 8px; }
+.zoning-legend { display:flex; flex-wrap:wrap; gap:6px 10px; font-size:10px; }
+.zoning-legend span { display:flex; align-items:center; gap:4px; }
+.zoning-legend i { display:inline-block; width:12px; height:12px; border:1px solid #334155; border-radius:2px; }
+.maplibre-official-layers [aria-label="Official inspection mode"] { display:flex; gap:6px; }
+.maplibre-official-layers button[aria-pressed="true"] { background:#d3e5de; border-color:#216357; }
+.maplibre-official-layers [aria-label="Official feature Inspector"] { padding:12px; border:1px solid #bccac0; border-radius:8px; }
+.basemap-picker { flex-shrink:0; position:relative; font-size:12px; }
+.basemap-picker summary { cursor:pointer; display:flex; align-items:center; gap:5px; min-height:36px; }
+.basemap-picker i { display:inline-block; width:28px; height:24px; border:1px solid #8d9f95; border-radius:4px; }
+.basemap-options { position:absolute; top:100%; right:0; width:270px; padding:12px; background:var(--paper); border:1px solid var(--line); box-shadow:0 8px 20px #0003; border-radius:10px; }
+.basemap-options [role="group"] { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+.basemap-options button { display:flex; align-items:center; gap:8px; font-size:12px; text-align:left; }
+.basemap-options button[aria-pressed="true"] { border-color:#216357; background:#d3e5de; }
+.basemap-options small { display:block; font-size:10px; line-height:1.5; }
+.fiord-swatch { background:linear-gradient(130deg,#a8b8b9 40%,#546b79 40%,#546b79 50%,#dce1d5 50%); }
+
+.floating-map-widget { position:absolute; z-index:600; max-width:calc(100% - 16px); color:#eef7f4; background:#0d1d1f; border:1px solid #355052; border-radius:10px; box-shadow:0 5px 20px #0004; }
+.floating-map-widget-header { display:flex; align-items:center; }
+.floating-map-widget-header button { color:inherit; background:transparent; border:0; min-height:40px; }
+.floating-map-widget-handle { cursor:grab; touch-action:none; font-size:20px; }
+.floating-map-widget-handle:active { cursor:grabbing; }
+.floating-map-widget-content { padding:6px; }

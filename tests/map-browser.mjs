@@ -21,7 +21,25 @@ export async function mapFixtures(target) {
               attribution: "Synthetic workflow fixture",
             },
           },
-          layers: [{ id: "fixture", type: "raster", source: "fixture" }],
+          layers: [
+            {
+              id: "fixture-background",
+              type: "background",
+              paint: {
+                "background-color": route.request().url().endsWith("/dark")
+                  ? "#19242c"
+                  : route.request().url().endsWith("/fiord")
+                    ? "#c8d4cf"
+                    : "#eef1ee",
+              },
+            },
+            {
+              id: "fixture",
+              type: "raster",
+              source: "fixture",
+              paint: { "raster-opacity": 0.02 },
+            },
+          ],
         },
       });
     return route.fulfill({ contentType: "image/png", body: tile });

@@ -1,6 +1,16 @@
 "use client";
-import { useEffect, useState, type RefObject } from "react";
-import type { Map, GeoJSONSource, MapMouseEvent } from "maplibre-gl";
+import { useEffect, useState, useRef, type RefObject } from "react";
+import type { Feature, FeatureCollection } from "geojson";
+import { parcelFromOfficialFeature } from "@/lib/map/official-selection";
+import type { OfficialParcel } from "@/lib/map/parcel-types";
+import { ZONE_CATEGORIES } from "@/lib/map/zoning-style";
+import { setSceneData, geometryBounds } from "@/lib/map/maplibre-scene";
+import type {
+  Map,
+  GeoJSONSource,
+  MapMouseEvent,
+  ExpressionSpecification,
+} from "maplibre-gl";
 import {
   OFFICIAL_MAP_LAYERS,
   queryOfficialLayer,
@@ -17,19 +27,25 @@ export function useOfficialMapLayers({
   revision,
   blocked,
   onPick,
+  onParcel,
 }: {
   map: RefObject<Map | null>;
   revision: number;
   blocked: boolean;
   onPick: () => void;
+  onParcel: (parcel: OfficialParcel) => void;
 }) {
   const [visible, setVisible] = useState<Record<string, boolean>>(
     Object.fromEntries(ids.map((id) => [id, true])),
   );
+  const cache = useRef<Partial<Record<OfficialLayerId, FeatureCollection>>>({});
+  const [mode, setMode] = useState<"parcel" | "zoning">("parcel");
+  const [opacity, setOpacity] = useState(0.3);
   const [status, setStatus] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<{
     id: OfficialLayerId;
     properties: Record<string, unknown>;
+    feature: Feature;
   } | null>(null);
   useEffect(() => {
     const m = map.current;
@@ -45,8 +61,26 @@ export function useOfficialMapLayers({
           type: "fill",
           source,
           paint: {
-            "fill-color": layer.color,
-            "fill-opacity": layer.fillOpacity,
+            "fill-color": id.endsWith("zoning")
+              ? ([
+                  "match",
+                  ["get", "zoneCategory"],
+                  "residential",
+                  ZONE_CATEGORIES.residential.color,
+                  "commercial",
+                  ZONE_CATEGORIES.commercial.color,
+                  "industrial",
+                  ZONE_CATEGORIES.industrial.color,
+                  "rural",
+                  ZONE_CATEGORIES.rural.color,
+                  "conservation",
+                  ZONE_CATEGORIES.conservation.color,
+                  "special",
+                  ZONE_CATEGORIES.special.color,
+                  ZONE_CATEGORIES.unknown.color,
+                ] as ExpressionSpecification)
+              : layer.color,
+            "fill-opacity": id.endsWith("zoning") ? 0.3 : layer.fillOpacity,
           },
         },
         "landos-parcels-fill",
@@ -99,6 +133,7 @@ export function useOfficialMapLayers({
         void queryOfficialLayer(layer, bbox, signal)
           .then((result) => {
             if (signal.aborted) return;
+            cache.current[id] = result.collection;
             source?.setData(result.collection);
             setStatus((s) => ({
               ...s,
@@ -132,17 +167,68 @@ export function useOfficialMapLayers({
           "landos-features-point",
         ].filter((id) => !!m!.getLayer(id)),
       });
-      if (workspace.length || blocked) return;
-      const hit = m!.queryRenderedFeatures(event.point, {
-        layers: ids.map((id) => `official-${id}-fill`),
-      })[0];
+      if (blocked || (workspace.length && mode !== "zoning")) return;
+      const hits = m!.queryRenderedFeatures(event.point, {
+        layers: ids
+          .filter((id) => mode !== "zoning" || id.endsWith("zoning"))
+          .map((id) => `official-${id}-fill`),
+      });
+      const hit =
+        mode === "parcel"
+          ? hits.find((f) =>
+              String(f.properties?.officialLayerId).endsWith("parcels"),
+            ) || hits[0]
+          : hits[0];
       const id = hit?.properties?.officialLayerId as
         OfficialLayerId | undefined;
-      if (id && OFFICIAL_MAP_LAYERS[id]) {
-        setSelected({ id, properties: hit.properties });
-        onPick();
+      if (!id || !OFFICIAL_MAP_LAYERS[id]) return;
+      // queryRenderedFeatures geometries may be clipped to tiles. Resolve the
+      // provider's full query feature by stable identity before inspecting/fitting.
+      const feature = cache.current[id]?.features.find(
+        (f) => String(f.id) === String(hit.properties?.officialFeatureKey),
+      );
+      if (!feature) return;
+      if (id.endsWith("parcels")) {
+        const parcel = parcelFromOfficialFeature(
+          OFFICIAL_MAP_LAYERS[id],
+          feature,
+          [event.lngLat.lng, event.lngLat.lat],
+        );
+        if (parcel) {
+          setSelected(null);
+          onParcel(parcel);
+          return;
+        }
       }
+      setSelected({ id, properties: feature.properties || {}, feature });
+      onPick();
     }
+    let hovered = "";
+    function hover(event: MapMouseEvent) {
+      if (blocked) return;
+      const hit = m!.queryRenderedFeatures(event.point, {
+        layers: ids
+          .filter((id) => id.endsWith("zoning"))
+          .map((id) => `official-${id}-fill`),
+      })[0];
+      const key = String(hit?.properties?.officialFeatureKey || "");
+      if (key === hovered) return;
+      hovered = key;
+      const id = hit?.properties?.officialLayerId as
+        OfficialLayerId | undefined;
+      const feature = id
+        ? cache.current[id]?.features.find((f) => String(f.id) === key)
+        : undefined;
+      setSceneData(m!, "hover", feature ? [feature] : []);
+      m!.getCanvas().style.cursor = feature ? "pointer" : "";
+    }
+    function leave() {
+      hovered = "";
+      setSceneData(m!, "hover", []);
+      m!.getCanvas().style.cursor = "";
+    }
+    m.on("mousemove", hover);
+    m.getCanvas().addEventListener("mouseleave", leave);
     m.on("moveend", schedule);
     m.on("click", select);
     schedule();
@@ -151,19 +237,100 @@ export function useOfficialMapLayers({
       controller?.abort();
       m.off("moveend", schedule);
       m.off("click", select);
+      m.off("mousemove", hover);
+      m.getCanvas().removeEventListener("mouseleave", leave);
     };
-  }, [map, revision, visible, blocked, onPick]);
-  return { visible, setVisible, status, selected, setSelected };
+  }, [map, revision, visible, blocked, onPick, onParcel, mode]);
+  useEffect(() => {
+    setSceneData(
+      map.current,
+      "zoning-selection",
+      selected ? [selected.feature] : [],
+    );
+  }, [map, selected, revision]);
+  useEffect(() => {
+    const m = map.current;
+    for (const id of ids.filter((id) => id.endsWith("zoning")))
+      if (m?.getLayer(`official-${id}-fill`))
+        m.setPaintProperty(`official-${id}-fill`, "fill-opacity", opacity);
+  }, [map, revision, opacity]);
+  return {
+    visible,
+    setVisible,
+    status,
+    selected,
+    setSelected,
+    mode,
+    setMode,
+    opacity,
+    setOpacity,
+    fit: () => {
+      if (selected)
+        map.current?.fitBounds(geometryBounds(selected.feature), {
+          padding: 60,
+          maxZoom: 18,
+        });
+    },
+  };
 }
 export function OfficialMapLayers({
   controller,
 }: {
   controller: ReturnType<typeof useOfficialMapLayers>;
 }) {
-  const { visible, setVisible, status, selected, setSelected } = controller;
+  const {
+    visible,
+    setVisible,
+    status,
+    selected,
+    setSelected,
+    mode,
+    setMode,
+    opacity,
+    setOpacity,
+    fit,
+  } = controller;
   return (
     <section aria-label="Official layers" className="maplibre-official-layers">
       <strong>Official parcels and zones</strong>
+      <div role="group" aria-label="Official inspection mode">
+        <button
+          aria-pressed={mode === "parcel"}
+          onClick={() => setMode("parcel")}
+        >
+          Inspect parcels
+        </button>
+        <button
+          aria-pressed={mode === "zoning"}
+          onClick={() => setMode("zoning")}
+        >
+          Inspect zoning
+        </button>
+      </div>
+      <label>
+        Zoning fill opacity
+        <input
+          aria-label="Zoning fill opacity"
+          type="range"
+          min="0"
+          max="0.7"
+          step="0.05"
+          value={opacity}
+          onChange={(e) => setOpacity(Number(e.target.value))}
+        />
+      </label>
+      <div className="zoning-legend" aria-label="Zoning colour legend">
+        {Object.entries(ZONE_CATEGORIES).map(([id, value]) => (
+          <span key={id}>
+            <i style={{ background: value.color }} />
+            {value.label}
+          </span>
+        ))}
+      </div>
+      <small>
+        Visual groups for orientation only. Official zone codes and planning
+        instruments determine legal meaning.
+      </small>
       {ids.map((id) => (
         <label key={id} className="maplibre-official-row">
           <input
@@ -182,7 +349,17 @@ export function OfficialMapLayers({
           <button onClick={() => setSelected(null)}>
             Close official feature
           </button>
-          <strong>{OFFICIAL_MAP_LAYERS[selected.id].label}</strong>
+          <strong>
+            {selected.id.endsWith("parcels")
+              ? "Parcel details"
+              : "Zoning details"}{" "}
+            · {OFFICIAL_MAP_LAYERS[selected.id].label}
+          </strong>
+          <button onClick={fit}>
+            {selected.id.endsWith("parcels")
+              ? "Fit to Parcel"
+              : "Fit selected zone"}
+          </button>
           <p>
             {OFFICIAL_MAP_LAYERS[selected.id].provider} ·{" "}
             {OFFICIAL_MAP_LAYERS[selected.id].dataset}

@@ -1,5 +1,12 @@
 # LandOS status
 
+## Map quality upgrade — 27 October 2026 AEDT
+
+Implementation is on `codex/landos-map-quality-basemaps`, based on main/rollback `7673fec75203a51fc27b3f6ff7738e29869db807`. P0 fractional zoom/API error recovery and stable parcel/workspace picking are fixed; official geometry persists with a contrasting selection halo, Fit/Clear and shared parcel Inspector. P1 zoning display groups/legend/opacity/hover and five OpenFreeMap style swatches are implemented. Satellite research found no live-verified imagery suitable to enable. No MaxQI/Supabase security/Auth/RLS/Storage policy/schema change or paid service is introduced.
+
+Lint/typecheck/40 unit tests/build and all 13 local workflow regressions PASS on the final tap-point/stable-ID production build. Mandatory live official-source, live style and production verification are blocked by actual network HTTP403 responses. The network-only environment draft is saved but requires publication. Main integration and deployment remain held until required live checks can pass. Read [MAP_QUALITY_PROGRESS.md](MAP_QUALITY_PROGRESS.md) and [SATELLITE_RESEARCH.md](SATELLITE_RESEARCH.md) for checkpoints/evidence/exact resume steps. Do not repeat the architecture rebuild or claim this upgrade deployed.
+
+
 ## MapLibre workflow continuation — 27 October 2026 AEDT
 
 Resumed the verified `0ea31bc` checkpoint on `codex/landos-map-foundation-rebuild`; implementation checkpoints through `5cd203f` are pushed. Drawing/recovery/editing, Field/GPS/private photos/offline queue, Saved Views, viewport/change feed, official catalog/public overlays and Property Planning/Inspector now share one MapLibre renderer. Existing business APIs, Auth/RLS/Storage, public frozen projection and MaxQI remain unchanged. The old 3D experiment redirects to the workspace and Leaflet dependencies/overlay components have been removed.

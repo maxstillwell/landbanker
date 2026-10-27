@@ -1,4 +1,5 @@
-export type MapLibreBasemap = "streets" | "light" | "dark" | "terrain";
+export type MapLibreBasemap =
+  "streets" | "light" | "dark" | "terrain" | "fiord";
 
 export const MAPLIBRE_BASEMAPS: Record<
   MapLibreBasemap,
@@ -19,6 +20,11 @@ export const MAPLIBRE_BASEMAPS: Record<
     styleUrl: "https://tiles.openfreemap.org/styles/dark",
     description: "OpenFreeMap Dark vector base map",
   },
+  fiord: {
+    label: "Fiord",
+    styleUrl: "https://tiles.openfreemap.org/styles/fiord",
+    description: "OpenFreeMap Fiord vector/raster styling (no DEM terrain)",
+  },
   terrain: {
     label: "Bright",
     styleUrl: "https://tiles.openfreemap.org/styles/bright",
@@ -34,7 +40,7 @@ export function scopedMapLibrePreference(userId: string, workspaceId: string) {
 }
 
 export function isMapLibreBasemap(value: unknown): value is MapLibreBasemap {
-  return typeof value === "string" && value in MAPLIBRE_BASEMAPS;
+  return typeof value === "string" && Object.hasOwn(MAPLIBRE_BASEMAPS, value);
 }
 
 export function terrainTileJsonUrl(value: string | undefined) {
@@ -45,4 +51,13 @@ export function terrainTileJsonUrl(value: string | undefined) {
   } catch {
     return null;
   }
+}
+
+export function basemapAttribution(value: MapLibreBasemap) {
+  return (
+    OPENFREEMAP_ATTRIBUTION +
+    (["light", "dark", "fiord"].includes(value)
+      ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
+      : "")
+  );
 }

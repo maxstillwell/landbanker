@@ -1,12 +1,11 @@
+import { officialFeatureKey } from "./official-selection";
+import { officialZoneCode, zoneCategory } from "./zoning-style";
 import { timeoutFetch } from "../network";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { esriRingsGeometry } from "./esri-rings";
 
 export type OfficialLayerId =
-  | "vic-parcels"
-  | "vic-zoning"
-  | "nsw-parcels"
-  | "nsw-zoning";
+  "vic-parcels" | "vic-zoning" | "nsw-parcels" | "nsw-zoning";
 export type OfficialLayerState = "VIC" | "NSW";
 
 export type OfficialMapLayer = {
@@ -38,7 +37,12 @@ export const OFFICIAL_MAP_LAYERS: Record<OfficialLayerId, OfficialMapLayer> = {
       "https://plan-gis.mapshare.vic.gov.au/arcgis/rest/services/Planning/VicPlan_PropertyAndParcel/MapServer",
     layerId: 4,
     requestFormat: "geojson",
-    fields: ["PARCEL_PFI", "PARCEL_SPI", "PARCEL_LOT_NUMBER", "PARCEL_PLAN_NUMBER"],
+    fields: [
+      "PARCEL_PFI",
+      "PARCEL_SPI",
+      "PARCEL_LOT_NUMBER",
+      "PARCEL_PLAN_NUMBER",
+    ],
     minZoom: 13,
     color: "#24564d",
     fillOpacity: 0.03,
@@ -75,7 +79,8 @@ export const OFFICIAL_MAP_LAYERS: Record<OfficialLayerId, OfficialMapLayer> = {
     minZoom: 13,
     color: "#24564d",
     fillOpacity: 0.03,
-    sourceUrl: "https://www.spatial.nsw.gov.au/products_and_services/web_services",
+    sourceUrl:
+      "https://www.spatial.nsw.gov.au/products_and_services/web_services",
   },
   "nsw-zoning": {
     id: "nsw-zoning",
@@ -106,7 +111,10 @@ type EsriFeature = {
   geometry?: { rings?: unknown };
 };
 
-function queryUrl(layer: OfficialMapLayer, bbox: [number, number, number, number]) {
+function queryUrl(
+  layer: OfficialMapLayer,
+  bbox: [number, number, number, number],
+) {
   const params = new URLSearchParams({
     f: layer.requestFormat === "geojson" ? "geojson" : "json",
     where: "1=1",
@@ -128,32 +136,51 @@ export async function queryOfficialLayer(
   signal?: AbortSignal,
 ): Promise<OfficialLayerResult> {
   const response = await timeoutFetch(queryUrl(layer, bbox), { signal }, 12000);
-  if (!response.ok) throw new Error(`${layer.label} returned HTTP ${response.status}.`);
+  if (!response.ok)
+    throw new Error(`${layer.label} returned HTTP ${response.status}.`);
   const payload = (await response.json()) as {
     error?: { message?: string };
     features?: Array<Feature | EsriFeature>;
     exceededTransferLimit?: boolean;
     type?: string;
   };
-  if (payload.error) throw new Error(payload.error.message || `${layer.label} could not be queried.`);
+  if (payload.error)
+    throw new Error(
+      payload.error.message || `${layer.label} could not be queried.`,
+    );
   const features: Feature[] =
     layer.requestFormat === "geojson"
       ? ((payload.features || []) as Feature[])
       : (payload.features || []).flatMap((feature) => {
           const input = feature as EsriFeature;
           try {
-            const geometry = esriRingsGeometry(input.geometry?.rings) as Geometry;
-            return [{ type: "Feature" as const, properties: input.attributes || {}, geometry }];
+            const geometry = esriRingsGeometry(
+              input.geometry?.rings,
+            ) as Geometry;
+            return [
+              {
+                type: "Feature" as const,
+                properties: input.attributes || {},
+                geometry,
+              },
+            ];
           } catch {
             return [];
           }
         });
-  const tagged = features.map((feature, index) => ({
+  const tagged = features.map((feature) => ({
     ...feature,
-    id: `${layer.id}:${index}`,
+    id: officialFeatureKey(layer, feature),
     properties: {
       ...(feature.properties || {}),
+      officialFeatureKey: officialFeatureKey(layer, feature),
       officialLayerId: layer.id,
+      zoneCode: officialZoneCode(layer.state, feature.properties || {}),
+      zoneCategory: zoneCategory(
+        layer.state,
+        officialZoneCode(layer.state, feature.properties || {}),
+        feature.properties?.LAY_NAME || feature.properties?.ZONE_DESCRIPTION,
+      ),
       officialLayerLabel: layer.label,
       officialProvider: layer.provider,
       officialDataset: layer.dataset,

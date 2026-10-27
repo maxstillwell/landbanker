@@ -15,7 +15,7 @@ import {
 import { installOfficialRasters } from "@/lib/map/maplibre-official";
 import {
   MAPLIBRE_BASEMAPS,
-  OPENFREEMAP_ATTRIBUTION,
+  basemapAttribution,
   isMapLibreBasemap,
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
@@ -23,6 +23,7 @@ import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
+import { BasemapSelector } from "./basemap-selector";
 import { BrandLockup } from "@/components/brand-lockup";
 import * as exifr from "exifr";
 import { browserClient } from "@/lib/supabase/browser";
@@ -126,7 +127,8 @@ export default function MapWorkspace({
   const mapNode = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const [styleRevision, setStyleRevision] = useState(0);
-  const [basemap, setBasemap] = useState<MapLibreBasemap>("streets");
+  const basemapRef = useRef<MapLibreBasemap>("light");
+  const [basemap, setBasemap] = useState<MapLibreBasemap>("light");
   const watch = useRef<number | null>(null);
   const followRef = useRef(false);
   const locateRequested = useRef(false);
@@ -154,6 +156,9 @@ export default function MapWorkspace({
   const [overviewReady, setOverviewReady] = useState(false);
   const viewport = useViewport(map, `${userId}:${workspaceId}`, overviewReady);
   const refreshViewport = viewport.refresh;
+  useEffect(() => {
+    if (!viewport.error) setDismissedMapError("");
+  }, [viewport.error]);
   const renderedData = useMemo<MapData>(() => {
     if (!viewport.ready) return emptyData;
     const byLayer = new Map<string, Feature[]>();
@@ -193,6 +198,7 @@ export default function MapWorkspace({
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
   const [notice, setNotice] = useState("");
+  const [dismissedMapError, setDismissedMapError] = useState("");
   const [draft, setDraft] = useState<FieldDraft | null>(null);
   const draftRef = useRef<FieldDraft | null>(null);
   const photoProcessing = useRef(0);
@@ -391,6 +397,7 @@ export default function MapWorkspace({
   }, [userId, workspaceId]);
   const session = useDrawingSession(userId, workspaceId);
   const inspectOfficial = useCallback(() => {
+    setSelection(null);
     setTab("layers");
     setSheet("medium");
   }, []);
@@ -399,7 +406,13 @@ export default function MapWorkspace({
     revision: styleRevision,
     blocked: Boolean(session.active || draft || identifyState),
     onPick: inspectOfficial,
+    onParcel: selectOfficialParcel,
   });
+  const clearOfficialInspector = officialLayers.setSelected;
+  useEffect(() => {
+    if (selection?.kind === "parcel" || selection?.kind === "official-parcel")
+      clearOfficialInspector(null);
+  }, [selection?.kind, clearOfficialInspector]);
   const drawMode = Boolean(session.active);
   const kind: DrawingKind = session.active?.kind || "Polygon";
   const drawPoints = useMemo(
@@ -641,7 +654,7 @@ export default function MapWorkspace({
     try {
       m = new maplibregl.Map({
         container: mapNode.current,
-        style: MAPLIBRE_BASEMAPS.streets.styleUrl,
+        style: MAPLIBRE_BASEMAPS.light.styleUrl,
         center: [143.8503, -37.5622],
         zoom: 11,
         maxPitch: 70,
@@ -679,6 +692,7 @@ export default function MapWorkspace({
       if (isMapLibreBasemap(stored?.basemap)) {
         const restoredBasemap: MapLibreBasemap = stored.basemap;
         setBasemap(restoredBasemap);
+        basemapRef.current = restoredBasemap;
         m.setStyle(MAPLIBRE_BASEMAPS[restoredBasemap].styleUrl);
       }
     } catch {
@@ -691,7 +705,7 @@ export default function MapWorkspace({
           JSON.stringify({
             center: m.getCenter().toArray(),
             zoom: m.getZoom(),
-            basemap: m.getContainer().dataset.basemap || "streets",
+            basemap: m.getContainer().dataset.basemap || "light",
           }),
         );
       } catch {
@@ -699,6 +713,15 @@ export default function MapWorkspace({
       }
     });
     m.on("error", (event) => {
+      if (basemapRef.current === "fiord") {
+        basemapRef.current = "light";
+        setBasemap("light");
+        m.setStyle(MAPLIBRE_BASEMAPS.light.styleUrl);
+        setNotice(
+          "Fiord is unavailable. Showing Light; your workspace selection and drafts are preserved.",
+        );
+        return;
+      }
       const source = (event as { sourceId?: string }).sourceId;
       if (source?.startsWith("landos-reference-"))
         setNotice(
@@ -757,7 +780,7 @@ export default function MapWorkspace({
           new CustomEvent("landos:select-rendered", {
             detail: {
               scope: `${userId}:${workspaceId}`,
-              id: String(hit.id || ""),
+              id: String(hit.properties?.recordId ?? hit.id ?? ""),
               ...hit.properties,
             },
           }),
@@ -1594,10 +1617,20 @@ export default function MapWorkspace({
   }
   return (
     <main className={`map-app sheet-${sheet}`}>
-      <div className="maplibre-attribution">{OPENFREEMAP_ATTRIBUTION}</div>
-      {viewport.error ? (
-        <div className="drawing-storage-error" role="status">
-          Map update failed: {viewport.error}. Your local drafts are preserved.
+      <div className="maplibre-attribution">{basemapAttribution(basemap)}</div>
+      {viewport.error && dismissedMapError !== viewport.error ? (
+        <div className="map-update-error" role="alert">
+          <span>
+            Map update failed: {viewport.error}. Your local drafts are
+            preserved.
+          </span>
+          <button
+            onClick={() => setDismissedMapError(viewport.error)}
+            aria-label="Dismiss map update error"
+          >
+            ×
+          </button>
+          <button onClick={refreshViewport}>Retry</button>
         </div>
       ) : null}
       <div
@@ -1696,13 +1729,12 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
-        <select
-          aria-label="Basemap"
+        <BasemapSelector
           value={basemap}
-          onChange={(event) => {
-            const next = event.target.value;
+          onChange={(next) => {
             if (!isMapLibreBasemap(next)) return;
             setBasemap(next);
+            basemapRef.current = next;
             map.current?.setStyle(MAPLIBRE_BASEMAPS[next].styleUrl);
             const current = map.current;
             if (current) {
@@ -1720,13 +1752,7 @@ export default function MapWorkspace({
               }
             }
           }}
-        >
-          {Object.entries(MAPLIBRE_BASEMAPS).map(([id, item]) => (
-            <option key={id} value={id}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+        />
         <button
           className={`map-mode-toggle${mapMode === "3d" ? " active" : ""}`}
           onClick={toggleMapMode}
@@ -2120,6 +2146,25 @@ export default function MapWorkspace({
               ) : null}
               {officialParcel || selectedParcel ? (
                 <section className="property-details">
+                  <h3>Parcel details</h3>
+                  <div className="actions">
+                    <button
+                      onClick={() => {
+                        const geometry =
+                          officialParcel?.geometry || selectedParcel?.geometry;
+                        if (map.current && geometry)
+                          map.current.fitBounds(geometryBounds(geometry), {
+                            padding: 60,
+                            maxZoom: 18,
+                          });
+                      }}
+                    >
+                      Fit to Parcel
+                    </button>
+                    <button onClick={() => setSelection(null)}>
+                      Clear Selection
+                    </button>
+                  </div>
                   <h3>
                     {officialParcel?.address ||
                       selectedParcel?.address ||

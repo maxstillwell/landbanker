@@ -100,7 +100,9 @@ try {
   await page.getByRole("button", { name: "3D view", exact: true }).click();
   await expect(page.locator(".maplibregl-canvas")).toHaveCount(1);
   await page.getByRole("button", { name: "2D edit", exact: true }).click();
+  await page.getByLabel("Basemap previews").click();
   await page.getByLabel("Basemap", { exact: true }).selectOption("dark");
+  await page.getByLabel("Basemap previews").click();
   await page.mouse.move(450, 400);
   await page.mouse.down();
   await page.mouse.move(520, 440, { steps: 12 });
@@ -116,7 +118,9 @@ try {
   await page.waitForTimeout(1000); // Allow inertial pan to emit its final moveend.
   const savedCamera = await camera();
   await page.reload();
+  await page.getByLabel("Basemap previews").click();
   await expect(page.getByLabel("Basemap", { exact: true })).toHaveValue("dark");
+  await page.getByLabel("Basemap previews").click();
   await expect
     .poll(async () => (await camera())?.center)
     .toEqual(savedCamera.center);

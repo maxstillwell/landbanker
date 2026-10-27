@@ -289,15 +289,28 @@ try {
     await page.waitForTimeout(350);
   }
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
-  await expect.poll(async () => (await (await page.request.get(origin + "/api/map")).json()).parcels.length).toBeGreaterThan(0);
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get(origin + "/api/map")).json()).parcels
+          .length,
+    )
+    .toBeGreaterThan(0);
   let panRequests = 0,
-    panBytes = 0;
+    panBytes = 0,
+    unavailableMetricBodies = 0;
   page.on("request", (r) => {
     if (r.url().includes("/api/map/viewport?")) panRequests++;
   });
   page.on("response", async (r) => {
-    if (r.url().includes("/api/map/viewport?") && r.status() === 200)
-      panBytes += (await r.body()).length;
+    if (r.url().includes("/api/map/viewport?") && r.status() === 200) {
+      try {
+        panBytes += (await r.body()).length;
+      } catch {
+        // Moving the camera aborts obsolete reads; CDP may discard their bodies.
+        unavailableMetricBodies++;
+      }
+    }
   });
   await page.mouse.move(400, 350);
   await page.mouse.down();
@@ -359,7 +372,7 @@ try {
     new Set(features.map((f) => f.id)),
   );
   console.log(
-    `Browser scale pan: ${panRequests} viewport requests, ${panBytes} response bytes, ten-frame timing ${Math.round(frameMs)} ms; complete-layer edit retained 502 feature IDs.`,
+    `Browser scale pan: ${panRequests} viewport requests, ${panBytes} measured response bytes (${unavailableMetricBodies} unavailable bodies), ten-frame timing ${Math.round(frameMs)} ms; complete-layer edit retained 502 feature IDs.`,
   );
   const viewportTimings = [],
     viewportSizes = [];
