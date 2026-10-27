@@ -62,9 +62,10 @@ export function BasemapSelector({
         </div>
         <small>
           Style swatches are illustrative. Bright is a vector basemap, without
-          DEM terrain. Satellite uses the 2025 DEA annual Landsat composite at
-          approximately 30 m resolution, with Australian coverage. Hybrid adds
-          OpenStreetMap place and road labels.
+          DEM terrain. Regional Satellite and Regional Hybrid use the 2025 DEA
+          annual Landsat composite at approximately 30 m resolution, with
+          Australian coverage. They are not parcel-scale aerial imagery. Hybrid
+          adds OpenStreetMap place and road labels.
         </small>
       </div>
     </details>

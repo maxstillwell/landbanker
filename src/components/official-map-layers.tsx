@@ -275,8 +275,12 @@ export function useOfficialMapLayers({
 }
 export function OfficialMapLayers({
   controller,
+  showControls = true,
+  showSelection = true,
 }: {
   controller: ReturnType<typeof useOfficialMapLayers>;
+  showControls?: boolean;
+  showSelection?: boolean;
 }) {
   const {
     visible,
@@ -292,6 +296,7 @@ export function OfficialMapLayers({
   } = controller;
   return (
     <section aria-label="Official layers" className="maplibre-official-layers">
+      {showControls ? <>
       <strong>Official parcels and zones</strong>
       <div role="group" aria-label="Official inspection mode">
         <button
@@ -344,7 +349,8 @@ export function OfficialMapLayers({
           </span>
         </label>
       ))}
-      {selected ? (
+      </> : null}
+      {showSelection && selected ? (
         <div role="region" aria-label="Official feature Inspector">
           <button onClick={() => setSelected(null)}>
             Close official feature

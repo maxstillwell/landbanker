@@ -6,12 +6,12 @@ export const MAPLIBRE_BASEMAPS: Record<
   { label: string; styleUrl: string; description: string }
 > = {
   hybrid: {
-    label: "Hybrid",
+    label: "Regional Hybrid",
     styleUrl: "https://ows.dea.ga.gov.au/",
     description: "DEA 2025 satellite composite with OpenStreetMap place and road labels",
   },
   satellite: {
-    label: "Satellite",
+    label: "Regional Satellite",
     styleUrl: "https://ows.dea.ga.gov.au/",
     description:
       "DEA Landsat 8/9 2025 annual composite, approximately 30 m; Australian coverage",

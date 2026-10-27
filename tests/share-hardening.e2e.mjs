@@ -99,7 +99,7 @@ try {
   );
   assert.equal(rejectedDiagnostic.status(), 400);
   assert(!(await rejectedDiagnostic.text()).includes("PRIVATE PHOTO URL"));
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
   const viewScope = {
     latitude: -33,
     longitude: 151,
@@ -294,7 +294,7 @@ try {
     "direct gateway invocation requires the server capability",
   );
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
   assert.equal(
     await page
       .getByRole("link", { name: "Open shared view", exact: true })

@@ -24,8 +24,6 @@ import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
-import { OFFICIAL_MAP_LAYERS, type OfficialLayerId } from "@/lib/map/official-map-catalog";
-import { ZONE_CATEGORIES } from "@/lib/map/zoning-style";
 import { FloatingMapWidget } from "./floating-map-widget";
 import { BasemapSelector } from "./basemap-selector";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -216,15 +214,21 @@ export default function MapWorkspace({
   const [sheet, setSheet] = useState<"collapsed" | "medium" | "expanded">(
     "medium",
   );
-  const layoutKey = `landos:workspace-layout:v1:${userId}:${workspaceId}`;
+  const layoutKey = `landos:workspace-layout:v2:${userId}:${workspaceId}`;
   const [leftOpen, setLeftOpen] = useState(false);
-  const [rightOpen, setRightOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(false);
+  const [drawer, setDrawer] = useState<"search" | "layers" | "observations" | "views">("layers");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [radiusOpen, setRadiusOpen] = useState(false);
+  const [inspectorSize, setInspectorSize] = useState<"compact" | "expanded">("expanded");
   const [layoutScope, setLayoutScope] = useState("");
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(layoutKey) || "null");
       if (typeof saved?.leftOpen === "boolean") setLeftOpen(saved.leftOpen);
       if (typeof saved?.rightOpen === "boolean") setRightOpen(saved.rightOpen);
+      if (saved?.inspectorSize === "compact" || saved?.inspectorSize === "expanded") setInspectorSize(saved.inspectorSize);
+      if (["search", "layers", "observations", "views"].includes(saved?.drawer)) setDrawer(saved.drawer);
     } catch {
       /* Device preference is optional. */
     }
@@ -233,11 +237,22 @@ export default function MapWorkspace({
   useEffect(() => {
     if (layoutScope !== layoutKey) return;
     try {
-      localStorage.setItem(layoutKey, JSON.stringify({ leftOpen, rightOpen }));
+      localStorage.setItem(layoutKey, JSON.stringify({ leftOpen, rightOpen, inspectorSize, drawer }));
     } catch {
       /* Device preference is optional. */
     }
-  }, [layoutKey, layoutScope, leftOpen, rightOpen]);
+  }, [layoutKey, layoutScope, leftOpen, rightOpen, inspectorSize, drawer]);
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setDrawer("search");
+        setLeftOpen(true);
+      }
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
+  }, []);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
@@ -252,7 +267,7 @@ export default function MapWorkspace({
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
   const selectedPropertyId = selectedParcel?.id;
   useEffect(() => {
-    if (selection || draft) setRightOpen(true);
+    if (selection || draft) { setRightOpen(true); setLeftOpen(false); }
   }, [selection, draft]);
   useEffect(() => {
     function changed(event: Event) {
@@ -668,6 +683,9 @@ export default function MapWorkspace({
         if (parcels.length === 1) selectOfficialParcel(parcels[0]);
         else if (parcels.length > 1) {
           setIdentifiedParcels(parcels);
+          setTab("parcels");
+          setLeftOpen(false);
+          setRightOpen(true);
           setSheet("medium");
           setNotice("Multiple official parcels found. Choose one to preview.");
         } else
@@ -1571,7 +1589,7 @@ export default function MapWorkspace({
     feature.id = id;
     feature.properties = { ...feature.properties, name: `${kilometres} km radius` };
     if (await updateLocalLayer({ id, name: `${kilometres} km radius`, geojson: { type: "FeatureCollection", features: [feature] } })) {
-      setTab("layers"); setRightOpen(true); setSheet("expanded");
+      setTab("layers"); setRightOpen(true); setLeftOpen(false); setPaletteOpen(false); setSheet("expanded");
       setNotice("Radius saved as a device draft. Save to Workspace to sync.");
     }
   }
@@ -1619,6 +1637,7 @@ export default function MapWorkspace({
       updatedAt: Date.now(),
     });
     setToolsOpen(false);
+    setPaletteOpen(false);
     setSelection(null);
     setTab("layers");
     setSheet("collapsed");
@@ -1665,6 +1684,7 @@ export default function MapWorkspace({
     if (!preserved) return;
     drawing.current = false;
     await session.discard();
+    setRightOpen(true); setLeftOpen(false);
     setSheet("expanded");
     setNotice("Local Draft · Only on this device. Save to Workspace to sync.");
   }
@@ -1736,9 +1756,155 @@ export default function MapWorkspace({
     });
     setMapMode(next);
   }
+  const savedViewsPanel = (<>
+              <div className="section-label">SAVED VIEWS</div>
+              {data.savedViews.map((v) => (
+                <div key={v.id} className="saved-view">
+                  <button
+                    className="record-row"
+                    onClick={async () => {
+                      map.current?.jumpTo({
+                        pitch: 0,
+                        bearing: 0,
+                        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+                      });
+                      setMapMode("2d");
+                      setView(
+                        map.current,
+                        [Number(v.view.latitude), Number(v.view.longitude)],
+                        Number(v.view.zoom),
+                      );
+                      setVisibleParcelIds(
+                        Array.isArray(v.view.parcel_ids)
+                          ? new Set(v.view.parcel_ids as string[])
+                          : null,
+                      );
+                      setVisibleUserLayerIds(
+                        Array.isArray(v.view.layer_ids)
+                          ? new Set(v.view.layer_ids as string[])
+                          : null,
+                      );
+                      const viewLayers = v.view.official_layers as
+                        ActiveLayer[] | undefined;
+                      if (viewLayers) {
+                        try {
+                          for (const current of activeLayers)
+                            if (
+                              !viewLayers.some(
+                                (l) => l.catalog_id === current.catalog_id,
+                              )
+                            )
+                              await apiRequest("/api/layer-library", {
+                                id: current.catalog_id,
+                                action: "remove",
+                              });
+                          for (const item of viewLayers)
+                            await apiRequest("/api/layer-library", {
+                              id: item.catalog_id,
+                              action: "save",
+                              ...item,
+                            });
+                          await reloadLibrary();
+                        } catch (e) {
+                          setNotice(
+                            e instanceof Error
+                              ? e.message
+                              : "View layers unavailable",
+                          );
+                        }
+                      }
+                    }}
+                  >
+                    {v.name}
+                  </button>
+                </div>
+              ))}
+              {["owner", "admin"].includes(role) ? (
+                <ShareWorkspace
+                  key={`${userId}:${workspaceId}`}
+                  userId={userId}
+                  workspaceId={workspaceId}
+                  views={data.savedViews}
+                />
+              ) : null}
+              {pendingView?.scope === `${userId}:${workspaceId}` ? (
+                <SavedViewPreview
+                  key={pendingView.id}
+                  view={pendingView.view}
+                  onCancel={() => setPendingView(null)}
+                  onSave={async (name) => {
+                    await apiRequest("/api/views", {
+                      id: pendingView.id,
+                      name,
+                      view: pendingView.view,
+                    });
+                    await reload();
+                    setPendingView(null);
+                    setNotice("Map View saved to Workspace.");
+                  }}
+                />
+              ) : null}
+              {canWrite ? (
+                <button
+                  onClick={() => {
+                    const m = map.current;
+                    if (!m) return;
+                    setPendingView({
+                      scope: `${userId}:${workspaceId}`,
+                      id: crypto.randomUUID(),
+                      view: {
+                        latitude: m.getCenter().lat,
+                        longitude: m.getCenter().lng,
+                        zoom: m.getZoom(),
+                        parcel_ids: renderedData.parcels
+                          .filter((p) => {
+                            if (visibleParcelIds && !visibleParcelIds.has(p.id))
+                              return false;
+                            if (p.geometry) {
+                              try {
+                                return m
+                                  .getBounds()
+                                  .intersects(geometryBounds(p.geometry));
+                              } catch {
+                                return false;
+                              }
+                            }
+                            return (
+                              p.latitude != null &&
+                              p.longitude != null &&
+                              m.getBounds().contains([p.longitude, p.latitude])
+                            );
+                          })
+                          .map((p) => p.id),
+                        layer_ids: renderedData.layers
+                          .filter((l) => {
+                            if (
+                              visibleUserLayerIds &&
+                              !visibleUserLayerIds.has(l.id)
+                            )
+                              return false;
+                            if (!l.geojson) return false;
+                            try {
+                              return m
+                                .getBounds()
+                                .intersects(geometryBounds(l.geojson));
+                            } catch {
+                              return false;
+                            }
+                          })
+                          .map((l) => l.id),
+                        official_layers: activeLayers,
+                      },
+                    });
+                  }}
+                >
+                  Save current map view
+                </button>
+              ) : null}
+  </>);
   return (
     <main
-      className={`map-app sheet-${sheet} ${leftOpen ? "workspace-left-open" : ""} ${rightOpen ? "" : "workspace-right-closed"} ${drawMode ? "workspace-drawing" : ""}`}
+      className={`map-app sheet-${sheet} ${leftOpen ? "workspace-left-open" : ""} ${rightOpen ? "" : "workspace-right-closed"} ${drawMode ? "workspace-drawing" : ""} inspector-${inspectorSize}`}
     >
       <div className="maplibre-attribution">{basemapAttribution(basemap)}</div>
       {viewport.error && dismissedMapError !== viewport.error ? (
@@ -1852,6 +2018,7 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
+        <button className="global-map-search" onClick={() => { setDrawer("search"); setLeftOpen(true); }} aria-label="Search address or parcel">⌕ <span>Search address or parcel</span><kbd>⌘ K</kbd></button>
         <BasemapSelector
           value={basemap}
           onChange={(next) => {
@@ -1907,175 +2074,68 @@ export default function MapWorkspace({
           {queue.filter((q) => q.status !== "draft").length} items pending
         </div>
       ) : null}
-      <aside
-        inert={!leftOpen}
-        className={`workspace-library ${leftOpen ? "open" : ""}`}
-        aria-label="Workspace library"
-        aria-hidden={!leftOpen}
-      >
-        <div className="workspace-library-head">
-          <strong>LANDOS · WORKSPACE</strong>
-          <button
-            onClick={() => setLeftOpen(false)}
-            aria-label="Collapse library"
-          >
-            ‹
-          </button>
+      <nav className="workspace-dock" aria-label="Map tools">
+        {([
+          ["search", "Search", "⌕"], ["layers", "Layers", "▱"],
+          ["spatial", "Spatial Tools", "⌖"], ["observations", "Observations", "◎"], ["views", "Saved Views", "▤"],
+        ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={() => {
+          if (id === "spatial") { if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
+          setPaletteOpen(false); if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
+        }}><span aria-hidden="true">{icon}</span></button>)}
+        {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋</button> : null}
+        <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={() => { setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
+      </nav>
+      <aside className={`workspace-library ${leftOpen ? "open" : ""}`} aria-label="Workspace library" aria-hidden={!leftOpen} inert={!leftOpen}>
+        <div className="workspace-library-head"><strong>{drawer === "search" ? "SEARCH" : drawer === "layers" ? "LAYERS" : drawer === "observations" ? "OBSERVATIONS" : "SAVED VIEWS"}</strong><button type="button" onClick={() => setLeftOpen(false)} aria-label="Close library">×</button></div>
+        <div className="workspace-library-content">
+          <div hidden={drawer !== "search"}><ParcelSearch key={`${userId}:${workspaceId}`} userId={userId} workspaceId={workspaceId} state={parcelState} identifyActive={Boolean(identifyState)} onStateChange={setParcelState} onIdentify={armParcelIdentify} onSelect={selectOfficialParcel} onAddress={(p) => setView(map.current, [p.latitude, p.longitude], 17)} /></div>
+          <div hidden={drawer !== "layers"}><p className="drawer-intro">Manage planning, property and research layers.</p><div className="drawer-layer-toggles">{([ ["parcels", "Parcels"], ["observations", "Observations"], ["features", "My Layers"] ] as const).map(([id,label]) => <label key={id}><input type="checkbox" checked={workspaceVisibility[id]} onChange={(event) => setWorkspaceVisibility((current) => ({...current,[id]:event.target.checked}))} /> {label}</label>)}</div><OfficialMapLayers controller={officialLayers} showSelection={false} /><LayerLibrary catalog={catalog} active={activeLayers} onChange={changeOfficialLayer} onReorder={reorderOfficialLayers} /><div className="drawer-my-layers"><strong>MY LAYERS</strong>{data.layers.map((layer) => <label key={layer.id}><input type="checkbox" checked={!visibleUserLayerIds || visibleUserLayerIds.has(layer.id)} onChange={(event) => setVisibleUserLayerIds((current) => { const next = new Set(current || data.layers.map((item) => item.id)); if (event.target.checked) next.add(layer.id); else next.delete(layer.id); return next; })} /> {layer.name}</label>)}{!data.layers.length ? <p>No saved layers yet.</p> : null}<button type="button" onClick={() => { setTab("layers"); setRightOpen(true); }}>Manage saved shapes</button></div><details className="drawer-future"><summary>Future add-ons</summary><p>Additional sources will appear here when available.</p></details></div>
+          <div hidden={drawer !== "observations"}><p className="drawer-intro">Your field observations</p>{canWrite ? <button className="drawer-add" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋ Add observation</button> : null}{data.observations.map((observation) => <button className="drawer-record" key={observation.id} onClick={() => { setSelection({kind:"observation", record:observation}); setView(map.current,[observation.latitude, observation.longitude],16); }}><b>{observation.title}</b><small>{new Date(observation.observed_at).toLocaleDateString()}</small></button>)}{!data.observations.length ? <p>No observations yet. Add one from the map.</p> : null}</div>
+          <div hidden={drawer !== "views"}>{savedViewsPanel}</div>
         </div>
-        <p>Tools and library</p>
-        {(
-          [
-            ["layers", "Official planning & My Layers"],
-            ["parcels", "Parcels & property search"],
-            ["observations", "Field observations"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            className={tab === id ? "workspace-library-active" : ""}
-            onClick={() => {
-              setTab(id);
-              setSelection(null);
-              setRightOpen(true);
-              setSheet("medium");
-            }}
-          >
-            {label}
-          </button>
-        ))}
-        <div className="workspace-library-section">
-          <strong>{tab === "layers" ? "PLANNING & LAYERS" : tab === "parcels" ? "LAND RECORDS" : "FIELD OBSERVATIONS"}</strong>
-          <span>{tab === "layers" ? activeLayers.length + data.layers.length : tab === "parcels" ? data.parcels.length : data.observations.length}</span>
-        </div>
-        {tab === "layers" ? activeLayers.slice(0, 8).map((item) => {
-          const layer = catalog.find((entry) => entry.id === item.catalog_id);
-          return layer ? <button className="workspace-library-record" key={item.catalog_id} onClick={() => { setRightOpen(true); setSheet("medium"); }}><b>{layer.name}</b><small>{layer.provider} · {item.visible ? "Visible" : "Hidden"}</small></button> : null;
-        }) : tab === "parcels" ? data.parcels.slice(0, 8).map((parcel) => <button className="workspace-library-record" key={parcel.id} onClick={() => { setSelection({ kind: "parcel", record: parcel }); setRightOpen(true); if (parcel.latitude !== null && parcel.longitude !== null) setView(map.current, [parcel.latitude, parcel.longitude], 15); }}><b>{parcel.title}</b><small>{parcel.status}</small></button>) : data.observations.slice(0, 8).map((observation) => <button className="workspace-library-record" key={observation.id} onClick={() => { setSelection({ kind: "observation", record: observation }); setRightOpen(true); setView(map.current, [observation.latitude, observation.longitude], 16); }}><b>{observation.title}</b><small>{new Date(observation.observed_at).toLocaleDateString()}</small></button>)}
-        <button
-          onClick={() => {
-            setTab("layers");
-            setToolsOpen(true);
-            setRightOpen(true);
-            setSheet("medium");
-          }}
-        >
-          Draw &amp; spatial tools
-        </button>
-        <button
-          onClick={() => {
-            setLeftOpen(false);
-            setRightOpen(true);
-            window.dispatchEvent(new Event("landos:reset-layout"));
-          }}
-        >
-          Reset Layout
-        </button>
       </aside>
-      <button
-        className="workspace-left-toggle"
-        onClick={() => setLeftOpen((v) => !v)}
-        aria-label={leftOpen ? "Collapse library" : "Open library"}
-        aria-expanded={leftOpen}
-      >
-        {leftOpen ? "‹" : "›"}
-      </button>
-      <button
-        className="workspace-right-toggle"
-        onClick={() => setRightOpen((v) => !v)}
-        aria-label={rightOpen ? "Collapse Inspector" : "Open Inspector"}
-        aria-expanded={rightOpen}
-      >
-        {rightOpen ? "›" : "‹"}
-      </button>
-      <FloatingMapWidget
-        title="Layers"
-        storageKey={`${layoutKey}:layers`}
-        initialPosition={{ x: 230, y: 84 }}
-      >
-        <div className="floating-layer-list">
-          <strong>Official planning</strong>
-          {([ ["parcels", "Parcels"], ["observations", "Observations"], ["features", "My Layers"] ] as const).map(([id, label]) => <label key={id}><input type="checkbox" checked={workspaceVisibility[id]} onChange={(event) => setWorkspaceVisibility((current) => ({ ...current, [id]: event.target.checked }))} /> {label}</label>)}
-          {(Object.keys(OFFICIAL_MAP_LAYERS) as OfficialLayerId[]).map((id) => <label key={id}>
-            <input type="checkbox" checked={officialLayers.visible[id]} onChange={() => officialLayers.setVisible((current) => ({ ...current, [id]: !current[id] }))} /> {OFFICIAL_MAP_LAYERS[id].label}
-            <small> {officialLayers.status[id] || "Waiting for map"}</small>
-          </label>)}
-          <label>Planning opacity <input type="range" min="0" max="0.7" step="0.05" value={officialLayers.opacity} onChange={(event) => officialLayers.setOpacity(Number(event.target.value))} /></label>
-          <div className="zoning-legend" aria-label="Widget planning colour legend">{Object.entries(ZONE_CATEGORIES).map(([id, value]) => <span key={id}><i style={{ background: value.color }} />{value.label}</span>)}</div>
-          <strong>Active overlays</strong>
-          {activeLayers.map((item) => {
-            const layer = catalog.find((entry) => entry.id === item.catalog_id);
-            if (!layer) return null;
-            return <div key={item.catalog_id}>
-              <label><input type="checkbox" checked={item.visible} aria-label={`Show ${layer.name}`} onChange={(event) => void changeOfficialLayer({ ...item, visible: event.target.checked })} /> {layer.name}</label>
-              <label>Opacity <input type="range" min="0" max="1" step=".05" defaultValue={item.opacity} key={`${item.catalog_id}:${item.opacity}`} aria-label={`Widget ${layer.name} opacity`} onPointerUp={(event) => void changeOfficialLayer({ ...item, opacity: Number(event.currentTarget.value) })} onKeyUp={(event) => void changeOfficialLayer({ ...item, opacity: Number(event.currentTarget.value) })} /></label>
-              <small>{layer.provider} · {layer.state}</small>
-            </div>;
-          })}
-        </div>
-        <button
-          onClick={() => {
-            setTab("layers");
-            setRightOpen(true);
-            setSheet("medium");
-          }}
-        >
-          Open layer library
-        </button>
-      </FloatingMapWidget>
+      <button className="workspace-right-toggle" onClick={() => setRightOpen((v) => !v)} aria-label={rightOpen ? "Collapse Inspector" : "Open Inspector"} aria-expanded={rightOpen}>{rightOpen ? "›" : "‹"}</button>
+      {paletteOpen ? (
       <FloatingMapWidget
         title="Spatial Tools"
         storageKey={`${layoutKey}:spatial`}
-        initialPosition={{ x: 230, y: 380 }}
+        initialPosition={{ x: 80, y: 100 }}
+        initiallyExpanded
       >
         <div className="spatial-widget-tools">
           {(
             [
-              ["Point", "Point"],
-              ["LineString", "Line / distance"],
-              ["Polygon", "Polygon / area"],
-              ["Rectangle", "Rectangle"],
-            ] as [DrawingKind, string][]
-          ).map(([type, label]) => (
+              ["LineString", "Line / distance", "╱"],
+              ["Polygon", "Polygon / area", "⬡"],
+              ["Rectangle", "Rectangle", "▭"],
+              ["Point", "Point", "•"],
+            ] as [DrawingKind, string, string][]
+          ).map(([type, label, icon]) => (
             <button
               key={type}
+              aria-label={label}
               disabled={!canWrite || drawMode}
               onClick={() => startDrawing(type)}
             >
-              {label}
+              <span className="tool-icon" aria-hidden="true">{icon}</span><span>{label}</span>
             </button>
           ))}
-          <label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label>
-          <button disabled={!canWrite} onClick={() => void createRadius()}>Create radius at map centre</button>
-          <button disabled={!canWrite} onClick={() => importInput.current?.click()}>Import GeoJSON</button>
-          <button onClick={() => { const c = map.current?.getCenter(); if (c) setNotice(`Map centre: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`); }}>Inspect centre coordinates</button>
+          <button type="button" aria-label="Radius" aria-expanded={radiusOpen} onClick={() => setRadiusOpen((v) => !v)}><span className="tool-icon" aria-hidden="true">◉</span><span>Radius</span></button>
+          {radiusOpen ? <div className="radius-settings"><label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label><button disabled={!canWrite} onClick={() => void createRadius()}>Create at map centre</button></div> : null}
+          <button disabled={!canWrite} aria-label="Import GeoJSON" onClick={() => importInput.current?.click()}><span className="tool-icon" aria-hidden="true">⇧</span><span>Import</span></button>
+          <button aria-label="Inspect centre coordinates" onClick={() => { const c = map.current?.getCenter(); if (c) setNotice(`Map centre: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`); }}><span className="tool-icon" aria-hidden="true">⌖</span><span>Coordinates</span></button>
           <small>
             {drawMode ? `Active: ${kind}` : "Select a tool to begin"}
           </small>
         </div>
       </FloatingMapWidget>
-      <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setTab("layers"); setRightOpen(true); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
-      <FloatingMapWidget
-        title="Location"
-        storageKey={`${layoutKey}:location`}
-        initialPosition={{ x: 12, y: 210 }}
-        initiallyExpanded
-      >
-        <button onClick={() => locate()} aria-label="Locate Me">
-          {locating ? "Locating…" : "Locate"}
-        </button>
-        <button
-          className={follow ? "active" : ""}
-          onClick={() => (follow ? stopFollow() : locate(true))}
-          aria-label={follow ? "Stop following" : "Follow Me"}
-        >
-          {follow ? "Following" : "Follow"}
-        </button>
-        <div className="floating-navigation" aria-label="Map controls">
-          <button onClick={() => map.current?.zoomIn()} aria-label="Zoom in">+</button>
-          <button onClick={() => map.current?.zoomOut()} aria-label="Zoom out">−</button>
-          <button onClick={() => map.current?.resetNorth()} aria-label="Reset bearing">North</button>
-        </div>
-      </FloatingMapWidget>
+      ) : null}
+      <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setTab("layers"); setRightOpen(true); setPaletteOpen(false); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
+      <div className="compact-location" aria-label="Location controls">
+        <button type="button" onClick={() => locate()} aria-label="Locate Me" title={locating ? "Locating…" : "Locate me"} disabled={locating}>{locating ? "…" : "⌖"}</button>
+        <button type="button" className={follow ? "active" : ""} onClick={() => (follow ? stopFollow() : locate(true))} aria-label={follow ? "Stop following" : "Follow Me"} title={follow ? "Stop following" : "Follow me"}>➤</button>
+        <button type="button" onClick={() => map.current?.resetNorth()} aria-label="Reset bearing" title="Reset north">N</button>
+      </div>
       {fix ? (
         <div className="accuracy">
           Accuracy ±{Math.round(fix.accuracy)} m{follow ? " · Following" : ""}
@@ -2138,14 +2198,10 @@ export default function MapWorkspace({
                         : "Workspace"}
             </h2>
           </div>
+          <button type="button" className="inspector-size" onClick={() => setInspectorSize((v) => v === "compact" ? "expanded" : "compact")} aria-label={inspectorSize === "compact" ? "Expand inspector" : "Compact inspector"}>{inspectorSize === "compact" ? "⤢" : "⤡"}</button>
           <button
             onClick={() => {
-              setSelected(null);
-              if (draft) {
-                draftRef.current = null;
-                setDraft(null);
-              }
-              setSheet("collapsed");
+              setRightOpen(false);
             }}
             disabled={
               processingPhotos > 0 ||
@@ -2391,19 +2447,6 @@ export default function MapWorkspace({
           ) : null}
           {!draft && tab === "parcels" ? (
             <>
-              <ParcelSearch
-                key={`${userId}:${workspaceId}`}
-                userId={userId}
-                workspaceId={workspaceId}
-                state={parcelState}
-                identifyActive={Boolean(identifyState)}
-                onStateChange={setParcelState}
-                onIdentify={armParcelIdentify}
-                onSelect={selectOfficialParcel}
-                onAddress={(p) =>
-                  setView(map.current, [p.latitude, p.longitude], 17)
-                }
-              />
               {identifyBusy ? <p role="status">Identifying parcel…</p> : null}
               {identifiedParcels.length > 1 ? (
                 <section aria-label="Map parcel matches">
@@ -2675,12 +2718,6 @@ export default function MapWorkspace({
           ) : null}
           {!draft && tab === "layers" ? (
             <>
-              <LayerLibrary
-                catalog={catalog}
-                active={activeLayers}
-                onChange={changeOfficialLayer}
-                onReorder={reorderOfficialLayers}
-              />
               <div className="section-label">
                 MY LAYERS <span>{data.layers.length}</span>
               </div>
@@ -2938,151 +2975,7 @@ export default function MapWorkspace({
                   ) : null}
                 </div>
               ) : null}
-              <OfficialMapLayers controller={officialLayers} />
-              <div className="section-label">SAVED VIEWS</div>
-              {data.savedViews.map((v) => (
-                <div key={v.id} className="saved-view">
-                  <button
-                    className="record-row"
-                    onClick={async () => {
-                      map.current?.jumpTo({
-                        pitch: 0,
-                        bearing: 0,
-                        padding: { top: 0, bottom: 0, left: 0, right: 0 },
-                      });
-                      setMapMode("2d");
-                      setView(
-                        map.current,
-                        [Number(v.view.latitude), Number(v.view.longitude)],
-                        Number(v.view.zoom),
-                      );
-                      setVisibleParcelIds(
-                        Array.isArray(v.view.parcel_ids)
-                          ? new Set(v.view.parcel_ids as string[])
-                          : null,
-                      );
-                      setVisibleUserLayerIds(
-                        Array.isArray(v.view.layer_ids)
-                          ? new Set(v.view.layer_ids as string[])
-                          : null,
-                      );
-                      const viewLayers = v.view.official_layers as
-                        ActiveLayer[] | undefined;
-                      if (viewLayers) {
-                        try {
-                          for (const current of activeLayers)
-                            if (
-                              !viewLayers.some(
-                                (l) => l.catalog_id === current.catalog_id,
-                              )
-                            )
-                              await apiRequest("/api/layer-library", {
-                                id: current.catalog_id,
-                                action: "remove",
-                              });
-                          for (const item of viewLayers)
-                            await apiRequest("/api/layer-library", {
-                              id: item.catalog_id,
-                              action: "save",
-                              ...item,
-                            });
-                          await reloadLibrary();
-                        } catch (e) {
-                          setNotice(
-                            e instanceof Error
-                              ? e.message
-                              : "View layers unavailable",
-                          );
-                        }
-                      }
-                    }}
-                  >
-                    {v.name}
-                  </button>
-                </div>
-              ))}
-              {["owner", "admin"].includes(role) ? (
-                <ShareWorkspace
-                  key={`${userId}:${workspaceId}`}
-                  userId={userId}
-                  workspaceId={workspaceId}
-                  views={data.savedViews}
-                />
-              ) : null}
-              {pendingView?.scope === `${userId}:${workspaceId}` ? (
-                <SavedViewPreview
-                  key={pendingView.id}
-                  view={pendingView.view}
-                  onCancel={() => setPendingView(null)}
-                  onSave={async (name) => {
-                    await apiRequest("/api/views", {
-                      id: pendingView.id,
-                      name,
-                      view: pendingView.view,
-                    });
-                    await reload();
-                    setPendingView(null);
-                    setNotice("Map View saved to Workspace.");
-                  }}
-                />
-              ) : null}
-              {canWrite ? (
-                <button
-                  onClick={() => {
-                    const m = map.current;
-                    if (!m) return;
-                    setPendingView({
-                      scope: `${userId}:${workspaceId}`,
-                      id: crypto.randomUUID(),
-                      view: {
-                        latitude: m.getCenter().lat,
-                        longitude: m.getCenter().lng,
-                        zoom: m.getZoom(),
-                        parcel_ids: renderedData.parcels
-                          .filter((p) => {
-                            if (visibleParcelIds && !visibleParcelIds.has(p.id))
-                              return false;
-                            if (p.geometry) {
-                              try {
-                                return m
-                                  .getBounds()
-                                  .intersects(geometryBounds(p.geometry));
-                              } catch {
-                                return false;
-                              }
-                            }
-                            return (
-                              p.latitude != null &&
-                              p.longitude != null &&
-                              m.getBounds().contains([p.longitude, p.latitude])
-                            );
-                          })
-                          .map((p) => p.id),
-                        layer_ids: renderedData.layers
-                          .filter((l) => {
-                            if (
-                              visibleUserLayerIds &&
-                              !visibleUserLayerIds.has(l.id)
-                            )
-                              return false;
-                            if (!l.geojson) return false;
-                            try {
-                              return m
-                                .getBounds()
-                                .intersects(geometryBounds(l.geojson));
-                            } catch {
-                              return false;
-                            }
-                          })
-                          .map((l) => l.id),
-                        official_layers: activeLayers,
-                      },
-                    });
-                  }}
-                >
-                  Save current map view
-                </button>
-              ) : null}
+              {officialLayers.selected ? <OfficialMapLayers controller={officialLayers} showControls={false} /> : null}
             </>
           ) : null}
           {hasMore ? (

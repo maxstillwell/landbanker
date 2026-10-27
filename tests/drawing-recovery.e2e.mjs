@@ -32,9 +32,9 @@ try {
   await page.waitForURL("**/app/map");
   const controls = page.getByLabel("Drawing controls");
   async function start(name) {
-    await page.getByRole("button", { name: "layers", exact: true }).click();
-    await page.getByRole("button", { name: "Draw", exact: true }).click();
-    await page.getByRole("button", { name, exact: true }).click();
+    await page.getByRole("button", { name: "Spatial Tools", exact: true }).click();
+    const tools = { "Draw polygon": "Polygon / area", "Draw line": "Line / distance", "Add point": "Point", "Draw rectangle": "Rectangle" };
+    await page.getByRole("button", { name: tools[name], exact: true }).click();
   }
   async function points() {
     return page.evaluate(async () => {
