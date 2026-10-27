@@ -1604,3 +1604,10 @@ fieldset {
 .basemap-options button[aria-pressed="true"] { border-color:#216357; background:#d3e5de; }
 .basemap-options small { display:block; font-size:10px; line-height:1.5; }
 .fiord-swatch { background:linear-gradient(130deg,#a8b8b9 40%,#546b79 40%,#546b79 50%,#dce1d5 50%); }
+
+.floating-map-widget { position:absolute; z-index:600; max-width:calc(100% - 16px); color:#eef7f4; background:#0d1d1f; border:1px solid #355052; border-radius:10px; box-shadow:0 5px 20px #0004; }
+.floating-map-widget-header { display:flex; align-items:center; }
+.floating-map-widget-header button { color:inherit; background:transparent; border:0; min-height:40px; }
+.floating-map-widget-handle { cursor:grab; touch-action:none; font-size:20px; }
+.floating-map-widget-handle:active { cursor:grabbing; }
+.floating-map-widget-content { padding:6px; }
