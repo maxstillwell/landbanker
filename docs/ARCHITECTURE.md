@@ -5,10 +5,10 @@ LandOS is an independent multi-tenant product. It is not a MaxQI wrapper. **NEVE
 ## Boundaries
 
 - Separate repository directory and Git history, remote `maxstillwell/landbanker` (currently public, created by the user).
-- Independent Next.js 16 / React 19 / TypeScript web app. Leaflet client map loaded dynamically.
+- Independent Next.js 16 / React 19 / TypeScript web app. MapLibre client map loaded dynamically; one scene handles 2D/3D camera states and all spatial workflows.
 - Independent Supabase Auth, Postgres, private Storage and migration history.
 - SwiftUI app loads the configured LandOS URL using persistent WKWebView, never MaxQI.
-- Web, iPhone and iPad share the same Leaflet basemap and layers. CoreLocation supplies coordinates to this map; no separate MapKit renderer. Tile origin identification/privacy details are in BASEMAP.md.
+- Web, iPhone and iPad share the same MapLibre basemap and layers. CoreLocation supplies coordinates to this map; no separate MapKit renderer. Tile origin identification/privacy details are in BASEMAP.md.
 - All authenticated queries use the user's Supabase credential so database RLS remains authoritative. No service-role bypass for application CRUD.
 - Public share pages call a LandOS server gateway. It uses the publishable key plus a server-only 256-bit capability to invoke a narrow PostgreSQL projection and distributed budget transaction; no runtime service key or arbitrary table query.
 - MaxQI remains on its old backend. `/api/published/[token]` is a future consumer seam only. No production integration or flag changes made.
@@ -60,3 +60,11 @@ Device draft database version 3 retains existing drawing/layer stores and adds a
 Planning now uses Property-specific official spatial intersections rather than map-active layer names. `src/lib/planning` separates geometry, explicit provider adapters and the unified per-source result contract. The authenticated property route first checks Workspace RLS, then runs bounded official requests; the Inspector shows clipping coverage, provenance and independent source failure. See PLANNING.md. Catalog release status/checklist distinguish reviewed readiness from technical map availability; FSR/Height remain disabled for documented release gates.
 
 Alpha 3 refinements keep query history in the existing account/Workspace-scoped IndexedDB abstraction (additive version 4 store). Government health uses fixed-schema platform events and bounded instance diagnostics, not a durable uptime claim; see OBSERVABILITY.md. SHARE_PERIMETER.md records the accepted Postgres-backed distributed perimeter and the separate optional Vercel Firewall 404 blocker.
+
+## MapLibre workflow continuation — 27 October 2026
+
+The renderer migration reuses the established workspace business flow in `map-workspace.tsx`. `maplibre-workspace.tsx` is its entry point. Native MapLibre GeoJSON/raster sources and draggable markers replace Leaflet drawing and display handlers. The viewport/change-feed hook now binds to MapLibre without changing API pagination, revision anchors, tenant scope or limits.
+
+Drawing sessions, layer drafts, geometry validation, whole-layer merge, private Field/photo IndexedDB queue, native GPS/photo bridge, Saved View preview/restore, Property Planning and public gateway contracts are reused. The catalog raster adapter uses MapLibre's Web Mercator tile envelope for ArcGIS exports and native XYZ for catalog tiles; public maps consume only their existing frozen projection. Direct official query layers retain distinct loading/empty/zoom/provider-failure states and provenance.
+
+MapLibre 6 workers are copied from the pinned npm package to a versioned same-origin public path before dev/build. No worker CDN or separately versioned script is used. `/app/map-3d` redirects to `/app/map`; the old overlay components, Leaflet export adapter and Leaflet dependencies are removed. See MAPLIBRE_PROGRESS.md for validation and deployment status.

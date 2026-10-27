@@ -832,8 +832,8 @@ small {
   font-size: 12px;
   cursor: pointer;
 }
-.maplibre-official-row input { margin-top: 3px; }
-.maplibre-official-row span { display: grid; gap: 2px; }
+.maplibre-official-row input { margin-top: 3px; width: 18px; min-height: 18px; flex: 0 0 18px; }
+.maplibre-official-row span { display: grid; gap: 2px; flex: 1; }
 .maplibre-official-row small { color: #61746a; font-size: 10px; line-height: 1.35; }
 .maplibre-workflow-link {
   display: block;
@@ -1532,4 +1532,56 @@ fieldset {
 }
 .share-management small {
   display: block;
+}
+
+/* MapLibre controls must clear the same mobile sheet as the workspace tools. */
+.map-app .maplibregl-ctrl-bottom-left {
+  bottom: 24px;
+}
+.map-app .maplibre-attribution {
+  right: calc(30vw + 12px);
+  bottom: 8px;
+  pointer-events: none;
+}
+.map-header select[aria-label="Basemap"] {
+  width: 86px;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+@media (max-width: 767px) {
+  .map-header {
+    gap: 6px;
+  }
+  .map-header .workspace-selector {
+    flex: 1;
+    overflow: visible;
+  }
+  .map-header .workspace-pill {
+    max-width: 100%;
+    width: 100%;
+  }
+  .map-header select[aria-label="Basemap"] {
+    width: 66px;
+    padding: 4px;
+    font-size: 11px;
+  }
+  .map-header .map-mode-toggle {
+    padding: 7px 5px;
+  }
+  .map-app .maplibregl-ctrl-bottom-left {
+    bottom: calc(var(--sheet-height) + 18px);
+  }
+  .map-app .maplibre-attribution {
+    right: 8px;
+    bottom: calc(var(--sheet-height) + 4px);
+  }
+}
+.gps-location {
+  width: 18px;
+  height: 18px;
+  background: #4b91f1;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 6px #0006;
+  pointer-events: none;
 }

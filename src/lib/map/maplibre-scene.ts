@@ -1,5 +1,15 @@
-import { LngLatBounds, type Map, type GeoJSONSource } from "maplibre-gl";
+import {
+  getVersion,
+  setWorkerUrl,
+  LngLatBounds,
+  type Map,
+  type GeoJSONSource,
+} from "maplibre-gl";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+
+// MapLibre 6's module-relative worker URL is lost when Next bundles the engine.
+// Serve the matching npm worker locally; no CDN/runtime version mismatch.
+setWorkerUrl(`/maplibre/${getVersion()}/maplibre-gl-worker.mjs`);
 
 export type LatLng = { lat: number; lng: number };
 export const latLng = (lat: number, lng: number): LatLng => ({ lat, lng });

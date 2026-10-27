@@ -1,5 +1,12 @@
 # LandOS status
 
+## MapLibre workflow continuation — 27 October 2026 AEDT
+
+Resumed the verified `0ea31bc` checkpoint on `codex/landos-map-foundation-rebuild`; implementation checkpoint `7fe79b2` is pushed. Drawing/recovery/editing, Field/GPS/private photos/offline queue, Saved Views, viewport/change feed, official catalog/public overlays and Property Planning/Inspector now share one MapLibre renderer. Existing business APIs, Auth/RLS/Storage, public frozen projection and MaxQI remain unchanged. The old 3D experiment redirects to the workspace and Leaflet dependencies/overlay components have been removed.
+
+Owner authorization now includes completion, safe main integration, GitHub push and deployment without intermediate approvals. Final regression/release evidence and exact resume tasks are in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). Earlier renderer and approval-limit entries below are historical. Production verification currently faces network-policy denials for Vercel/API GitHub hosts; do not infer a deployed revision from the local implementation.
+
+
 ## Final icon selection — 2026-10-09
 
 The owner selected Terrain Layers as the final LandOS icon language. `brand/landos-app-icon.svg` and `brand/landos-mark.svg` now use the selected three-plane, active-parcel and synthetic equal-interval contour artwork; Web favicon/manifest/home-screen PNGs, the native launch mark and the complete iPhone/iPad AppIcon catalog were regenerated from the formal master. The LandOS wordmark and SwiftUI launch presentation use the same icon language. Earlier concepts remain under `brand/round-2/` as design history. The selected vector is reproducible with `brand/round-2/svg-finalists/render-c4-terrain-layers.cjs`; it embeds no third-party raster or geographic dataset. This is an owner design selection, not trademark clearance or Apple review approval. It was merged to `main` through non-forced merge `da9c62d` and is now the production identity. No database, Supabase, MaxQI or map workflow changed. Rollback: revert merge `da9c62d`, run the normal verification/deployment workflow and do not alter data.

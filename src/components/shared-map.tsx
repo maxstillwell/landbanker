@@ -41,15 +41,23 @@ export default function SharedMap({ share }: { share: SharedProjection }) {
   const data = useMemo(() => resources(share), [share]);
   useEffect(() => {
     if (!node.current) return;
-    const map = new maplibregl.Map({
-      container: node.current,
-      transformRequest: (url) => ({ url, referrerPolicy: "strict-origin" }),
-      style: MAPLIBRE_BASEMAPS.streets.styleUrl,
-      center: share.view
-        ? [share.view.longitude, share.view.latitude]
-        : [144, -37],
-      zoom: share.view?.zoom ?? 7,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: node.current,
+        transformRequest: (url) => ({ url, referrerPolicy: "strict-origin" }),
+        style: MAPLIBRE_BASEMAPS.streets.styleUrl,
+        center: share.view
+          ? [share.view.longitude, share.view.latitude]
+          : [144, -37],
+        zoom: share.view?.zoom ?? 7,
+      });
+    } catch {
+      setNotice(
+        "MapLibre could not start. Open this shared view in a browser with WebGL enabled.",
+      );
+      return;
+    }
     map.on("style.load", () => {
       map.addSource("shared-resources", { type: "geojson", data });
       map.addLayer({

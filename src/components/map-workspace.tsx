@@ -964,13 +964,7 @@ export default function MapWorkspace({
       m,
       "gps",
       fix
-        ? [
-            circleFeature(fix.latitude, fix.longitude, fix.accuracy, "#4b91f1"),
-            geometryFeature({
-              type: "Point",
-              coordinates: [fix.longitude, fix.latitude],
-            }),
-          ]
+        ? [circleFeature(fix.latitude, fix.longitude, fix.accuracy, "#4b91f1")]
         : [],
     );
   }, [
@@ -984,6 +978,23 @@ export default function MapWorkspace({
     fix,
     styleRevision,
   ]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !fix) return;
+    const node = document.createElement("div");
+    node.className = "gps-location";
+    node.setAttribute("role", "img");
+    node.setAttribute(
+      "aria-label",
+      `Current GPS location, accuracy ${Math.round(fix.accuracy)} metres`,
+    );
+    const marker = new maplibregl.Marker({ element: node })
+      .setLngLat([fix.longitude, fix.latitude])
+      .addTo(m);
+    return () => {
+      marker.remove();
+    };
+  }, [fix]);
   useEffect(() => {
     const m = map.current;
     if (!m?.getSource("landos-parcels")) return;
@@ -1683,6 +1694,21 @@ export default function MapWorkspace({
             if (!isMapLibreBasemap(next)) return;
             setBasemap(next);
             map.current?.setStyle(MAPLIBRE_BASEMAPS[next].styleUrl);
+            const current = map.current;
+            if (current) {
+              try {
+                localStorage.setItem(
+                  `landos:map-camera:v1:${userId}:${workspaceId}`,
+                  JSON.stringify({
+                    center: current.getCenter().toArray(),
+                    zoom: current.getZoom(),
+                    basemap: next,
+                  }),
+                );
+              } catch {
+                /* Optional camera storage. */
+              }
+            }
           }}
         >
           {Object.entries(MAPLIBRE_BASEMAPS).map(([id, item]) => (
@@ -2591,6 +2617,12 @@ export default function MapWorkspace({
                   <button
                     className="record-row"
                     onClick={async () => {
+                      map.current?.jumpTo({
+                        pitch: 0,
+                        bearing: 0,
+                        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+                      });
+                      setMapMode("2d");
                       setView(
                         map.current,
                         [Number(v.view.latitude), Number(v.view.longitude)],

@@ -17,7 +17,9 @@
     "import:maxqi": "node --import tsx scripts/import-maxqi.ts",
     "infra:check": "node --import tsx scripts/check-infrastructure.ts",
     "local:start": "bash scripts/local-start.sh",
-    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts && node tests/photo-batch.e2e.mjs && node tests/map-pages.e2e.mjs && node tests/drawing-recovery.e2e.mjs && node tests/parcels.e2e.mjs && node tests/share-hardening.e2e.mjs && node tests/planning.e2e.mjs && node tests/change-feed.e2e.mjs"
+    "test:e2e": "node tests/field.e2e.mjs && node tests/spatial.e2e.mjs && node tests/import.e2e.mjs && node --import tsx tests/sql-import.e2e.ts && node tests/photo-batch.e2e.mjs && node tests/map-pages.e2e.mjs && node tests/drawing-recovery.e2e.mjs && node tests/parcels.e2e.mjs && node tests/share-hardening.e2e.mjs && node tests/planning.e2e.mjs && node tests/change-feed.e2e.mjs && node tests/maplibre.e2e.mjs",
+    "predev": "node scripts/prepare-maplibre-worker.mjs",
+    "prebuild": "node scripts/prepare-maplibre-worker.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -28,7 +30,6 @@
     "@turf/intersect": "7.3.5",
     "exifr": "7.1.3",
     "idb": "8.0.3",
-    "leaflet": "1.9.4",
     "maplibre-gl": "6.16.0",
     "next": "16.3.8",
     "react": "19.3.0",
@@ -39,7 +40,6 @@
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@types/geojson": "7946.0.16",
-    "@types/leaflet": "1.9.21",
     "@types/node": "24.10.1",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

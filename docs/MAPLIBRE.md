@@ -1,5 +1,7 @@
 # LandOS MapLibre / 3D engine evaluation
 
+> Historical evaluation record. The authorized workflow rebuild supersedes the renderer decisions below. The supported workspace and public map now use MapLibre alone; `/app/map-3d` redirects to `/app/map`. Current implementation, evidence and deployment status: [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md).
+
 Updated: 2026-10-25. This document covers the isolated `codex/landos-maplibre-3d` experiment. It does not change MaxQI, LandOS database schema, Supabase configuration, RLS, Storage, Auth, existing Leaflet routes or public sharing.
 
 ## Decision for this iteration

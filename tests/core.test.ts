@@ -53,7 +53,14 @@ test("MapLibre workspace overlays preserve boundaries and fall back to saved loc
       longitude: null,
       geometry: {
         type: "Polygon",
-        coordinates: [[[143, -37], [144, -37], [144, -38], [143, -37]]],
+        coordinates: [
+          [
+            [143, -37],
+            [144, -37],
+            [144, -38],
+            [143, -37],
+          ],
+        ],
       } as GeoJsonObject,
       notes: null,
       status: "saved",
@@ -73,7 +80,10 @@ test("MapLibre workspace overlays preserve boundaries and fall back to saved loc
   ]);
   assert.equal(parcels.features.length, 2);
   assert.equal(parcels.features[0].geometry.type, "Polygon");
-  assert.deepEqual(parcels.features[1].geometry, { type: "Point", coordinates: [143, -37] });
+  assert.deepEqual(parcels.features[1].geometry, {
+    type: "Point",
+    coordinates: [143, -37],
+  });
   const observations = observationsGeoJson([
     {
       id: "field-note",
@@ -848,7 +858,16 @@ test("malformed imported geometry cannot break or falsely match a viewport", () 
 import { officialTileUrl } from "../src/lib/map/maplibre-official";
 import { circleFeature, geometryBounds } from "../src/lib/map/maplibre-scene";
 test("MapLibre official raster requests preserve catalog sublayers and exact Web Mercator tile envelopes", () => {
-  const source = { id: "test", name: "Official test", service_url: "https://government.example/MapServer/", renderer: "arcgis_export" as const, layer_ids: "1,3", attribution: "Government", min_zoom: 8, opacity: 0.35 };
+  const source = {
+    id: "test",
+    name: "Official test",
+    service_url: "https://government.example/MapServer/",
+    renderer: "arcgis_export" as const,
+    layer_ids: "1,3",
+    attribution: "Government",
+    min_zoom: 8,
+    opacity: 0.35,
+  };
   const template = officialTileUrl(source);
   assert(template.endsWith("bbox={bbox-epsg-3857}"));
   const url = new URL(template.replace("{bbox-epsg-3857}", "1,2,3,4"));
@@ -858,7 +877,14 @@ test("MapLibre official raster requests preserve catalog sublayers and exact Web
   assert.equal(url.searchParams.get("imageSR"), "3857");
   assert.equal(url.searchParams.get("transparent"), "true");
   assert.equal(url.searchParams.get("bbox"), "1,2,3,4");
-  assert.equal(officialTileUrl({ ...source, renderer: "tile", service_url: "https://government.example/{z}/{x}/{y}.png" }), "https://government.example/{z}/{x}/{y}.png");
+  assert.equal(
+    officialTileUrl({
+      ...source,
+      renderer: "tile",
+      service_url: "https://government.example/{z}/{x}/{y}.png",
+    }),
+    "https://government.example/{z}/{x}/{y}.png",
+  );
 });
 test("MapLibre scene bounds retain multipart geometry and GPS accuracy circles use metre radii", () => {
   const circle = circleFeature(-37, 144, 100, "blue");
@@ -866,7 +892,20 @@ test("MapLibre scene bounds retain multipart geometry and GPS accuracy circles u
   assert(bounds.getWest() < 144 && bounds.getEast() > 144);
   assert(bounds.getSouth() < -37 && bounds.getNorth() > -37);
   assert(Math.abs((bounds.getNorth() + 37) * 111195 - 100) < 1);
-  const multi = geometryBounds({ type: "FeatureCollection", features: [circle, { type: "Feature", properties: {}, geometry: { type: "GeometryCollection", geometries: [{ type: "Point", coordinates: [150, -30] }] } }] });
+  const multi = geometryBounds({
+    type: "FeatureCollection",
+    features: [
+      circle,
+      {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "GeometryCollection",
+          geometries: [{ type: "Point", coordinates: [150, -30] }],
+        },
+      },
+    ],
+  });
   assert.equal(multi.getEast(), 150);
   assert.equal(multi.getNorth(), -30);
   assert(geometryBounds({ type: "FeatureCollection", features: [] }).isEmpty());

@@ -61,7 +61,8 @@ try {
     .click();
   await page.waitForURL("**/app/map", { timeout: 60000 });
   await page.locator(".maplibregl-canvas").waitFor();
-  if (!firstTileRequest) await page.waitForRequest((r) => r.url().includes("/workflow-fixture/"));
+  if (!firstTileRequest)
+    await page.waitForRequest((r) => r.url().includes("/workflow-fixture/"));
   assert.ok(firstTileRequest, "map requested its basemap tiles");
   const tileHeaders = await firstTileRequest.allHeaders();
   assert.equal(
@@ -71,6 +72,16 @@ try {
   );
   await page.getByRole("button", { name: "Locate Me", exact: true }).click();
   await page.getByText("Accuracy ±8 m", { exact: true }).waitFor();
+  const point = page.getByRole("img", {
+    name: "Current GPS location, accuracy 8 metres",
+  });
+  await point.waitFor({ state: "visible" });
+  const pointBox = await point.boundingBox();
+  const sheetBox = await page.locator(".inspector").boundingBox();
+  assert(
+    pointBox.y > 100 && pointBox.y + pointBox.height < sheetBox.y - 70,
+    "GPS marker remains visible above the mobile sheet and action button",
+  );
   await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await page.getByRole("button", { name: "Add observation" }).click();
   const title = `Field inspection ${Date.now()}`;
@@ -115,8 +126,10 @@ try {
     viewport: { width: 1440, height: 1000 },
   });
   const desktop = await desktopContext.newPage();
-  await desktop.route("https://tiles.openfreemap.org/workflow-fixture/**", (route) =>
-    route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
+  await desktop.route(
+    "https://tiles.openfreemap.org/workflow-fixture/**",
+    (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: testTile }),
   );
   await login(desktop);
   const desktopData = await (

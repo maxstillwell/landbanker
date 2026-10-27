@@ -2,7 +2,9 @@
 
 ## Status
 
-**Gate A — architecture and source verification is in progress.**
+**Gate C — spatial workflow implementation is complete; final production-build regression verification is in progress.**
+
+The owner authorized continued implementation, safe main integration, push and deployment on 27 October 2026. That instruction supersedes the earlier approval limits below. Current checkpoints, test evidence and environment blockers are maintained in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). No architectural restart is involved.
 
 This rebuild is being developed only on `codex/landos-map-foundation-rebuild`. It is not merged or deployed. It does not modify MaxQI, the independent Supabase project, Auth, RLS, Storage, migrations, or API contracts.
 
