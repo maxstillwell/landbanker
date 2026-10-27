@@ -167,7 +167,7 @@ export function useOfficialMapLayers({
           "landos-features-point",
         ].filter((id) => !!m!.getLayer(id)),
       });
-      if (workspace.length || blocked) return;
+      if (blocked || (workspace.length && mode !== "zoning")) return;
       const hits = m!.queryRenderedFeatures(event.point, {
         layers: ids
           .filter((id) => mode !== "zoning" || id.endsWith("zoning"))

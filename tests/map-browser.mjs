@@ -22,8 +22,23 @@ export async function mapFixtures(target) {
             },
           },
           layers: [
-            { id: "fixture-background", type: "background", paint: { "background-color": route.request().url().endsWith("/dark") ? "#19242c" : route.request().url().endsWith("/fiord") ? "#c8d4cf" : "#eef1ee" } },
-            { id: "fixture", type: "raster", source: "fixture", paint: { "raster-opacity": 0.02 } },
+            {
+              id: "fixture-background",
+              type: "background",
+              paint: {
+                "background-color": route.request().url().endsWith("/dark")
+                  ? "#19242c"
+                  : route.request().url().endsWith("/fiord")
+                    ? "#c8d4cf"
+                    : "#eef1ee",
+              },
+            },
+            {
+              id: "fixture",
+              type: "raster",
+              source: "fixture",
+              paint: { "raster-opacity": 0.02 },
+            },
           ],
         },
       });

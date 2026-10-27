@@ -208,7 +208,59 @@ try {
     await page
       .getByRole("button", { name: "Clear Selection", exact: true })
       .click();
+    // A real saved workspace polygon must retain normal picking priority, while
+    // explicit zoning inspection can reach the planning zone beneath it.
+    const overlayId = crypto.randomUUID();
+    const ring = [
+      [point.lng - 0.01, point.lat - 0.01],
+      [point.lng + 0.01, point.lat - 0.01],
+      [point.lng + 0.01, point.lat + 0.01],
+      [point.lng - 0.01, point.lat + 0.01],
+      [point.lng - 0.01, point.lat - 0.01],
+    ];
+    assert.equal(
+      (
+        await page.request.post(origin + "/api/layers", {
+          headers: { Origin: origin },
+          data: {
+            id: overlayId,
+            name: `Quality analysis ${point.state}`,
+            geojson: {
+              type: "FeatureCollection",
+              features: [
+                {
+                  type: "Feature",
+                  id: crypto.randomUUID(),
+                  properties: { name: "Analysis over zoning" },
+                  geometry: { type: "Polygon", coordinates: [ring] },
+                },
+              ],
+            },
+          },
+        })
+      ).status(),
+      200,
+    );
+    assert.equal(
+      (
+        await page.request.post(origin + "/api/views", {
+          headers: { Origin: origin },
+          data: { ...view, view: { ...view.view, layer_ids: [overlayId] } },
+        })
+      ).status(),
+      200,
+    );
+    await page.reload();
     await page.getByRole("button", { name: "layers", exact: true }).click();
+    await page.getByRole("button", { name: view.name, exact: true }).click();
+    await expect
+      .poll(async () => {
+        await page.mouse.click(500, 450);
+        return page
+          .getByRole("button", { name: "Edit shape", exact: true })
+          .count();
+      })
+      .toBe(1);
     await page
       .getByRole("button", { name: "Inspect zoning", exact: true })
       .click();
