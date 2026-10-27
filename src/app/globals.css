@@ -1610,7 +1610,7 @@ fieldset {
 .floating-map-widget-header button { color:inherit; background:transparent; border:0; min-height:40px; }
 .floating-map-widget-handle { cursor:grab; touch-action:none; font-size:20px; }
 .floating-map-widget-handle:active { cursor:grabbing; }
-.floating-map-widget-content { padding:6px; }
+.floating-map-widget-content { padding:6px; max-height:min(55vh, 420px); overflow:auto; }
 
 /* Single-scene workspace chrome. */
 .workspace-library { position:absolute; z-index:650; inset:0 auto 0 0; width:210px; padding:16px 12px; overflow-y:auto; transform:translateX(-100%); transition:transform .25s ease; background:#0d1d1f; color:#eef7f4; border-right:1px solid #355052; }
@@ -1628,8 +1628,14 @@ fieldset {
 .inspector { transition:transform .25s ease, visibility .25s; }
 .floating-map-widget-content button { background:#122528; color:#eef7f4; border:1px solid #355052; border-radius:6px; padding:7px; }
 .spatial-widget-tools { display:grid; gap:5px; }.spatial-widget-tools small { color:#b6cbc5; }
+.spatial-widget-tools input { width:100%; min-width:0; background:#071315; color:#eef7f4; border:1px solid #355052; }
 @media (max-width:767px) { .workspace-library { width:min(290px,85vw); }.workspace-left-open .map-canvas { left:0; }.workspace-left-open .map-header { left:10px; }.workspace-left-open .workspace-left-toggle { left:min(290px,85vw); }.workspace-right-toggle { right:0; top:90px; }.workspace-right-closed .inspector { transform:translateY(100%); }.floating-map-widget { max-width:180px; } }
 .workspace-library p { color:#a8bfba; font-size:12px; }
+.workspace-library button.workspace-library-active { color:#d8ff43; border-color:#779329; }
+.workspace-library-section { display:flex; justify-content:space-between; align-items:center; margin:18px 2px 8px; font-size:10px; letter-spacing:.08em; color:#d8ff43; }
+.workspace-library-section span { color:#eef7f4; font-size:12px; }
+.workspace-library button.workspace-library-record { display:grid; gap:4px; font-size:12px; border-left:3px solid #d8ff43; }
+.workspace-library-record small { color:#a8bfba; font-size:10px; }
 .map-app .inspector { background:#0d1d1f; color:#eef7f4; border-color:#355052; }
 .map-app .inspector h2,.map-app .inspector h3,.map-app .inspector strong,.map-app .inspector label { color:#eef7f4; }
 .map-app .inspector small,.map-app .inspector p { color:#b5cbc5; }

@@ -24,6 +24,8 @@ import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
+import { OFFICIAL_MAP_LAYERS, type OfficialLayerId } from "@/lib/map/official-map-catalog";
+import { ZONE_CATEGORIES } from "@/lib/map/zoning-style";
 import { FloatingMapWidget } from "./floating-map-widget";
 import { BasemapSelector } from "./basemap-selector";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -133,6 +135,8 @@ export default function MapWorkspace({
   const followRef = useRef(false);
   const locateRequested = useRef(false);
   const [locating, setLocating] = useState(false);
+  const [radiusKm, setRadiusKm] = useState("1");
+  const [workspaceVisibility, setWorkspaceVisibility] = useState({ parcels: true, observations: true, features: true });
   const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploading = useRef(false);
   const importInput = useRef<HTMLInputElement>(null);
@@ -234,10 +238,6 @@ export default function MapWorkspace({
       /* Device preference is optional. */
     }
   }, [layoutKey, layoutScope, leftOpen, rightOpen]);
-  useEffect(() => {
-    const id = window.setTimeout(() => map.current?.resize(), 320);
-    return () => clearTimeout(id);
-  }, [leftOpen, rightOpen]);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
@@ -1065,6 +1065,16 @@ export default function MapWorkspace({
   ]);
   useEffect(() => {
     const m = map.current;
+    if (!m) return;
+    for (const [name, visible] of Object.entries(workspaceVisibility)) {
+      for (const kind of ["fill", "line", "point"]) {
+        const id = `landos-${name}-${kind}`;
+        if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+      }
+    }
+  }, [workspaceVisibility, styleRevision]);
+  useEffect(() => {
+    const m = map.current;
     if (!m || !fix) return;
     const node = document.createElement("div");
     node.className = "gps-location";
@@ -1527,6 +1537,8 @@ export default function MapWorkspace({
   }
   async function importLayer(file: File) {
     try {
+      if (localLayer || session.active || session.found)
+        throw new Error("Save or discard your existing draft before importing.");
       if (file.size > 3e6) throw new Error("Import GeoJSON up to 3 MB.");
       const value = JSON.parse(await file.text());
       if (!geojsonFeatures(value))
@@ -1541,6 +1553,26 @@ export default function MapWorkspace({
       );
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Import failed");
+    }
+  }
+  async function createRadius() {
+    const centre = map.current?.getCenter();
+    const kilometres = Number(radiusKm);
+    if (!centre || !Number.isFinite(kilometres) || kilometres <= 0 || kilometres > 500) {
+      setNotice("Enter a radius between 0 and 500 kilometres.");
+      return;
+    }
+    if (localLayer || session.active || session.found) {
+      setNotice("Save or discard your existing draft before creating a radius.");
+      return;
+    }
+    const id = crypto.randomUUID();
+    const feature = circleFeature(centre.lat, centre.lng, kilometres * 1000, "#d8ff43");
+    feature.id = id;
+    feature.properties = { ...feature.properties, name: `${kilometres} km radius` };
+    if (await updateLocalLayer({ id, name: `${kilometres} km radius`, geojson: { type: "FeatureCollection", features: [feature] } })) {
+      setTab("layers"); setRightOpen(true); setSheet("expanded");
+      setNotice("Radius saved as a device draft. Save to Workspace to sync.");
     }
   }
   function startDrawing(
@@ -1900,6 +1932,7 @@ export default function MapWorkspace({
         ).map(([id, label]) => (
           <button
             key={id}
+            className={tab === id ? "workspace-library-active" : ""}
             onClick={() => {
               setTab(id);
               setSelection(null);
@@ -1910,6 +1943,14 @@ export default function MapWorkspace({
             {label}
           </button>
         ))}
+        <div className="workspace-library-section">
+          <strong>{tab === "layers" ? "PLANNING & LAYERS" : tab === "parcels" ? "LAND RECORDS" : "FIELD OBSERVATIONS"}</strong>
+          <span>{tab === "layers" ? activeLayers.length + data.layers.length : tab === "parcels" ? data.parcels.length : data.observations.length}</span>
+        </div>
+        {tab === "layers" ? activeLayers.slice(0, 8).map((item) => {
+          const layer = catalog.find((entry) => entry.id === item.catalog_id);
+          return layer ? <button className="workspace-library-record" key={item.catalog_id} onClick={() => { setRightOpen(true); setSheet("medium"); }}><b>{layer.name}</b><small>{layer.provider} · {item.visible ? "Visible" : "Hidden"}</small></button> : null;
+        }) : tab === "parcels" ? data.parcels.slice(0, 8).map((parcel) => <button className="workspace-library-record" key={parcel.id} onClick={() => { setSelection({ kind: "parcel", record: parcel }); setRightOpen(true); if (parcel.latitude !== null && parcel.longitude !== null) setView(map.current, [parcel.latitude, parcel.longitude], 15); }}><b>{parcel.title}</b><small>{parcel.status}</small></button>) : data.observations.slice(0, 8).map((observation) => <button className="workspace-library-record" key={observation.id} onClick={() => { setSelection({ kind: "observation", record: observation }); setRightOpen(true); setView(map.current, [observation.latitude, observation.longitude], 16); }}><b>{observation.title}</b><small>{new Date(observation.observed_at).toLocaleDateString()}</small></button>)}
         <button
           onClick={() => {
             setTab("layers");
@@ -1952,6 +1993,15 @@ export default function MapWorkspace({
         initialPosition={{ x: 230, y: 84 }}
       >
         <div className="floating-layer-list">
+          <strong>Official planning</strong>
+          {([ ["parcels", "Parcels"], ["observations", "Observations"], ["features", "My Layers"] ] as const).map(([id, label]) => <label key={id}><input type="checkbox" checked={workspaceVisibility[id]} onChange={(event) => setWorkspaceVisibility((current) => ({ ...current, [id]: event.target.checked }))} /> {label}</label>)}
+          {(Object.keys(OFFICIAL_MAP_LAYERS) as OfficialLayerId[]).map((id) => <label key={id}>
+            <input type="checkbox" checked={officialLayers.visible[id]} onChange={() => officialLayers.setVisible((current) => ({ ...current, [id]: !current[id] }))} /> {OFFICIAL_MAP_LAYERS[id].label}
+            <small> {officialLayers.status[id] || "Waiting for map"}</small>
+          </label>)}
+          <label>Planning opacity <input type="range" min="0" max="0.7" step="0.05" value={officialLayers.opacity} onChange={(event) => officialLayers.setOpacity(Number(event.target.value))} /></label>
+          <div className="zoning-legend" aria-label="Widget planning colour legend">{Object.entries(ZONE_CATEGORIES).map(([id, value]) => <span key={id}><i style={{ background: value.color }} />{value.label}</span>)}</div>
+          <strong>Active overlays</strong>
           {activeLayers.map((item) => {
             const layer = catalog.find((entry) => entry.id === item.catalog_id);
             if (!layer) return null;
@@ -1994,24 +2044,20 @@ export default function MapWorkspace({
               {label}
             </button>
           ))}
-          <button
-            onClick={() => {
-              setTab("layers");
-              setRightOpen(true);
-              setSheet("medium");
-            }}
-          >
-            Radius &amp; import
-          </button>
+          <label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label>
+          <button disabled={!canWrite} onClick={() => void createRadius()}>Create radius at map centre</button>
+          <button disabled={!canWrite} onClick={() => importInput.current?.click()}>Import GeoJSON</button>
+          <button onClick={() => { const c = map.current?.getCenter(); if (c) setNotice(`Map centre: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`); }}>Inspect centre coordinates</button>
           <small>
             {drawMode ? `Active: ${kind}` : "Select a tool to begin"}
           </small>
         </div>
       </FloatingMapWidget>
+      <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setTab("layers"); setRightOpen(true); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
       <FloatingMapWidget
         title="Location"
         storageKey={`${layoutKey}:location`}
-        initialPosition={{ x: 12, y: 560 }}
+        initialPosition={{ x: 12, y: 210 }}
         initiallyExpanded
       >
         <button onClick={() => locate()} aria-label="Locate Me">
@@ -2813,17 +2859,6 @@ export default function MapWorkspace({
                       </div>
                     </>
                   ) : null}
-                  <input
-                    ref={importInput}
-                    type="file"
-                    hidden
-                    accept=".geojson,.json"
-                    onChange={(e) => {
-                      if (e.target.files?.[0])
-                        void importLayer(e.target.files[0]);
-                      e.target.value = "";
-                    }}
-                  />
                   {localLayer ? (
                     <ShapeDraft
                       key={localLayer.id}
