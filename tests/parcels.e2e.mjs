@@ -101,7 +101,7 @@ try {
       },
     });
   });
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
   await page
     .getByRole("button", { name: "Identify parcel on map", exact: true })
     .click();
@@ -120,7 +120,7 @@ try {
     page.getByRole("button", { name: "Save to Workspace", exact: true }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
   await page
     .getByLabel("Search address", { exact: true })
     .fill("Recent local search");
@@ -138,7 +138,7 @@ try {
     page.getByRole("button", { name: "Save to Workspace", exact: true }),
   ).toHaveCount(0);
   await page.reload();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByText("Recent searches", { exact: true }).click();
   await page
     .getByRole("button", {
@@ -242,6 +242,7 @@ try {
   });
   assert.ifError(seeded.error);
   await page.reload();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "parcels", exact: true }).click();
   await page.getByLabel("Search saved properties").fill("TEST-42");
   await page
@@ -282,6 +283,7 @@ try {
     ).error,
   );
   await page.reload();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "parcels", exact: true }).click();
   await page.getByLabel("Search saved properties").fill("LINKED-42");
   await page
@@ -311,6 +313,7 @@ try {
   ).observations.find((o) => o.title === "Linked field inspection");
   assert.equal(fieldRecord.linked_parcel_id, protectedId);
   await page.reload();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "parcels", exact: true }).click();
   await page.getByLabel("Search saved properties").fill("LINKED-42");
   await page
@@ -337,7 +340,7 @@ try {
   await page.goto(origin + "/app/settings");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await signup("Parcel Other Test");
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByText("Recent searches", { exact: true })).toHaveCount(
     0,
   );

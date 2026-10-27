@@ -208,7 +208,7 @@ try {
     );
   }
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page.locator(".active-layer").last().waitFor();
   assert.equal(await page.locator(".active-layer").count(), 10);
   assert.equal(
@@ -216,6 +216,8 @@ try {
       .active.length,
     10,
   );
+  await page.getByRole("button", { name: "Close library" }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   const parcelIds = new Set(),
     observationIds = new Set(),
     timings = [];

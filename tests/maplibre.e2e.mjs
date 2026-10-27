@@ -75,15 +75,17 @@ try {
   await expect(page.locator(".leaflet-container")).toHaveCount(0);
   const box = await page.locator(".map-canvas").boundingBox();
   assert(
-    box.width > 900 && box.height === 1000,
+    box.width > 900 && box.height === 944,
     "MapLibre fills the map surface",
   );
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
   const sources = page
     .getByRole("region", { name: "Official layers" })
     .or(page.getByLabel("Official layers", { exact: true }));
   await expect(sources).toContainText("Ready");
   // Official layers remain live while another Inspector tab is open.
+  await page.getByRole("button", { name: "Close library" }).click();
+  await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "observations", exact: true }).click();
   await expect
     .poll(async () => {
@@ -153,7 +155,7 @@ try {
     200,
   );
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
   await page
     .getByRole("button", { name: "Restored official view", exact: true })
     .click();

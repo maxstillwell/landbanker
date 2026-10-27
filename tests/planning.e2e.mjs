@@ -265,6 +265,7 @@ try {
     }),
   );
   await page.reload();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "parcels", exact: true }).click();
   await page
     .getByRole("button")

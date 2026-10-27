@@ -17,6 +17,8 @@ try {
  const initial=await page.locator(".map-canvas").boundingBox(); assert(initial.width>1300);
  await page.getByRole("button",{name:"Layers",exact:true}).click(); await expect(page.getByLabel("Workspace library")).toBeVisible(); await expect(page.getByText("Official parcels and zones")).toBeVisible();
  assert.equal(await page.locator(".workspace-library-content").evaluate(e=>e.scrollWidth<=e.clientWidth+1),true); await page.waitForTimeout(350); await page.screenshot({path:"artifacts/workspace-v2-layers.png"});
+ await page.getByRole("button",{name:"Search",exact:true}).click(); await page.getByLabel("Search address",{exact:true}).fill("Ballarat");
+ await page.getByRole("button",{name:"Layers",exact:true}).click(); await page.getByRole("button",{name:"Search",exact:true}).click(); await expect(page.getByLabel("Search address",{exact:true})).toHaveValue("Ballarat");
  await page.getByRole("button",{name:"Close library"}).click(); await page.getByRole("button",{name:"Open Inspector"}).click(); await page.waitForTimeout(350);
  const smaller=await page.locator(".map-canvas").boundingBox(); assert(initial.width-smaller.width>300);
  await page.getByRole("button",{name:"Compact inspector"}).click(); await page.waitForTimeout(300); assert((await page.locator(".inspector").boundingBox()).width===280);

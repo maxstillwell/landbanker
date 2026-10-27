@@ -92,6 +92,7 @@ try {
     ),
   );
   // Device B also applies the real incremental feed automatically, without reload/Refresh.
+  if (await b.getByRole("button", { name: "Open Inspector" }).isVisible()) await b.getByRole("button", { name: "Open Inspector" }).click();
   await b.getByRole("button", { name: "layers", exact: true }).click();
   await expect
     .poll(

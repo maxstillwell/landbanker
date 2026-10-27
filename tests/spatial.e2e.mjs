@@ -34,9 +34,8 @@ try {
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await page.waitForURL("**/app/map");
-  await page.getByRole("button", { name: "layers", exact: true }).click();
-  await page.getByRole("button", { name: "Draw", exact: true }).click();
-  await page.getByRole("button", { name: "Draw polygon", exact: true }).click();
+  await page.getByRole("button", { name: "Spatial Tools", exact: true }).click();
+  await page.getByRole("button", { name: "Polygon / area", exact: true }).click();
   await page.mouse.click(100, 180);
   await page.mouse.click(260, 180);
   await page.mouse.click(200, 310);
@@ -54,6 +53,7 @@ try {
     .click();
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   await page.reload();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
   await page.getByRole("button", { name: "layers", exact: true }).click();
   await page
     .locator(".saved-layer summary")
@@ -104,6 +104,7 @@ try {
     data.layers.find((l) => l.id === layer.id).geojson.features[0].id,
     featureId,
   );
+  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page.getByRole("button", { name: "Add Layer", exact: true }).click();
   await page.getByLabel("Search layers").fill("flood");
   await page
@@ -143,7 +144,7 @@ try {
     200,
   );
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page
     .getByRole("button", { name: `${secondSource.name} move up`, exact: true })
     .click();
@@ -155,7 +156,7 @@ try {
     )
     .toBe(secondSource.id);
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
   assert.equal(
     await page
       .getByLabel(`${secondSource.name} opacity`, { exact: true })
@@ -176,7 +177,7 @@ try {
     400,
   );
   await page.reload();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
   assert.equal(
     await page
       .getByLabel("Victoria flood planning overlays", { exact: true })
@@ -202,8 +203,8 @@ try {
     inspector: document.querySelector(".inspector").getBoundingClientRect()
       .width,
   }));
-  assert.ok(Math.abs(rects.map / 1280 - 0.7) < 0.02);
-  assert.ok(Math.abs(rects.inspector / 1280 - 0.3) < 0.02);
+  assert.ok(rects.map > 1200, "closed Inspector leaves the iPad map open");
+  assert.ok(rects.inspector >= 280, "Inspector retains its usable width");
   await page.screenshot({ path: "artifacts/landos-ipad-spatial.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   const viewId = crypto.randomUUID();

@@ -170,8 +170,9 @@ try {
       200,
     );
     await page.reload();
-    await page.getByRole("button", { name: "layers", exact: true }).click();
+    if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
     await page.getByRole("button", { name: view.name, exact: true }).click();
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
     await expect(
       page.getByLabel("Official layers", { exact: true }),
     ).toContainText("Ready");
@@ -251,7 +252,7 @@ try {
       200,
     );
     await page.reload();
-    await page.getByRole("button", { name: "layers", exact: true }).click();
+    if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
     await page.getByRole("button", { name: view.name, exact: true }).click();
     await expect
       .poll(async () => {
@@ -261,6 +262,7 @@ try {
           .count();
       })
       .toBe(1);
+    if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
     await page
       .getByRole("button", { name: "Inspect zoning", exact: true })
       .click();

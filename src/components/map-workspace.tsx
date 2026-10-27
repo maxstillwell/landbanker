@@ -661,6 +661,7 @@ export default function MapWorkspace({
     const next = identifyStateRef.current === state ? null : state;
     identifyStateRef.current = next;
     setIdentifyState(next);
+    if (next) setLeftOpen(false);
     setIdentifiedParcels([]);
     setNotice(
       next

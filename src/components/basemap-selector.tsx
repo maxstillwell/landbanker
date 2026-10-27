@@ -17,6 +17,7 @@ const swatches: Record<MapLibreBasemap, string> = {
   terrain:
     "linear-gradient(135deg,#cee2b5 40%,#ead6ae 40%,#ead6ae 45%,#cee2b5 45%,#cee2b5 70%,#8fcae0 70%)",
 };
+const basemapOrder: MapLibreBasemap[] = ["streets", "light", "dark", "terrain", "fiord", "satellite", "hybrid"];
 export function BasemapSelector({
   value,
   onChange,
@@ -38,15 +39,15 @@ export function BasemapSelector({
             value={value}
             onChange={(e) => onChange(e.target.value as MapLibreBasemap)}
           >
-            {Object.entries(MAPLIBRE_BASEMAPS).map(([id, item]) => (
+            {basemapOrder.map((id) => (
               <option key={id} value={id}>
-                {item.label}
+                {MAPLIBRE_BASEMAPS[id].label}
               </option>
             ))}
           </select>
         </label>
         <div role="group" aria-label="Basemap styles">
-          {Object.entries(MAPLIBRE_BASEMAPS).map(([id, item]) => (
+          {basemapOrder.map((id) => (
             <button
               key={id}
               aria-pressed={value === id}
@@ -56,7 +57,7 @@ export function BasemapSelector({
               }}
             >
               <i style={{ background: swatches[id as MapLibreBasemap] }} />
-              <span>{item.label}</span>
+              <span>{MAPLIBRE_BASEMAPS[id].label}</span>
             </button>
           ))}
         </div>
