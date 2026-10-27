@@ -1630,6 +1630,7 @@ fieldset {
 .spatial-widget-tools { display:grid; gap:5px; }.spatial-widget-tools small { color:#b6cbc5; }
 .spatial-widget-tools input { width:100%; min-width:0; background:#071315; color:#eef7f4; border:1px solid #355052; }
 @media (max-width:767px) { .workspace-library { width:min(290px,85vw); }.workspace-left-open .map-canvas { left:0; }.workspace-left-open .map-header { left:10px; }.workspace-left-open .workspace-left-toggle { left:min(290px,85vw); }.workspace-right-toggle { right:0; top:90px; }.workspace-right-closed .inspector { transform:translateY(100%); }.floating-map-widget { max-width:180px; } }
+@media (max-width:767px) { .floating-map-widget-content { max-height:max(80px, min(42dvh, calc(100dvh - var(--sheet-height) - 130px))); } }
 .workspace-library p { color:#a8bfba; font-size:12px; }
 .workspace-library button.workspace-library-active { color:#d8ff43; border-color:#779329; }
 .workspace-library-section { display:flex; justify-content:space-between; align-items:center; margin:18px 2px 8px; font-size:10px; letter-spacing:.08em; color:#d8ff43; }
@@ -1644,7 +1645,7 @@ fieldset {
 .map-app .inspector .tabs button.active { color:#d8ff43; border-color:#d8ff43; }
 .map-app .inspector .primary { background:#d8ff43; color:#071315; }
 .map-app .inspector a { color:#6de4cc; }
-.map-app .map-header { background:#0d1d1ff2; border-color:#355052; color:#eef7f4; }
+.map-app .map-header { z-index:625; background:#0d1d1ff2; border-color:#355052; color:#eef7f4; }
 .map-app .map-header button,.map-app .map-header summary { color:#eef7f4; }
 .map-app .map-header .map-mode-toggle { background:#122528; border-color:#355052; }
 .map-app .map-header .basemap-options { background:#0d1d1f; color:#eef7f4; }

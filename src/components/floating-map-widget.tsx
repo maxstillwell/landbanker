@@ -43,6 +43,8 @@ export function FloatingMapWidget({
     const offset = bounds
       ? bounds.left - parent.getBoundingClientRect().left
       : 0;
+    const header = parent.querySelector(".map-header")?.getBoundingClientRect();
+    const minY = header ? Math.max(0, header.bottom - parent.getBoundingClientRect().top + 8) : 0;
     return {
       x: Math.max(
         offset,
@@ -52,7 +54,7 @@ export function FloatingMapWidget({
             Math.max(0, (bounds?.width ?? parent.clientWidth) - el.offsetWidth),
         ),
       ),
-      y: Math.max(0, Math.min(p.y, Math.max(0, height - el.offsetHeight))),
+      y: Math.max(minY, Math.min(p.y, Math.max(minY, height - el.offsetHeight))),
     };
   };
   useEffect(() => {
@@ -83,8 +85,10 @@ export function FloatingMapWidget({
       observer.observe(parent);
       const canvas = parent.querySelector(".map-canvas");
       const inspector = parent.querySelector(".inspector");
+      const header = parent.querySelector(".map-header");
       if (canvas) observer.observe(canvas);
       if (inspector) observer.observe(inspector);
+      if (header) observer.observe(header);
     }
     if (node.current) observer.observe(node.current);
     window.addEventListener("resize", resize);

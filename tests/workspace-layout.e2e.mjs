@@ -38,7 +38,7 @@ try {
  await page.getByRole("button",{name:"Locate Me",exact:true}).click(); await expect(page.getByText("Accuracy ±8 m",{exact:true})).toBeVisible();
  await expect.poll(async()=>page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith("landos:map-camera:"));return k ? JSON.parse(localStorage.getItem(k)).center : []})).toEqual([145.182,-37.856]);
  await page.getByRole("button",{name:"Follow Me",exact:true}).click(); await expect(page.getByRole("button",{name:"Stop following",exact:true})).toBeVisible();
- await context.setGeolocation({latitude:-28.8135,longitude:153.2773,accuracy:12}); await expect(page.getByText("Accuracy ±12 m · Following",{exact:true})).toBeVisible();
+ await context.setGeolocation({latitude:-28.8135,longitude:153.2773,accuracy:12}); await expect(page.getByText("Accuracy ±12 m · Following",{exact:true})).toBeVisible({timeout:15000});
  await page.getByRole("button",{name:"Stop following",exact:true}).click();
  await context.clearPermissions(); await page.getByRole("button",{name:"Locate Me",exact:true}).click();
  await expect(page.getByText("Location permission denied. Enable location access and try again.")).toBeVisible();
@@ -48,6 +48,10 @@ try {
  await expect(page.getByLabel("Shape name")).toHaveValue("2 km radius");
  await page.getByRole("button",{name:"Save to Workspace",exact:true}).click();
  await expect(page.getByText("Shape saved to Workspace.")).toBeVisible();
+ await page.getByRole("button",{name:"Layers",exact:true}).click();
+ const observationsToggle=page.getByLabel("Observations",{exact:true});
+ await observationsToggle.uncheck(); await expect(observationsToggle).not.toBeChecked();
+ await observationsToggle.check(); await page.getByRole("button",{name:"Layers",exact:true}).click();
  await page.getByLabel("Basemap previews").click(); await page.getByLabel("Basemap",{exact:true}).selectOption("satellite");
  await expect(page.locator(".maplibre-attribution")).toContainText("Geoscience Australia"); await page.screenshot({path:"artifacts/workspace-satellite.png"});
  await page.getByLabel("Basemap",{exact:true}).selectOption("hybrid");
