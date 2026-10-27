@@ -4,7 +4,7 @@
 
 Resumed the verified `0ea31bc` checkpoint on `codex/landos-map-foundation-rebuild`; implementation checkpoints through `5cd203f` are pushed. Drawing/recovery/editing, Field/GPS/private photos/offline queue, Saved Views, viewport/change feed, official catalog/public overlays and Property Planning/Inspector now share one MapLibre renderer. Existing business APIs, Auth/RLS/Storage, public frozen projection and MaxQI remain unchanged. The old 3D experiment redirects to the workspace and Leaflet dependencies/overlay components have been removed.
 
-Owner authorization now includes completion, safe main integration, GitHub push and deployment without intermediate approvals. Local lint/typecheck/37 unit tests/production build, disposable database security/concurrency checks and all twelve production-build browser/API/import workflows PASS. Independent cloud verification of the tested-image fix is pending. Full regression/release evidence and exact resume tasks are in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). Earlier renderer and approval-limit entries below are historical. Production verification currently faces network-policy denials for Vercel/API GitHub hosts; do not infer a deployed revision from the local implementation.
+Owner authorization now includes completion, safe main integration, GitHub push and deployment without intermediate approvals. Local lint/typecheck/37 unit tests/production build, disposable database security/concurrency checks and all twelve production-build browser/API/import workflows PASS. Independent cloud run [40441056691](https://github.com/maxstillwell/landbanker/actions/runs/40441056691) for the tested-image fix is SUCCESS: full Web job and all four unsigned iPhone/iPad Debug/Release simulator builds. Full regression/release evidence and exact resume tasks are in [MAPLIBRE_PROGRESS.md](MAPLIBRE_PROGRESS.md). Earlier renderer and approval-limit entries below are historical. Production verification currently faces network-policy denials for Vercel/API GitHub hosts; do not infer a deployed revision from the local implementation.
 
 
 ## Final icon selection — 2026-10-09
@@ -71,7 +71,7 @@ Independent Supabase gksyipjxhrolsgztfyer, PG17.11, private field-media, 16 expo
 
 ## Next / exact resume step
 
-Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.md. All local critical workflow checks pass. Await independent cloud CI for the test-stack image fix, safely merge/push main under the owner's existing authorization, and verify the Vercel production revision. The saved environment network draft requires user publication before blocked Vercel/live-source endpoints become reachable. Do not repeat the architecture work or apply hosted database/security changes.
+Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.md. All local critical workflow checks pass. Independent cloud CI is green. Safely merge/push main under the owner's existing authorization and verify the Vercel production revision. The saved environment network draft requires user publication before blocked Vercel/live-source endpoints become reachable. Do not repeat the architecture work or apply hosted database/security changes.
 
 ## MaxQI safety / migration
 

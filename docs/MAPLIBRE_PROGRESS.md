@@ -29,11 +29,11 @@ The owner authorized completion, testing, safe main integration, push and deploy
 - Individual Field, spatial/drawing save, drawing recovery/edit and dedicated native MapLibre regressions PASS. Native regression checks one canvas, official geometry picking, 2D/3D camera transition, scoped restoration, Saved View preferences and public official requests without token disclosure.
 - All twelve browser/API/import workflows PASS against the final `next start` build. This includes 500 parcels/500 observations, complete-layer 502-feature editing, drawing recovery, Field/photos/retry, parcel search/identify, Saved Views and frozen shares/revoke/expiry/rate limits, Planning tenant guards, two-device create/update/delete reconciliation and native MapLibre rendering/restoration/public overlays.
 - Workflow browser tests use synthetic basemap/provider fixtures and real disposable Auth/PostgREST/Storage. They are not live-government-source visual acceptance or physical-device acceptance. Native MapLibre tests verify real geometry picking with the version-matched local worker.
-- Cloud run `40440276372` for `e392c34` passed all four unsigned simulator builds but failed while bootstrapping the disposable backend, before browser tests. The verified-image fix is under independent CI run `40441056691`; await its result before main integration.
+- Cloud run `40440276372` for `e392c34` passed all four unsigned simulator builds but failed while bootstrapping the disposable backend, before browser tests. The verified-image fix passed independent cloud run [40441056691](https://github.com/maxstillwell/landbanker/actions/runs/40441056691): full Web checks (including database/build/twelve browser/API workflows) plus all four unsigned iPhone/iPad Debug/Release simulator builds.
 
 ## Release tasks
 
-Local required checks and twelve production-build regressions are complete. Await independent CI for the tested-image fix, then fetch/check main and merge without force-push. The owner already authorized main integration and deployment. Inspect main CI and deployment evidence; do not describe deployment as verified until its production revision and endpoints are confirmed.
+Local required checks, twelve production-build regressions and independent cloud CI are complete. Application/test/infrastructure files at the final documentation checkpoint match tested `5cd203f`. Integrate into main with a non-forced merge under the owner’s existing authorization; preserve rollback baseline `d23121c3c7c5c408d9e159ec362538707d0d64a2`. Inspect main CI and deployment evidence; do not describe deployment as verified until its production revision and endpoints are confirmed.
 
 ## Known limitations
 
