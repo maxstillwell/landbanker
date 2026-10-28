@@ -1,5 +1,9 @@
 # LandOS status
 
+## Map interaction and geometry release — 28 October 2026
+
+The V2 layout is retained while drawing selection/editing, boundary candidate review and confirmed association, and camera Back/Forward/Home are implemented. Local lint, typecheck, 41 unit tests, production build, critical browser regressions and synthetic-property association with live VIC candidates passed. The unchanged ten-frame performance assertion failed under SwiftShader; a limited same-environment comparison found overlapping baseline/candidate ranges and similar request counts. See MAP_INTERACTION_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md for exact evidence, rollback `0b3f003445f111d71a2865272ef837e93934b3a3`, and limitations. The actual Balliang property and physical devices were not tested. Verify production deployment against the pushed commit before claiming release.
+
 ## Workspace UI V2 release candidate — 28 October 2026
 
 The V2 workspace adds the compact header, tool dock, optional library drawer and collapsible Inspector while retaining the MapLibre and existing GIS flows. Lint, typecheck, 40 unit tests, production build and independent local workflow regressions passed. The original software-rendering map performance assertion failed at 2,489 ms against its unchanged 2,000 ms limit; remaining assertions in that test file did not execute. See WORKSPACE_UI_V2_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md for evidence, visual-review scope and remaining real-device/provider limitations. Production deployment must be verified against the final pushed SHA.

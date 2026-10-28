@@ -15,6 +15,15 @@ try {
  await page.evaluate(()=>{window.__originalMapCanvas=document.querySelector(".maplibregl-canvas")});
  await page.screenshot({path:"artifacts/workspace-v2-desktop.png"});
  const initial=await page.locator(".map-canvas").boundingBox(); assert(initial.width>1300);
+ await page.getByRole("button",{name:"Set current view as Home"}).click();
+ const home = await page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.startsWith("landos:map-home:")))));
+ await page.getByRole("button",{name:"Zoom in"}).click();
+ await expect(page.getByRole("button",{name:"Back to previous map view"})).toBeEnabled();
+ await page.getByRole("button",{name:"Back to previous map view"}).click();
+ await expect(page.getByRole("button",{name:"Forward to next map view"})).toBeEnabled();
+ await page.getByRole("button",{name:"Forward to next map view"}).click();
+ await page.getByRole("button",{name:"Home",exact:true}).click();
+ await expect.poll(async()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(k=>k.startsWith("landos:map-camera:")); return JSON.parse(localStorage.getItem(key)).zoom;})).toBeCloseTo(home.zoom, 1);
  await page.getByRole("button",{name:"Layers",exact:true}).click(); await expect(page.getByLabel("Workspace library")).toBeVisible(); await expect(page.getByText("Official parcels and zones")).toBeVisible();
  assert.equal(await page.locator(".workspace-library-content").evaluate(e=>e.scrollWidth<=e.clientWidth+1),true); await page.waitForTimeout(350); await page.screenshot({path:"artifacts/workspace-v2-layers.png"});
  await page.getByRole("button",{name:"Search",exact:true}).click(); await page.getByLabel("Search address",{exact:true}).fill("Ballarat");

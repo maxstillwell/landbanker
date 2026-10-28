@@ -55,6 +55,8 @@ import {
   type LocalLayerDraft,
 } from "@/lib/layer-draft";
 import { geojsonFeatures } from "@/lib/map/geometry";
+import { propertyGeometry } from "@/lib/planning/geometry";
+import { isLocationGeometry } from "@/lib/map/location-geometry";
 import { ParcelSearch } from "./parcel-search";
 import type { MapSelection } from "@/lib/map/selection";
 import type { OfficialParcel, SupportedState } from "@/lib/map/parcel-types";
@@ -118,6 +120,14 @@ type Props = {
   workspaceName: string;
   role: string;
 };
+type CameraView = { center: [number, number]; zoom: number; bearing: number; pitch: number };
+function cameraView(m: MapLibreMap): CameraView {
+  const c = m.getCenter();
+  return { center: [c.lng, c.lat], zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() };
+}
+function sameCamera(a: CameraView, b: CameraView) {
+  return Math.abs(a.center[0] - b.center[0]) < 0.00001 && Math.abs(a.center[1] - b.center[1]) < 0.00001 && Math.abs(a.zoom - b.zoom) < 0.01 && Math.abs(a.bearing - b.bearing) < 0.1 && Math.abs(a.pitch - b.pitch) < 0.1;
+}
 export default function MapWorkspace({
   userId,
   workspaceId,
@@ -126,6 +136,11 @@ export default function MapWorkspace({
 }: Props) {
   const mapNode = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
+  const cameraHistory = useRef<CameraView[]>([]);
+  const cameraIndex = useRef(0);
+  const historyNavigation = useRef(false);
+  const [historyPosition, setHistoryPosition] = useState({ index: 0, length: 1 });
+  const homeKey = `landos:map-home:v1:${userId}:${workspaceId}`;
   const [styleRevision, setStyleRevision] = useState(0);
   const basemapRef = useRef<MapLibreBasemap>("light");
   const [basemap, setBasemap] = useState<MapLibreBasemap>("light");
@@ -199,6 +214,11 @@ export default function MapWorkspace({
   const [identifiedParcels, setIdentifiedParcels] = useState<OfficialParcel[]>(
     [],
   );
+  const [boundaryCandidates, setBoundaryCandidates] = useState<OfficialParcel[]>([]);
+  const [previewCandidates, setPreviewCandidates] = useState<string[]>([]);
+  const [candidateProperty, setCandidateProperty] = useState("");
+  const [candidateLatitude, setCandidateLatitude] = useState("");
+  const [candidateLongitude, setCandidateLongitude] = useState("");
   const [fix, setFix] = useState<LocationFix | null>(null);
   const [follow, setFollow] = useState(false);
   const [notice, setNotice] = useState("");
@@ -265,6 +285,10 @@ export default function MapWorkspace({
         selection.record
       : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
+  const selectedBoundary = useMemo(() => propertyGeometry(selectedParcel?.geometry), [selectedParcel?.geometry]);
+  const selectedDrawing = selection?.kind === "drawing"
+    ? selection.record.geojson?.features.find((f) => String(f.id) === selection.featureId)
+    : null;
   const selectedPropertyId = selectedParcel?.id;
   useEffect(() => {
     if (selection || draft) { setRightOpen(true); setLeftOpen(false); }
@@ -366,6 +390,9 @@ export default function MapWorkspace({
   }, [userId, workspaceId]);
   useEffect(() => {
     if (!selectedPropertyId) return;
+    setCandidateProperty("");
+    setBoundaryCandidates([]);
+    setPreviewCandidates([]);
     const controller = new AbortController();
     fetch(`/api/properties/${selectedPropertyId}`, {
       signal: controller.signal,
@@ -383,8 +410,9 @@ export default function MapWorkspace({
             ? { kind: "parcel", record: property }
             : current,
         );
-        if (property.geometry && map.current) {
-          const bounds = geometryBounds(property.geometry);
+        const boundary = propertyGeometry(property.geometry);
+        if (boundary && map.current) {
+          const bounds = geometryBounds(boundary);
           if (!bounds.isEmpty())
             map.current.fitBounds(bounds, { padding: 30, maxZoom: 18 });
         }
@@ -751,7 +779,19 @@ export default function MapWorkspace({
     } catch {
       /* Device storage restrictions must not prevent map use. */
     }
-    m.on("moveend", () => {
+    cameraHistory.current = [cameraView(m)];
+    cameraIndex.current = 0;
+    setHistoryPosition({ index: 0, length: 1 });
+    m.on("moveend", (event) => {
+      const view = cameraView(m);
+      if (historyNavigation.current) historyNavigation.current = false;
+      else if ((!followRef.current || event.originalEvent) && !sameCamera(cameraHistory.current[cameraIndex.current], view)) {
+        const entries = cameraHistory.current.slice(0, cameraIndex.current + 1);
+        entries.push(view);
+        cameraHistory.current = entries.slice(-50);
+        cameraIndex.current = cameraHistory.current.length - 1;
+        setHistoryPosition({ index: cameraIndex.current, length: cameraHistory.current.length });
+      }
       try {
         localStorage.setItem(
           storageKey,
@@ -968,6 +1008,7 @@ export default function MapWorkspace({
     function select(event: Event) {
       const detail = (event as CustomEvent).detail;
       if (detail.scope !== `${userId}:${workspaceId}`) return;
+      clearOfficialInspector(null);
       if (detail.kind === "parcel") {
         const record = renderedData.parcels.find((p) => p.id === detail.id);
         if (record) {
@@ -1002,7 +1043,7 @@ export default function MapWorkspace({
     }
     window.addEventListener("landos:select-rendered", select);
     return () => window.removeEventListener("landos:select-rendered", select);
-  }, [renderedData, userId, workspaceId]);
+  }, [renderedData, userId, workspaceId, clearOfficialInspector]);
   useEffect(() => {
     const m = map.current;
     if (!m?.getSource("landos-parcels")) return;
@@ -1051,18 +1092,23 @@ export default function MapWorkspace({
     setSceneData(
       m,
       "selected",
-      selectedParcel?.geometry
+      selectedDrawing?.geometry
+        ? [geometryFeature(selectedDrawing.geometry)]
+        : selectedBoundary
         ? [
             geometryFeature(
-              selectedParcel.geometry as import("geojson").Geometry,
+              selectedBoundary,
             ),
           ]
-        : [],
+        : selectedParcel?.latitude != null && selectedParcel.longitude != null
+          ? [geometryFeature({ type: "Point", coordinates: [selectedParcel.longitude, selectedParcel.latitude] })]
+          : selected ? [geometryFeature({ type: "Point", coordinates: [selected.longitude, selected.latitude] })] : [],
     );
     setSceneData(
       m,
       "official",
-      officialParcel ? [geometryFeature(officialParcel.geometry)] : [],
+      officialParcel ? [geometryFeature(officialParcel.geometry)] : candidateProperty === selectedParcel?.id
+        ? boundaryCandidates.filter((p) => previewCandidates.includes(p.sourceId)).map((p) => geometryFeature(p.geometry)) : [],
     );
     setSceneData(
       m,
@@ -1077,8 +1123,16 @@ export default function MapWorkspace({
     visibleUserLayerIds,
     localLayer,
     draft,
-    selectedParcel,
+    selectedBoundary,
+    selectedParcel?.id,
+    selectedParcel?.latitude,
+    selectedParcel?.longitude,
+    selected,
+    selectedDrawing,
     officialParcel,
+    boundaryCandidates,
+    previewCandidates,
+    candidateProperty,
     fix,
     styleRevision,
   ]);
@@ -1697,6 +1751,7 @@ export default function MapWorkspace({
       const target = localLayer.targetLayerId
         ? await loadFullLayer(localLayer.targetLayerId)
         : null;
+      if (localLayer.targetLayerId && !target?.geojson) throw new Error("The complete layer is unavailable. Your draft remains on this device.");
       const ids = new Set(localLayer.geojson.features.map((f) => f.id));
       const geojson = target?.geojson
         ? {
@@ -1733,6 +1788,45 @@ export default function MapWorkspace({
     }));
     return result.layer;
   }
+  async function findBoundaryCandidates(property: Parcel, additional = false) {
+    setCandidateProperty(property.id);
+    if (!additional) { setBoundaryCandidates([]); setPreviewCandidates([]); }
+    const latitude = additional ? Number(candidateLatitude) : property.latitude;
+    const longitude = additional ? Number(candidateLongitude) : property.longitude;
+    if (latitude == null || longitude == null || !Number.isFinite(latitude) || !Number.isFinite(longitude) || (additional && (!candidateLatitude.trim() || !candidateLongitude.trim()))) {
+      setNotice("A VIC or NSW state and saved location are needed for boundary lookup. Search by address or parcel identifier instead.");
+      return;
+    }
+    setIdentifyBusy(true);
+    try {
+      const query = new URLSearchParams({ state: property.state || parcelState, latitude: String(latitude), longitude: String(longitude), address: "" });
+      const response = await timeoutFetch(`/api/parcels/lookup?${query}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Official boundary lookup failed");
+      const candidates = (result.parcels || []) as OfficialParcel[];
+      setBoundaryCandidates((current) => additional ? [...current, ...candidates.filter((p) => !current.some((existing) => existing.state === p.state && existing.sourceId === p.sourceId))] : candidates);
+      setNotice(candidates.length ? "Review candidate boundaries. No property association has been saved." : "No official boundary was returned at the saved location. Coverage may be unavailable; search nearby parcels separately.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Official boundary lookup failed"); }
+    finally { setIdentifyBusy(false); }
+  }
+  async function associateBoundaries(property: Parcel) {
+    const chosen = boundaryCandidates.filter((p) => previewCandidates.includes(p.sourceId));
+    if (!chosen.length || !window.confirm(`Associate ${chosen.length} reviewed official parcel ${chosen.length === 1 ? "boundary" : "boundaries"} with this property? The existing property and its notes will be retained${property.geometry ? ", and the original location geometry will be preserved in its metadata" : ""}.`)) return;
+    setIdentifyBusy(true);
+    try {
+      await apiRequest(`/api/properties/${property.id}/boundary`, { confirmed: true, candidates: chosen.map((p) => ({ state: p.state, latitude: p.latitude, longitude: p.longitude, sourceId: p.sourceId, address: "" })) });
+      const response = await timeoutFetch(`/api/properties/${property.id}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to reload property");
+      setSelection((current) => current?.kind === "parcel" && current.record.id === property.id ? { kind: "parcel", record: result.property } : current);
+      setBoundaryCandidates([]); setPreviewCandidates([]);
+      const boundary = propertyGeometry(result.property.geometry);
+      if (boundary && map.current) map.current.fitBounds(geometryBounds(boundary), { padding: 60, maxZoom: 18 });
+      await reload();
+      setNotice("Reviewed boundaries associated with the property.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to associate boundaries"); }
+    finally { setIdentifyBusy(false); }
+  }
   const drawnGeometry = drawingGeometry(
     kind,
     drawPoints.map((p) => [p.lng, p.lat]),
@@ -1740,12 +1834,28 @@ export default function MapWorkspace({
   const drawnMeasurement = drawnGeometry
     ? geometryMeasurement(drawnGeometry)
     : null;
-  const selectedDrawing =
-    selection?.kind === "drawing"
-      ? selection.record.geojson?.features.find(
-          (f) => String(f.id) === selection.featureId,
-        )
-      : null;
+  function navigateHistory(delta: number) {
+    const target = cameraIndex.current + delta;
+    const m = map.current;
+    if (!m || target < 0 || target >= cameraHistory.current.length) return;
+    cameraIndex.current = target;
+    setHistoryPosition({ index: target, length: cameraHistory.current.length });
+    const view = cameraHistory.current[target];
+    if (!sameCamera(cameraView(m), view)) {
+      historyNavigation.current = true;
+      m.jumpTo(view);
+    }
+  }
+  function goHome() {
+    const m = map.current;
+    if (!m) return;
+    let home: CameraView = { center: [143.8503, -37.5622], zoom: 11, bearing: 0, pitch: 0 };
+    try {
+      const saved = JSON.parse(localStorage.getItem(homeKey) || "null");
+      if (Array.isArray(saved?.center) && saved.center.length === 2 && saved.center.every(Number.isFinite) && Math.abs(saved.center[0]) <= 180 && Math.abs(saved.center[1]) <= 85 && [saved.zoom, saved.bearing, saved.pitch].every(Number.isFinite) && saved.zoom >= 0 && saved.zoom <= 20 && saved.pitch >= 0 && saved.pitch <= 70) home = saved;
+    } catch { /* Use the workspace default. */ }
+    m.jumpTo(home);
+  }
   function toggleMapMode() {
     const next = mapMode === "2d" ? "3d" : "2d";
     map.current?.easeTo({
@@ -1963,6 +2073,7 @@ export default function MapWorkspace({
       {drawMode ? (
         <div className="map-drawing-bar" aria-label="Drawing controls">
           <strong>
+            Active: {kind} · {" "}
             {drawnMeasurement?.areaM2
               ? formatArea(drawnMeasurement.areaM2)
               : drawnMeasurement?.distanceM
@@ -2078,11 +2189,11 @@ export default function MapWorkspace({
       <nav className="workspace-dock" aria-label="Map tools">
         {([
           ["search", "Search", "⌕"], ["layers", "Layers", "▱"],
-          ["spatial", "Spatial Tools", "⌖"], ["observations", "Observations", "◎"], ["views", "Saved Views", "▤"],
+          ["spatial", "Spatial Tools", "✎"], ["observations", "Observations", "◎"], ["views", "Saved Views", "▤"],
         ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={() => {
           if (id === "spatial") { if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
           setPaletteOpen(false); if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
-        }}><span aria-hidden="true">{icon}</span></button>)}
+        }}><span aria-hidden="true">{icon}</span>{id === "spatial" ? <small aria-hidden="true">Draw</small> : null}</button>)}
         {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋</button> : null}
         <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={() => { setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
       </nav>
@@ -2121,6 +2232,7 @@ export default function MapWorkspace({
               <span className="tool-icon" aria-hidden="true">{icon}</span><span>{label}</span>
             </button>
           ))}
+          <button type="button" aria-label="Measure distance" disabled={!canWrite || drawMode} onClick={() => startDrawing("LineString")}><span className="tool-icon" aria-hidden="true">⌁</span><span>Measure</span></button>
           <button type="button" aria-label="Radius" aria-expanded={radiusOpen} onClick={() => setRadiusOpen((v) => !v)}><span className="tool-icon" aria-hidden="true">◉</span><span>Radius</span></button>
           {radiusOpen ? <div className="radius-settings"><label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label><button disabled={!canWrite} onClick={() => void createRadius()}>Create at map centre</button></div> : null}
           <button disabled={!canWrite} aria-label="Import GeoJSON" onClick={() => importInput.current?.click()}><span className="tool-icon" aria-hidden="true">⇧</span><span>Import</span></button>
@@ -2133,6 +2245,10 @@ export default function MapWorkspace({
       ) : null}
       <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setTab("layers"); setRightOpen(true); setPaletteOpen(false); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
       <div className="compact-location" aria-label="Location controls">
+        <button type="button" aria-label="Back to previous map view" title="Back to previous map view" disabled={historyPosition.index === 0} onClick={() => navigateHistory(-1)}>←</button>
+        <button type="button" aria-label="Forward to next map view" title="Forward to next map view" disabled={historyPosition.index >= historyPosition.length - 1} onClick={() => navigateHistory(1)}>→</button>
+        <button type="button" aria-label="Home" title="Home" onClick={goHome}>⌂</button>
+        <button type="button" aria-label="Set current view as Home" title="Set current view as Home" onClick={() => { if (!map.current) return; try { localStorage.setItem(homeKey, JSON.stringify(cameraView(map.current))); setNotice("Current map view saved as Home on this device."); } catch { setNotice("Unable to save Home on this device."); } }}>⌂＋</button>
         <button type="button" onClick={() => locate()} aria-label="Locate Me" title={locating ? "Locating…" : "Locate me"} disabled={locating}>{locating ? "…" : "⌖"}</button>
         <button type="button" className={follow ? "active" : ""} onClick={() => (follow ? stopFollow() : locate(true))} aria-label={follow ? "Stop following" : "Follow Me"} title={follow ? "Stop following" : "Follow me"}>➤</button>
         <button type="button" onClick={() => map.current?.resetNorth()} aria-label="Reset bearing" title="Reset north">N</button>
@@ -2475,11 +2591,17 @@ export default function MapWorkspace({
               {officialParcel || selectedParcel ? (
                 <section className="property-details">
                   <h3>Parcel details</h3>
+                  {selectedParcel && !selectedBoundary ? (
+                    <><p role="status">Location only — boundary not linked. A nearby parcel is not automatically linked to this property.</p>
+                    {!selectedParcel.state ? <label>Lookup state <select value={parcelState} onChange={(e) => setParcelState(e.target.value as SupportedState)}><option value="VIC">Victoria</option><option value="NSW">New South Wales</option></select></label> : null}
+                    <button disabled={identifyBusy} onClick={() => void findBoundaryCandidates(selectedParcel)}>Find official parcel boundary</button>
+                    {candidateProperty === selectedParcel.id ? <div><p>Preview candidates; no association is saved until confirmed. To add another parcel, enter a point inside it.</p><label>Latitude <input type="number" value={candidateLatitude} onChange={(e) => setCandidateLatitude(e.target.value)} /></label><label>Longitude <input type="number" value={candidateLongitude} onChange={(e) => setCandidateLongitude(e.target.value)} /></label><button disabled={identifyBusy} onClick={() => void findBoundaryCandidates(selectedParcel, true)}>Find another parcel</button>{boundaryCandidates.map((p) => <label key={`${p.state}:${p.sourceId}`}><input type="checkbox" checked={previewCandidates.includes(p.sourceId)} onChange={(e) => setPreviewCandidates((current) => e.target.checked ? [...current, p.sourceId] : current.filter((id) => id !== p.sourceId))} /> {p.address || p.sourceId} · {p.lot || ""} {p.plan || ""}</label>)}{canWrite && boundaryCandidates.length ? <button disabled={identifyBusy || !previewCandidates.length || (selectedParcel.geometry !== null && !isLocationGeometry(selectedParcel.geometry))} onClick={() => void associateBoundaries(selectedParcel)}>Associate selected boundaries</button> : null}{selectedParcel.geometry !== null && !isLocationGeometry(selectedParcel.geometry) ? <p>Existing stored geometry cannot be replaced by this action.</p> : null}</div> : null}</>
+                  ) : null}
                   <div className="actions">
                     <button
                       onClick={() => {
                         const geometry =
-                          officialParcel?.geometry || selectedParcel?.geometry;
+                          officialParcel?.geometry || selectedBoundary;
                         if (map.current && geometry)
                           map.current.fitBounds(geometryBounds(geometry), {
                             padding: 60,
@@ -2915,6 +3037,10 @@ export default function MapWorkspace({
                     {String(selectedDrawing.properties?.name || "Shape")}
                   </strong>
                   <p>{String(selectedDrawing.properties?.note || "")}</p>
+                  <div className="actions">
+                    <button onClick={() => map.current?.fitBounds(geometryBounds(selectedDrawing.geometry), { padding: 60, maxZoom: 18 })}>Fit to Shape</button>
+                    <button onClick={() => setSelection(null)}>Clear Selection</button>
+                  </div>
                   <p>
                     {geometryMeasurement(selectedDrawing.geometry).areaM2
                       ? formatArea(
@@ -2928,25 +3054,31 @@ export default function MapWorkspace({
                   {canWrite ? (
                     <div className="actions">
                       <button
-                        onClick={() =>
-                          startDrawing(
-                            selectedDrawing.properties?.drawing_kind ===
+                        onClick={async () => {
+                          try {
+                            const complete = await loadFullLayer(selection.record.id);
+                            const feature = complete.geojson?.features.find((f) => String(f.id) === selection.featureId);
+                            if (!feature) throw new Error("The full shape is unavailable. Refresh and try again.");
+                            startDrawing(
+                            feature.properties?.drawing_kind ===
                               "Rectangle"
                               ? "Rectangle"
-                              : selectedDrawing.geometry.type === "Point"
+                              : feature.geometry.type === "Point"
                                 ? "Point"
-                                : selectedDrawing.geometry.type === "LineString"
+                                : feature.geometry.type === "LineString"
                                   ? "LineString"
                                   : "Polygon",
-                            selectedDrawing,
+                            feature,
                             selection.record.id,
-                          )
-                        }
+                          );
+                          } catch (e) { setNotice(e instanceof Error ? e.message : "Unable to load the full shape."); }
+                        }}
                       >
                         Edit shape
                       </button>
                       <button
                         onClick={async () => {
+                          if (!window.confirm("Delete this shape from the workspace?")) return;
                           try {
                             const complete = await loadFullLayer(
                               selection.record.id,

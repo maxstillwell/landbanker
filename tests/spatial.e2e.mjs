@@ -67,6 +67,46 @@ try {
     "Potential development area",
   );
   const featureId = layer.geojson.features[0].id;
+  const offscreenId = crypto.randomUUID();
+  const offscreen = { type: "Feature", id: offscreenId, properties: { name: "Off-screen fixture" }, geometry: { type: "Point", coordinates: [150, -34] } };
+  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: { ...layer.geojson, features: [...layer.geojson.features, offscreen] } } })).status(), 200);
+  await page.reload();
+  // The geometry itself is clickable, and editing loads the complete layer.
+  await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await page.waitForTimeout(400);
+  await page.mouse.click(185, 220);
+  await expect(page.getByRole("button", { name: "Edit shape" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit shape" }).click();
+  await expect(page.getByLabel("Drawing controls")).toBeVisible();
+  const moveHandle = await page.getByRole("img", { name: "Move entire shape" }).boundingBox();
+  await page.mouse.move(moveHandle.x + moveHandle.width / 2, moveHandle.y + moveHandle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(moveHandle.x + moveHandle.width / 2 + 12, moveHandle.y + moveHandle.height / 2 + 12, { steps: 5 });
+  await page.mouse.up();
+  await page.getByLabel("Drawing controls").getByRole("button", { name: "Finish polygon" }).click();
+  await page.getByRole("button", { name: "Save to Workspace", exact: true }).click();
+  await expect(page.getByText("Shape saved to Workspace.", { exact: true })).toBeVisible();
+  const completeAfterEdit = (await (await page.request.get(origin + "/api/layers?id=" + layer.id)).json()).layer.geojson.features;
+  const edited = completeAfterEdit.find((f) => f.id === featureId);
+  assert.ok(completeAfterEdit.some((f) => f.id === offscreenId));
+  assert.equal(edited.id, featureId);
+  assert.notDeepEqual(edited.geometry, layer.geojson.features[0].geometry);
+  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: layer.geojson } })).status(), 200);
+  await page.reload();
+  if (await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await page.waitForTimeout(500);
+  await page.mouse.click(185, 220);
+  await expect(page.getByRole("button", { name: "Clear Selection" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear Selection" }).click();
+  await expect(page.getByRole("button", { name: "Edit shape" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await page.waitForTimeout(400);
+  await page.mouse.click(185, 220);
+  await expect(page.getByRole("button", { name: "Delete shape" })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete shape" }).click();
+  await expect.poll(async () => (await (await page.request.get(origin + "/api/layers?id=" + layer.id)).json()).layer.geojson.features.length).toBe(0);
+  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: layer.geojson } })).status(), 200);
   // Server rejects malformed coordinates; repeat writes preserve feature identity.
   assert.equal(
     (

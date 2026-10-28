@@ -62,7 +62,9 @@ export function FloatingMapWidget({
       const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
       if (Number.isFinite(saved?.x) && Number.isFinite(saved?.y))
         setPosition(clamp(saved));
-      if (typeof saved?.expanded === "boolean") setExpanded(saved.expanded);
+      // Opening the dock entry must expose the tools, even if the widget was
+      // collapsed when it was last closed.
+      if (!initiallyExpanded && typeof saved?.expanded === "boolean") setExpanded(saved.expanded);
     } catch {
       /* Local preference storage is optional. */
     }

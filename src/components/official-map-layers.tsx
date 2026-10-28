@@ -161,12 +161,15 @@ export function useOfficialMapLayers({
       const workspace = m!.queryRenderedFeatures(event.point, {
         layers: [
           "landos-parcels-fill",
+          "landos-parcels-point",
           "landos-observations-point",
           "landos-features-fill",
           "landos-features-line",
           "landos-features-point",
         ].filter((id) => !!m!.getLayer(id)),
       });
+      // Explicit zoning mode gives zoning precedence; otherwise workspace
+      // records take precedence over overlapping official features.
       if (blocked || (workspace.length && mode !== "zoning")) return;
       const hits = m!.queryRenderedFeatures(event.point, {
         layers: ids

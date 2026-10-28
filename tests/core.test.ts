@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { GeoJsonObject } from "geojson";
+import { isLocationGeometry } from "../src/lib/map/location-geometry";
 import { assertIndependentBackend, safeNext } from "../src/lib/config";
 import {
   planImport,
@@ -31,6 +32,13 @@ import {
   parcelsGeoJson,
 } from "../src/lib/map/maplibre-geojson";
 const w = "11111111-1111-4111-8111-111111111111";
+test("only valid location points are eligible for preserving an original geometry during boundary association", () => {
+  assert(isLocationGeometry({ type: "Point", coordinates: [143.85, -37.56] }));
+  assert(isLocationGeometry({ type: "Feature", geometry: { type: "Point", coordinates: [143.85, -37.56] }, properties: {} }));
+  assert(!isLocationGeometry({ type: "Point", coordinates: [200, -37] }));
+  assert(!isLocationGeometry({ type: "Polygon", coordinates: [] }));
+  assert(!isLocationGeometry(null));
+});
 test("MapLibre preview configuration is scoped and only accepts secure terrain configuration", () => {
   assert.equal(isMapLibreBasemap("dark"), true);
   assert.equal(isMapLibreBasemap("satellite"), true);
