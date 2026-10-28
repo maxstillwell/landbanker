@@ -283,6 +283,7 @@ try {
     .locator(".property-workspace dd")
     .filter({ hasText: /144\./ })
     .waitFor();
+  await page.getByRole("button", { name: "Fit to Parcel", exact: true }).click();
   // Property now fits its actual small boundary (up to zoom 18), not its stored
   // point at zoom 15. Zoom out to the same large-workspace test extent.
   for (let i = 0; i < 6; i++) {

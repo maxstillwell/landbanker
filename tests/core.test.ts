@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { GeoJsonObject } from "geojson";
 import { isLocationGeometry } from "../src/lib/map/location-geometry";
+import { safeStoredFeatureIds } from "../src/lib/map/feature-identity";
+import { isOfficialParcelSource, officialSelectionId, summarizeAreas, updateSelectedAreas } from "../src/lib/map/selection-summary";
 import { assertIndependentBackend, safeNext } from "../src/lib/config";
 import {
   planImport,
@@ -30,8 +32,40 @@ import {
 import {
   observationsGeoJson,
   parcelsGeoJson,
+  workspaceFeaturesGeoJson,
 } from "../src/lib/map/maplibre-geojson";
 const w = "11111111-1111-4111-8111-111111111111";
+test("selection summary preserves multipart and hole areas and warns about incomplete and overlapping totals", () => {
+  const outer = [[143, -37], [143.02, -37], [143.02, -37.02], [143, -37.02], [143, -37]];
+  const hole = [[143.005, -37.005], [143.015, -37.005], [143.015, -37.015], [143.005, -37.015], [143.005, -37.005]];
+  const shape = { type: "Polygon" as const, coordinates: [outer, hole] };
+  const item = { id: officialSelectionId("vic", "42"), label: "Lot", source: "Official", kind: "parcel" as const, geometry: shape };
+  const result = summarizeAreas([item, { ...item, id: "other" }, { ...item, id: "unknown", geometry: null }]);
+  assert(result.areaM2 > 0); assert(result.overlaps); assert(result.incomplete);
+  assert.equal(officialSelectionId("VIC", "42"), officialSelectionId("vic", "42"));
+  assert(isOfficialParcelSource("VIC", "Vicmap / VicPlan"));
+  assert(!isOfficialParcelSource("VIC", "Imported workspace record"));
+  assert.equal(updateSelectedAreas([item], { ...item, id: officialSelectionId("VIC", "42"), source: "Other representation" }, true).length, 0);
+  const multipart = summarizeAreas([{ ...item, geometry: { type: "MultiPolygon", coordinates: [[outer, hole], [[[144, -37], [144.01, -37], [144.01, -37.01], [144, -37.01], [144, -37]]]] } }]);
+  assert(multipart.areaM2 > result.areaM2 / 2);
+});
+test("legacy workspace features with equally long geometry retain distinct render identities", () => {
+  const feature = (x: number) => ({ type: "Feature" as const, properties: {}, geometry: { type: "Point" as const, coordinates: [x, -37] } });
+  const layer = { id: "layer", workspace_id: w, name: "Legacy", layer_kind: "geojson", layer_data: {}, metadata: {}, geojson: { type: "FeatureCollection" as const, features: [feature(143), feature(144)] } };
+  assert.equal(JSON.stringify(layer.geojson.features[0].geometry).length, JSON.stringify(layer.geojson.features[1].geometry).length);
+  const first = workspaceFeaturesGeoJson([layer]);
+  assert.equal(first.index.size, 2);
+  assert.equal(new Set(first.collection.features.map((item) => item.id)).size, 2);
+  assert.deepEqual(first.collection.features.map((item) => item.id), workspaceFeaturesGeoJson([layer]).collection.features.map((item) => item.id));
+  assert.equal(safeStoredFeatureIds(layer.geojson.features), false);
+  const withIds = layer.geojson.features.map((item) => ({ ...item, id: crypto.randomUUID() }));
+  assert.equal(safeStoredFeatureIds(withIds), true);
+  assert.equal(safeStoredFeatureIds([withIds[0], withIds[0]]), false);
+  const radius = { ...layer, id: "radius", layer_kind: "radius", geojson: null, layer_data: { centre: [-37, 143], rings: [{ kilometres: 1, colour: "#00aa00" }, { kilometres: 2, colour: "#00bb00" }] } };
+  const rings = workspaceFeaturesGeoJson([radius]);
+  assert.equal(rings.index.size, 2);
+  assert(rings.collection.features.every((item) => item.geometry.type === "Polygon" && item.properties?.layerId === "radius"));
+});
 test("only valid location points are eligible for preserving an original geometry during boundary association", () => {
   assert(isLocationGeometry({ type: "Point", coordinates: [143.85, -37.56] }));
   assert(isLocationGeometry({ type: "Feature", geometry: { type: "Point", coordinates: [143.85, -37.56] }, properties: {} }));

@@ -1,6 +1,9 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import { sha256 } from "@noble/hashes/sha256";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import type { MapData, Observation, Parcel, SpatialLayer } from "@/lib/types";
 import { validGeometry } from "@/lib/map/drawing";
+import { circleFeature } from "@/lib/map/maplibre-scene";
 
 type WorkspaceFeature = {
   id: string;
@@ -77,9 +80,46 @@ export function workspaceFeaturesGeoJson(layers: SpatialLayer[]): {
   const index = new Map<string, WorkspaceFeature>();
   const features: Feature[] = [];
   for (const layer of layers) {
+    if (layer.layer_kind === "radius") {
+      const centre = layer.layer_data.centre;
+      const rings = layer.layer_data.rings;
+      if (Array.isArray(centre) && centre.length >= 2 && centre.slice(0, 2).every(Number.isFinite) && Array.isArray(rings)) {
+        rings.forEach((ring: { kilometres?: unknown; colour?: unknown }, ringIndex: number) => {
+          const km = Number(ring?.kilometres);
+          if (!Number.isFinite(km) || km <= 0 || km > 500) return;
+          const shape = circleFeature(centre[0], centre[1], km * 1000, typeof ring.colour === "string" ? ring.colour : "#d8ff43");
+          shape.id = `radius-${ringIndex}`;
+          shape.properties = { ...shape.properties, name: `${layer.name} · ${km} km`, drawing_kind: "Radius" };
+          const id = `${layer.id}:${shape.id}`;
+          index.set(id, { id, layerId: layer.id, layerName: layer.name, feature: shape });
+          features.push(feature(id, shape.geometry, { kind: "workspace-feature", layerId: layer.id, layerName: layer.name, title: shape.properties.name, color: shape.properties.color }));
+        });
+      }
+      continue;
+    }
+    const legacy = new Map<string, Set<string>>();
+    for (const input of layer.geojson?.features || []) {
+      if (input.id != null || !input.geometry) continue;
+      const value = JSON.stringify([input.geometry, input.properties]);
+      const hash = legacyHash(value);
+      const group = legacy.get(hash) || new Set<string>();
+      group.add(value);
+      legacy.set(hash, group);
+    }
+    const occurrences = new Map<string, number>();
     for (const input of layer.geojson?.features || []) {
       if (!input.geometry) continue;
-      const id = `${layer.id}:${String(input.id || cryptoSafeId(input))}`;
+      let key = input.id != null ? String(input.id) : "";
+      if (input.id == null) {
+        const value = JSON.stringify([input.geometry, input.properties]);
+        const hash = legacyHash(value);
+        const collision = (legacy.get(hash)?.size || 0) > 1;
+        const base = `legacy:${hash}${collision ? `:${value}` : ""}`;
+        const count = occurrences.get(base) || 0;
+        occurrences.set(base, count + 1);
+        key = `${base}:${count}`;
+      }
+      const id = `${layer.id}:${key}`;
       const output = feature(id, input.geometry, {
         kind: "workspace-feature",
         layerId: layer.id,
@@ -100,9 +140,8 @@ export function workspaceFeaturesGeoJson(layers: SpatialLayer[]): {
   return { collection: { type: "FeatureCollection", features }, index };
 }
 
-function cryptoSafeId(feature: Feature) {
-  // This only identifies an in-memory render feature; it is never persisted.
-  return `${feature.geometry?.type || "geometry"}:${JSON.stringify(feature.geometry).length}`;
+function legacyHash(value: string) {
+  return bytesToHex(sha256(utf8ToBytes(value)));
 }
 
 export function mapLibreCollections(data: MapData) {

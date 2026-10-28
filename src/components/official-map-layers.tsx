@@ -33,7 +33,7 @@ export function useOfficialMapLayers({
   revision: number;
   blocked: boolean;
   onPick: () => void;
-  onParcel: (parcel: OfficialParcel) => void;
+  onParcel: (parcel: OfficialParcel, shift: boolean) => void;
 }) {
   const [visible, setVisible] = useState<Record<string, boolean>>(
     Object.fromEntries(ids.map((id) => [id, true])),
@@ -199,7 +199,7 @@ export function useOfficialMapLayers({
         );
         if (parcel) {
           setSelected(null);
-          onParcel(parcel);
+          onParcel(parcel, Boolean(event.originalEvent?.shiftKey));
           return;
         }
       }

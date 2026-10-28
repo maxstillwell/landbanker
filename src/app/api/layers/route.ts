@@ -17,6 +17,34 @@ export async function GET(request: NextRequest) {
   try {
     const c = await workspaceContext();
     const id = z.uuid().parse(request.nextUrl.searchParams.get("id"));
+    const featureParam = request.nextUrl.searchParams.get("feature");
+    if (featureParam) {
+      const featureId = z.string().min(1).max(200).parse(featureParam);
+      if (z.uuid().safeParse(featureId).success) {
+        const { data: row, error } = await c.client.from("spatial_features").select("feature").eq("workspace_id", c.workspaceId).eq("layer_id", id).eq("id", featureId).maybeSingle();
+        if (error) throw error;
+        if (row) return json({ feature: row.feature });
+      }
+      const { data: legacy, error: legacyError } = await c.client.from("spatial_layers").select("geojson").eq("workspace_id", c.workspaceId).eq("id", id).single();
+      if (legacyError) throw legacyError;
+      const feature = (legacy.geojson as FeatureCollection | null)?.features.find((item) => String(item.id) === featureId);
+      if (!feature) throw new Error("Feature unavailable in this Workspace");
+      return json({ feature });
+    }
+    if (request.nextUrl.searchParams.get("list") === "1") {
+      const offset = z.coerce.number().int().min(0).max(5000).default(0).parse(request.nextUrl.searchParams.get("offset") ?? undefined);
+      const { data: parent, error: parentError } = await c.client.from("spatial_layers").select("id,name,layer_kind,metadata").eq("workspace_id", c.workspaceId).eq("id", id).single();
+      if (parentError || !parent) throw new Error("Layer unavailable in this Workspace");
+      const { data: rows, error } = await c.client.from("spatial_features").select("id,feature").eq("workspace_id", c.workspaceId).eq("layer_id", id).order("id").range(offset, offset + 50);
+      if (error) throw error;
+      if (rows?.length) return json({ features: rows.slice(0, 50).map((row) => row.feature), hasMore: rows.length > 50, layer: parent });
+      // Legacy layers can predate normalized feature rows. Return only the
+      // requested page and never mutate their stored geometry or identifiers.
+      const { data: legacy, error: legacyError } = await c.client.from("spatial_layers").select("geojson").eq("workspace_id", c.workspaceId).eq("id", id).single();
+      if (legacyError) throw legacyError;
+      const features = (legacy.geojson as FeatureCollection | null)?.features || [];
+      return json({ features: features.slice(offset, offset + 50), hasMore: features.length > offset + 50, layer: parent });
+    }
     const { data, error } = await c.client
       .from("spatial_layers")
       .select("id,workspace_id,name,layer_kind,geojson,layer_data")

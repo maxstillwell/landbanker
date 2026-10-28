@@ -1,5 +1,9 @@
 # LandOS status
 
+## Parcel multi-selection release candidate — 28 October 2026
+
+Desktop Shift and touch multi-selection, source-aware geodesic area summaries, layer-child selection, pagination, overlap warnings and stable legacy render identities are implemented. Local lint, typecheck, 43 unit tests, build, RLS/concurrency and critical browser regressions passed; production verification remains. The unchanged 2,000 ms performance assertion failed at 2,365 ms under SwiftShader on the preceding candidate. See PARCEL_MULTISELECT_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md. Rollback baseline: `4027b6b798bbf36c78e51e63424ea45d2509e483`.
+
 ## Observation interaction fix — 28 October 2026
 
 Observation drafts now pause safely on section/tool changes or Inspector close, and can be resumed from the device queue. GeoJSON Feature-wrapped parcel boundaries render as polygons; location-only records remain labelled without fabricated boundaries. Lint, typecheck, 41 unit tests, production build and final observation/map-quality regressions passed. The formerly blocked map-pages functional checks now run before the unchanged 2,000 ms performance assertion; functional checks passed and the software-rendering assertion failed at 2,512 ms. See OBSERVATION_INTERACTION_FIX.md. Rollback baseline: `48d004aea6f1bdd2c99a2b55989b917f67f9ae8e`. Real Balliang records were not accessed or verified.
