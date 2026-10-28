@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "verify:map-sources": "node scripts/verify-map-sources.mjs",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --import tsx tests/core.test.ts && node --import tsx tests/planning.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts",
+    "test": "node --import tsx --test tests/terrain.test.ts && node --import tsx tests/core.test.ts && node --import tsx tests/planning.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts",
     "db:test": "bash scripts/test-database.sh",
     "import:maxqi": "node --import tsx scripts/import-maxqi.ts",
     "infra:check": "node --import tsx scripts/check-infrastructure.ts",

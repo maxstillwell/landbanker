@@ -104,3 +104,7 @@ Continue from the existing rebuild branch and checkpoints in MAPLIBRE_PROGRESS.m
 ## MaxQI safety / migration
 
 No MaxQI schema/Auth/RLS/Storage/API/publishing/site/source changes, no new MaxQI import, no photo copy, no full migration or cutover. Existing limited 10-source-record test remains metadata-only legacy_pending; importer/mappings/dry-run regression uses synthetic local sources. 2026-10-07 read-only homepage and both protected Land routes HTTP200 with expected access redirects; endpoint health, not exhaustive legacy acceptance. All phase writes target only independent LandOS or disposable local fixtures.
+
+## Terrain development checkpoint
+
+An opt-in Terrarium TileJSON integration adds 3D terrain, hillshade, visual exaggeration and approximate centre-point sampling. Configure `NEXT_PUBLIC_TERRAIN_TILEJSON_URL` and `NEXT_PUBLIC_TERRAIN_ATTRIBUTION` only after reviewing the provider's coverage, vertical datum, resolution, attribution and hosted-service terms. No provider is enabled by default. Missing or zero-valued samples are reported unavailable because MapLibre can return zero when DEM tiles are missing. Actual zero elevations are therefore unavailable too. This is not survey-grade; profiles, parcel statistics, slope, contours, real-world terrain and production release remain unverified or unimplemented. Basemap switching reinstalls terrain after style load. Do not deploy until provider review and browser/live regression checks are complete.

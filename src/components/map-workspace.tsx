@@ -21,6 +21,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
+import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
@@ -286,6 +287,16 @@ export default function MapWorkspace({
     return () => clearTimeout(timer);
   }, [leftOpen, drawer]);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
+  const [hillshade, setHillshade] = useState(false);
+  const [terrainExaggeration, setTerrainExaggeration] = useState(1);
+  const [pointElevation, setPointElevation] = useState<number | null>(null);
+  const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION), []);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded() || !dem) return;
+    try { applyTerrain(m, dem, mapMode === "3d", hillshade, terrainExaggeration); }
+    catch { setNotice("Terrain is unavailable. Your map and saved work are preserved."); }
+  }, [styleRevision, mapMode, hillshade, terrainExaggeration, dem]);
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -894,6 +905,7 @@ export default function MapWorkspace({
     });
     m.on("error", (event) => {
       const source = (event as { sourceId?: string }).sourceId;
+      if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
       if (
         (basemapRef.current === "fiord" && !source) ||
         ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite")
@@ -915,6 +927,7 @@ export default function MapWorkspace({
           "Basemap source unavailable. Your saved work and device drafts are preserved.",
         );
     });
+    m.on("movestart", () => setPointElevation(null));
     m.on("click", (e: maplibregl.MapMouseEvent) => {
       if (drawing.current) {
         setDrawPoints((points) =>
@@ -1996,6 +2009,7 @@ export default function MapWorkspace({
     if (!bounds.isEmpty()) map.current?.fitBounds(bounds, { padding: 60, maxZoom: 18 });
   }
   function toggleMapMode() {
+    if (mapMode === "2d" && !dem) { setNotice("3D terrain is unavailable: no reviewed elevation source is configured."); return; }
     const next = mapMode === "2d" ? "3d" : "2d";
     map.current?.easeTo({
       pitch: next === "3d" ? 50 : 0,
@@ -2305,6 +2319,10 @@ export default function MapWorkspace({
         >
           {mapMode === "3d" ? "2D edit" : "3D view"}
         </button>
+        {dem && <>
+          <button className="map-mode-toggle" aria-pressed={hillshade} onClick={() => setHillshade(!hillshade)}>Hillshade</button>
+          {mapMode === "3d" && <><label>Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => setTerrainExaggeration(Number(e.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle" onClick={() => { const m = map.current; const c = m?.getCenter(); setPointElevation(m && c ? terrainElevation(m, [c.lng, c.lat], terrainExaggeration) : null); }}>Elevation at centre</button><span role="status">{pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
+        </>}
         <Link
           className="icon-button"
           href="/app/settings"
