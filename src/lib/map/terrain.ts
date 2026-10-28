@@ -5,13 +5,14 @@ export const TERRAIN_SOURCE = "landos-terrain-dem";
 const HILLSHADE = "landos-terrain-hillshade";
 
 /** Disabled until an operator configures a reviewed Terrarium TileJSON and attribution. */
-export function terrainConfig(url: string | undefined, attribution: string | undefined) {
+export function terrainConfig(url: string | undefined, attribution: string | undefined, size?: string) {
   const safeUrl = terrainTileJsonUrl(url);
-  return safeUrl && attribution?.trim() ? { url: safeUrl, attribution: attribution.trim() } : null;
+  if (size && size !== "256" && size !== "512") return null;
+  return safeUrl && attribution?.trim() ? { url: safeUrl, attribution: attribution.trim(), tileSize: size === "256" ? 256 : 512 } : null;
 }
 
-export function applyTerrain(map: MapLibreMap, config: { url: string; attribution: string }, enabled: boolean, hillshade: boolean, exaggeration: number) {
-  if (!map.getSource(TERRAIN_SOURCE)) map.addSource(TERRAIN_SOURCE, { type: "raster-dem", url: config.url, encoding: "terrarium", tileSize: 512, attribution: config.attribution });
+export function applyTerrain(map: MapLibreMap, config: { url: string; attribution: string; tileSize?: number }, enabled: boolean, hillshade: boolean, exaggeration: number) {
+  if (!map.getSource(TERRAIN_SOURCE)) map.addSource(TERRAIN_SOURCE, { type: "raster-dem", url: config.url, encoding: "terrarium", tileSize: config.tileSize ?? 512, attribution: config.attribution });
   if (hillshade && !map.getLayer(HILLSHADE)) map.addLayer({ id: HILLSHADE, type: "hillshade", source: TERRAIN_SOURCE }, map.getStyle().layers.find((layer) => layer.type === "symbol")?.id);
   if (!hillshade && map.getLayer(HILLSHADE)) map.removeLayer(HILLSHADE);
   map.setTerrain(enabled ? { source: TERRAIN_SOURCE, exaggeration } : null);
@@ -22,6 +23,19 @@ export function terrainElevation(map: MapLibreMap, point: [number, number], exag
   if (!map.getTerrain() || !map.terrain || !Number.isFinite(exaggeration) || exaggeration <= 0) return null;
   const value = map.terrain.getDrawnElevationForLngLat(new LngLat(point[0], point[1]));
   return value === undefined || !Number.isFinite(value) ? null : value / exaggeration;
+}
+
+/** MapLibre's current terrain coverage index includes all drawn terrain tiles.
+ * An unavailable sampler must not be mistaken for a zero-elevation tile.
+ * A loaded tile can still contain source-data voids, so this is not proof of
+ * individual pixel validity or survey-quality coverage.
+ */
+export function visibleTerrainCoverage(map: MapLibreMap): "unknown" | "partial" | "loaded" {
+  if (!map.getTerrain() || !map.terrain) return "unknown";
+  const index = map.terrain.getCoverageIndex();
+  if (!index || !index.samplerPerTile.size) return "unknown";
+  for (const sampler of index.samplerPerTile.values()) if (!sampler) return "partial";
+  return "loaded";
 }
 
 export type Position = [number, number];

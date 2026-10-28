@@ -21,7 +21,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
-import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
+import { applyTerrain, terrainConfig, terrainElevation, visibleTerrainCoverage, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
@@ -304,8 +304,8 @@ export default function MapWorkspace({
   const [hillshade, setHillshade] = useState(false);
   const [terrainExaggeration, setTerrainExaggeration] = useState(1);
   const [pointElevation, setPointElevation] = useState<number | null>(null);
-  const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "available" | "unavailable">("unknown");
-  const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION), []);
+  const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "partial" | "loaded">("unknown");
+  const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION, process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE), []);
   useEffect(() => {
     const m = map.current;
     if (!m || !styleRevision || !dem) return;
@@ -315,19 +315,24 @@ export default function MapWorkspace({
   useEffect(() => {
     const m = map.current;
     if (!m || !styleRevision || mapMode !== "3d" || !dem) return;
+    let lastCheck = 0;
     const update = () => {
-      try {
-        const c = m.getCenter();
-        const value = terrainElevation(m, [c.lng, c.lat], terrainExaggeration);
-        setTerrainCoverage(value === null ? "unavailable" : "available");
-      } catch { setTerrainCoverage("unavailable"); }
+      try { setTerrainCoverage(visibleTerrainCoverage(m)); }
+      catch { setTerrainCoverage("unknown"); }
     };
+    const onRender = () => {
+      if (performance.now() - lastCheck < 250) return;
+      lastCheck = performance.now();
+      update();
+    };
+    const onMove = () => setTerrainCoverage("unknown");
     update();
-    m.on("sourcedata", update);
-    m.on("moveend", update);
+    m.on("movestart", onMove);
+    m.on("render", onRender);
     m.on("idle", update);
-    return () => { m.off("sourcedata", update); m.off("moveend", update); m.off("idle", update); };
+    return () => { m.off("movestart", onMove); m.off("render", onRender); m.off("idle", update); };
   }, [styleRevision, mapMode, terrainExaggeration, dem]);
+  const terrainMetadata = `Resolution: ${process.env.NEXT_PUBLIC_TERRAIN_RESOLUTION || "unknown"}; vertical datum: ${process.env.NEXT_PUBLIC_TERRAIN_DATUM || "unknown"}; accuracy: ${process.env.NEXT_PUBLIC_TERRAIN_ACCURACY || "unknown"}.`;
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -2254,7 +2259,7 @@ export default function MapWorkspace({
         </div>
       ) : null}
       {profileDrawing && <div className="map-drawing-bar" role="status">Profile: {profilePoints.length} points <button disabled={profilePoints.length < 2} onClick={() => { const m = map.current; if (m) setProfile(elevationProfile(profilePoints, (p) => terrainElevation(m, p, terrainExaggeration))); profileMode.current = false; setProfileDrawing(false); }}>Finish profile</button><button onClick={() => { profileMode.current = false; setProfileDrawing(false); setProfilePoints([]); setProfile([]); }}>Cancel</button></div>}
-      {profile.length > 0 && <div className="map-drawing-bar" role="region" aria-label="Elevation profile"><strong>Elevation profile · approximate, not survey grade</strong><span> {profileSummary(profile) ? `Rise slope ${profileSummary(profile)!.slopeDegrees.toFixed(1)}° / ${profileSummary(profile)!.slopePercent.toFixed(1)}%; range ${profileSummary(profile)!.min.toFixed(1)}–${profileSummary(profile)!.max.toFixed(1)} m` : "Incomplete: DEM data unavailable at one or more samples."} Source: {dem?.attribution}; resolution and vertical datum depend on the configured source.</span><details><summary>Profile samples (distance m, elevation m)</summary>{profile.map((p, i) => <div key={i}>{p.distance.toFixed(0)} m: {p.elevation === null ? "unavailable" : `${p.elevation.toFixed(1)} m`}</div>)}</details><button onClick={() => { setProfile([]); setProfilePoints([]); }}>Close profile</button></div>}
+      {profile.length > 0 && <div className="map-drawing-bar" role="region" aria-label="Elevation profile"><strong>Elevation profile · approximate, not survey grade</strong><span> {profileSummary(profile) ? `Rise slope ${profileSummary(profile)!.slopeDegrees.toFixed(1)}° / ${profileSummary(profile)!.slopePercent.toFixed(1)}%; range ${profileSummary(profile)!.min.toFixed(1)}–${profileSummary(profile)!.max.toFixed(1)} m` : "Incomplete: DEM data unavailable at one or more samples."} Source: {dem?.attribution}. {terrainMetadata} Avoid comparing heights across different or unknown datums.</span><details><summary>Profile samples (distance m, elevation m)</summary>{profile.map((p, i) => <div key={i}>{p.distance.toFixed(0)} m: {p.elevation === null ? "unavailable" : `${p.elevation.toFixed(1)} m`}</div>)}</details><button onClick={() => { setProfile([]); setProfilePoints([]); }}>Close profile</button></div>}
       {session.error ? (
         <div className="drawing-storage-error" role="alert">
           {session.error}
@@ -2357,7 +2362,7 @@ export default function MapWorkspace({
         </button>
         {dem && <>
           <button className="map-mode-toggle" aria-pressed={hillshade} onClick={() => setHillshade(!hillshade)}>Hillshade</button>
-          {mapMode === "3d" && <><label>Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => setTerrainExaggeration(Number(e.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle" onClick={() => { const m = map.current; const c = m?.getCenter(); setPointElevation(m && c ? terrainElevation(m, [c.lng, c.lat], terrainExaggeration) : null); }}>Elevation at centre</button><span role="status">{pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
+          {mapMode === "3d" && <><label>Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => setTerrainExaggeration(Number(e.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle" onClick={() => { const m = map.current; const c = m?.getCenter(); setPointElevation(m && c ? terrainElevation(m, [c.lng, c.lat], terrainExaggeration) : null); }}>Elevation at centre</button><span role="status" title={terrainMetadata}>{pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
         </>}
         {dem && mapMode === "3d" && <button className="map-mode-toggle" aria-pressed={profileDrawing} onClick={() => { profileMode.current = !profileDrawing; setProfileDrawing(!profileDrawing); if (!profileDrawing) { setProfilePoints([]); setProfile([]); setNotice("Click the map to draw an elevation profile; select Finish profile when ready."); } }}>Elevation profile</button>}
         <Link
@@ -2368,7 +2373,7 @@ export default function MapWorkspace({
           ⚙
         </Link>
       </header>
-      {mapMode === "3d" && terrainCoverage !== "available" && <div className="map-topline" role="status">Terrain data at the map centre is unavailable or still loading. Missing terrain is not shown; surrounding areas may also have gaps.</div>}
+      {mapMode === "3d" && terrainCoverage !== "loaded" && <div className="map-topline" role="status">Some visible terrain is unavailable or still loading. Missing elevation may appear flat; measurements in gaps are unavailable.</div>}
       {!online || queue.some((q) => q.status !== "draft") ? (
         <div className="map-topline" role="status">
           {!online
@@ -2567,8 +2572,9 @@ export default function MapWorkspace({
           ))}
         </nav>
         <div className="inspector-content">
+          {dem && mapMode === "3d" && <details><summary>Terrain source and accuracy</summary><p>{dem.attribution}. {terrainMetadata} Elevations are approximate and not survey grade; do not compare heights across different or unknown datums.</p></details>}
           {!draft && selectionDetails && selectedAreas.length ? <section className="selection-inspector" aria-label="Selected parcels and features" tabIndex={-1}><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated · {Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m²</p><small>Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setSelectionDetails(false); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source}{item.detail.kind === "official-parcel" || item.detail.kind === "parcel" ? ` · ${[item.detail.record.lot, item.detail.record.plan].filter(Boolean).join(" / ") || (item.detail.kind === "official-parcel" ? item.detail.record.sourceId : item.detail.record.source_parcel_id) || "ID unavailable"}` : ""} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul><div className="actions"><button onClick={fitSelectedAreas}>Fit to All</button><button onClick={clearAreas}>Clear All</button></div></section> : null}
-          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Datum and accuracy depend on the configured source.</p>}</section>}
+          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Source: {dem?.attribution}. {terrainMetadata}</p>}</section>}
           {!draft && !selectionDetails && selectedAreas.length > 1 ? <button onClick={() => { setSelection(null); setSelectionDetails(true); }}>Back to Selection</button> : null}
           {draft ? (
             <section className="observation-form">

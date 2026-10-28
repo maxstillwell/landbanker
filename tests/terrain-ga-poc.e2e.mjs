@@ -31,7 +31,7 @@ try {
  await page.getByLabel('Email',{exact:true}).fill(`ga-poc-${Date.now()}@landbanker.test`);await page.getByLabel('Password',{exact:true}).fill('LocalTerrainTest!42');
  await page.getByRole('button',{name:'Create account',exact:true}).click();await page.waitForURL('**/app/map');
  await expect(page.locator('.maplibregl-canvas')).toBeVisible({timeout:30000});
- await page.getByRole('button',{name:'3D view'}).click(); await expect(page.getByText(/Terrain data at the map centre is unavailable or still loading/)).toBeVisible(); await page.getByRole('button',{name:'2D edit'}).click();
+ await page.getByRole('button',{name:'3D view'}).click(); await expect(page.getByText(/Some visible terrain is unavailable or still loading/)).toBeVisible(); await page.getByRole('button',{name:'2D edit'}).click();
  await page.getByRole('button',{name:'Zoom in'}).click(); await page.waitForTimeout(1800);
  await expect.poll(()=>page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('landos:map-camera:v1:')))).toBe(true);
  await page.evaluate(center=>{const k=Object.keys(localStorage).find(k=>k.startsWith('landos:map-camera:v1:'));localStorage.setItem(k,JSON.stringify({center,zoom:12,basemap:'light'}));},area.center);
@@ -39,6 +39,7 @@ try {
  await expect.poll(()=>tileRequests,{timeout:30000}).toBeGreaterThan(0).catch(async e => { console.log('Map state:',await page.evaluate(()=>Object.entries(localStorage).filter(([k])=>k.startsWith('landos:map-camera:v1:')))); throw e; });
  await expect.poll(async()=>{await page.getByRole('button',{name:'Elevation at centre'}).click();return page.getByText(/\d+\.\d m \(approx\.\)/).count()},{timeout:30000,intervals:[2000]}).toBeGreaterThan(0);
  console.log('GA SRTM static tile requests:',tileRequests,'centre elevation:',await page.getByText(/\d+\.\d m \(approx\.\)/).innerText());
+ await expect(page.getByText(/Some visible terrain is unavailable or still loading/)).toBeVisible();
  await page.getByRole('button',{name:'Hillshade'}).click(); await expect(page.getByRole('button',{name:'Hillshade'})).toHaveAttribute('aria-pressed','true');
  if(process.env.TERRAIN_SCREENSHOT) await page.screenshot({path:process.env.TERRAIN_SCREENSHOT,timeout:45000,animations:'disabled'});
 } finally {await browser.close();}

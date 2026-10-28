@@ -118,3 +118,7 @@ A fixture browser run exposed a source-installation failure while unrelated sour
 ## GA SRTM bounded terrain proof
 
 Five separately hosted proof tiles generated from Geoscience Australia's CC BY 4.0 SRTM 1-second DEM are included in `public/terrain-poc*`; the application does not enable them by default. The reproducible WCS conversion, EGM96 datum, attribution, coverage and release blockers are recorded in `TERRAIN_GA_POC.md`. Desktop tests loaded and sampled all five test centres against locally served proof data; the Alpine centre also passed at a 390 px viewport. A real Alpine hillshade screenshot is included. A 3D centre-coverage warning was added and tested. These disconnected tiles do not provide national coverage, source selection, full-viewport gap detection or verified parcel alignment; keep production release blocked.
+
+## Remote terrain investigation
+
+The renderer now checks all rendered terrain tile samplers for missing DEM coverage rather than only the centre, with explicit warnings and conservative unknown handling. The controller accepts configured 256- or 512-pixel Terrarium sources and labels configured resolution/datum/accuracy or unknown. No remote provider is enabled. Direct AWS Terrain Tiles returned a CORS-allowing GET but has unresolved hosting conditions; GA WCS conversion and costs need strict production controls and source-operator permission. Benchmarks, evidence, limitations and illustrative costs are in TERRAIN_REMOTE_EVALUATION.md. Production remains blocked.
