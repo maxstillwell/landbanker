@@ -75,7 +75,7 @@ try {
   await expect(page.locator(".leaflet-container")).toHaveCount(0);
   const box = await page.locator(".map-canvas").boundingBox();
   assert(
-    box.width > 900 && box.height === 944,
+    box.width > 900 && box.y === 0 && box.height === 1000,
     "MapLibre fills the map surface",
   );
   await page.getByRole("button", { name: "Layers", exact: true }).click();

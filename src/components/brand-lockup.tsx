@@ -28,7 +28,7 @@ export function BrandLockup({
   );
 
   return href ? (
-    <Link className={`brand-lockup${compact ? " compact" : ""}`} href={href}>
+    <Link className={`brand-lockup${compact ? " compact" : ""}`} href={href} aria-label="LandOS home">
       {content}
     </Link>
   ) : (

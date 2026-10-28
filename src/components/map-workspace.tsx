@@ -293,7 +293,7 @@ export default function MapWorkspace({
   const [selectedAreas, setSelectedAreas] = useState<SelectedAreaDetail[]>([]);
   const selectedAreasRef = useRef<SelectedAreaDetail[]>([]);
   const [multiSelect, setMultiSelect] = useState(false);
-  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [selectionDetails, setSelectionDetails] = useState(false);
   const [hitChoices, setHitChoices] = useState<{ id: string; kind: string; title: string; layerId?: string; shift: boolean }[]>([]);
   const multiSelectRef = useRef(false);
   const applyArea = useCallback((item: SelectedAreaDetail, shift = false) => {
@@ -308,12 +308,13 @@ export default function MapWorkspace({
     selectedAreasRef.current = next;
     setSelectedAreas(next);
     setSelection(additive && present ? null : item.detail);
+    setSelectionDetails(next.length > 1);
   }, []);
   const areaSummary = useMemo(() => summarizeAreas(selectedAreas), [selectedAreas]);
-  const clearAreas = useCallback(() => { selectedAreasRef.current = []; setSelectedAreas([]); setSelection(null); }, []);
+  const clearAreas = useCallback(() => { selectedAreasRef.current = []; setSelectedAreas([]); setSelection(null); setSelectionDetails(false); }, []);
   const removeArea = useCallback((id: string) => {
     const next = selectedAreasRef.current.filter((item) => item.id !== id);
-    selectedAreasRef.current = next; setSelectedAreas(next); setSelection(null);
+    selectedAreasRef.current = next; setSelectedAreas(next); setSelection(null); setSelectionDetails(next.length > 0);
   }, []);
   const selectSavedParcel = useCallback((record: Parcel, shift = false) => {
     const id = record.state && record.source_parcel_id && isOfficialParcelSource(record.state, record.source) ? officialSelectionId(record.state, record.source_parcel_id) : `workspace:${record.id}`;
@@ -524,6 +525,7 @@ export default function MapWorkspace({
   const session = useDrawingSession(userId, workspaceId);
   const inspectOfficial = useCallback(() => {
     setSelection(null);
+    setSelectionDetails(false);
     setTab("layers");
     setRightOpen(true);
     setSheet("medium");
@@ -1760,7 +1762,7 @@ export default function MapWorkspace({
     feature.id = id;
     feature.properties = { ...feature.properties, name: `${kilometres} km radius` };
     if (await updateLocalLayer({ id, name: `${kilometres} km radius`, geojson: { type: "FeatureCollection", features: [feature] } })) {
-      setTab("layers"); setRightOpen(true); setLeftOpen(false); setPaletteOpen(false); setSheet("expanded");
+      setSelectionDetails(false); setTab("layers"); setRightOpen(true); setLeftOpen(false); setPaletteOpen(false); setSheet("expanded");
       setNotice("Radius saved as a device draft. Save to Workspace to sync.");
     }
   }
@@ -1809,6 +1811,7 @@ export default function MapWorkspace({
     });
     setToolsOpen(false);
     setPaletteOpen(false);
+    setSelectionDetails(false);
     setSelection(null);
     setTab("layers");
     setSheet("collapsed");
@@ -1981,6 +1984,16 @@ export default function MapWorkspace({
       if (Array.isArray(saved?.center) && saved.center.length === 2 && saved.center.every(Number.isFinite) && Math.abs(saved.center[0]) <= 180 && Math.abs(saved.center[1]) <= 85 && [saved.zoom, saved.bearing, saved.pitch].every(Number.isFinite) && saved.zoom >= 0 && saved.zoom <= 20 && saved.pitch >= 0 && saved.pitch <= 70) home = saved;
     } catch { /* Use the workspace default. */ }
     m.jumpTo(home);
+  }
+  function fitSelectedAreas() {
+    const bounds = new maplibregl.LngLatBounds();
+    for (const item of selectedAreas) {
+      if (item.geometry) {
+        const featureBounds = geometryBounds(item.geometry);
+        if (!featureBounds.isEmpty()) { bounds.extend(featureBounds.getSouthWest()); bounds.extend(featureBounds.getNorthEast()); }
+      } else if (item.location) bounds.extend(item.location);
+    }
+    if (!bounds.isEmpty()) map.current?.fitBounds(bounds, { padding: 60, maxZoom: 18 });
   }
   function toggleMapMode() {
     const next = mapMode === "2d" ? "3d" : "2d";
@@ -2174,6 +2187,7 @@ export default function MapWorkspace({
               drawing.current = true;
               drawKind.current = session.found!.kind;
               session.resume();
+              setSelectionDetails(false);
               setTab("layers");
               setSheet("collapsed");
             }}
@@ -2381,20 +2395,18 @@ export default function MapWorkspace({
         </div>
       </FloatingMapWidget>
       ) : null}
-      <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setTab("layers"); setRightOpen(true); setPaletteOpen(false); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
+      <input ref={importInput} type="file" hidden accept=".geojson,.json" onChange={(e) => { if (e.target.files?.[0]) { setSelectionDetails(false); setTab("layers"); setRightOpen(true); setPaletteOpen(false); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
       <div className="parcel-multi-control">
-        <button type="button" aria-pressed={multiSelect} disabled={drawMode || Boolean(draft)} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); setSummaryExpanded(false); if (window.matchMedia("(max-width: 767px)").matches) { if (multiSelectRef.current) setRightOpen(false); else if (selection) setRightOpen(true); } }}>{multiSelect ? "Done selecting" : "Multi-select"}</button>
+        <button type="button" aria-pressed={multiSelect} disabled={drawMode || Boolean(draft)} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); if (window.matchMedia("(max-width: 767px)").matches) { if (multiSelectRef.current) setRightOpen(false); else if (selection || selectedAreas.length) setRightOpen(true); } }}>{multiSelect ? "Done selecting" : "Multi-select"}</button>
         {multiSelect ? <span aria-live="polite">{selectedAreas.length} selected</span> : null}
         {multiSelect && selectedAreas.length ? <button onClick={clearAreas}>Clear</button> : null}
       </div>
       {hitChoices.length ? <section className="parcel-hit-chooser" aria-label="Choose a map feature"><strong>Choose a map feature</strong>{hitChoices.map((choice) => <button key={`${choice.kind}:${choice.id}`} onClick={() => { window.dispatchEvent(new CustomEvent("landos:select-rendered", { detail: { scope: `${userId}:${workspaceId}`, ...choice } })); setHitChoices([]); }}>{choice.title} · {choice.kind === "workspace-feature" ? "Layer feature" : choice.kind}</button>)}<button onClick={() => setHitChoices([])}>Cancel</button></section> : null}
-      {selectedAreas.length ? <section className={`parcel-selection-summary ${multiSelect && !summaryExpanded ? "selection-compact" : ""}`} aria-label="Parcel Selection Summary">
-        <strong>{selectedAreas.length} selected · {formatArea(areaSummary.areaM2)} calculated{areaSummary.incomplete ? " · Incomplete" : ""}{areaSummary.overlaps ? " · Overlap" : ""}</strong>
-        {multiSelect ? <button className="summary-expand" onClick={() => setSummaryExpanded((value) => !value)}>{summaryExpanded ? "Hide details" : "Show details"}</button> : null}
-        {selection && selectedAreas.length > 1 ? <button onClick={() => setSelection(null)}>Back to Selection</button> : null}
-        <small>{Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m² · Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small>
-        <details key={multiSelect ? "multi" : "single"} open={!multiSelect}><summary>Selected items</summary><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); setRightOpen(true); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul></details>
-        <div className="actions"><button onClick={() => { const bounds = new maplibregl.LngLatBounds(); for (const item of selectedAreas) { if (item.geometry) { const b = geometryBounds(item.geometry); if (!b.isEmpty()) { bounds.extend(b.getSouthWest()); bounds.extend(b.getNorthEast()); } } else if (item.location) bounds.extend(item.location); } if (!bounds.isEmpty()) map.current?.fitBounds(bounds, { padding: 60, maxZoom: 18 }); }}>Fit to All</button><button onClick={clearAreas}>Clear All</button></div>
+      {selectedAreas.length ? <section className="parcel-selection-summary" aria-label="Parcel Selection Summary">
+        <button className="selection-chip-open" onClick={async () => { if (!(await pauseObservation())) return; setSelection(null); setSelectionDetails(true); setRightOpen(true); setLeftOpen(false); setSheet("expanded"); window.setTimeout(() => document.querySelector<HTMLElement>(".selection-inspector")?.focus(), 0); }} aria-label="Open selection details">
+          {selectedAreas.length} {selectedAreas.every((item) => item.kind === "parcel") ? (selectedAreas.length === 1 ? "parcel" : "parcels") : (selectedAreas.length === 1 ? "feature" : "items")} selected · {formatArea(areaSummary.areaM2)}{areaSummary.incomplete ? " · Incomplete" : ""}{areaSummary.overlaps ? " · Overlap" : ""}
+        </button>
+        <button className="selection-chip-clear" onClick={clearAreas} aria-label="Clear all selected items">×</button>
       </section> : null}
       <div className="compact-location" aria-label="Location controls">
         <button type="button" aria-label="Back to previous map view" title="Back to previous map view" disabled={historyPosition.index === 0} onClick={() => navigateHistory(-1)}>←</button>
@@ -2458,6 +2470,8 @@ export default function MapWorkspace({
                 ? "Edit shape"
                 : draft
                   ? "New observation"
+                  : selectionDetails && selectedAreas.length
+                    ? "Selection"
                   : selected
                     ? selected.title
                     : selectedParcel || officialParcel
@@ -2486,6 +2500,7 @@ export default function MapWorkspace({
               className={tab === t ? "active" : ""}
               onClick={async () => {
                 if (t !== "observations" && !(await pauseObservation())) return;
+                setSelectionDetails(false);
                 setTab(t);
                 setSelection(null);
                 setSheet("medium");
@@ -2496,7 +2511,8 @@ export default function MapWorkspace({
           ))}
         </nav>
         <div className="inspector-content">
-          {!draft && selectedAreas.length > 1 ? <section className="selection-inspector" aria-label="Selected parcels and features"><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated{areaSummary.incomplete ? " · Incomplete" : ""}{areaSummary.overlaps ? " · Overlapping boundaries" : ""}</p>{selectedAreas.map((item) => <div className="actions" key={item.id}><button onClick={() => { setSelection(item.detail); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{item.label}</button><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></div>)}</section> : null}
+          {!draft && selectionDetails && selectedAreas.length ? <section className="selection-inspector" aria-label="Selected parcels and features" tabIndex={-1}><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated · {Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m²</p><small>Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setSelectionDetails(false); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source}{item.detail.kind === "official-parcel" || item.detail.kind === "parcel" ? ` · ${[item.detail.record.lot, item.detail.record.plan].filter(Boolean).join(" / ") || (item.detail.kind === "official-parcel" ? item.detail.record.sourceId : item.detail.record.source_parcel_id) || "ID unavailable"}` : ""} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul><div className="actions"><button onClick={fitSelectedAreas}>Fit to All</button><button onClick={clearAreas}>Clear All</button></div></section> : null}
+          {!draft && !selectionDetails && selectedAreas.length > 1 ? <button onClick={() => { setSelection(null); setSelectionDetails(true); }}>Back to Selection</button> : null}
           {draft ? (
             <section className="observation-form">
               <fieldset disabled={draft.status === "uploading"}>
@@ -2639,7 +2655,7 @@ export default function MapWorkspace({
               </fieldset>
             </section>
           ) : null}
-          {!draft && selected ? (
+          {!draft && !selectionDetails && selected ? (
             <section>
               <p>{selected.notes || "No field notes."}</p>
               <p className="coordinates">
@@ -2678,7 +2694,7 @@ export default function MapWorkspace({
               </button>
             </section>
           ) : null}
-          {!draft && !selected && tab === "observations" ? (
+          {!draft && !selectionDetails && !selected && tab === "observations" ? (
             <>
               <div className="section-label">
                 FIELD OBSERVATIONS <span>{data.observations.length}</span>
@@ -2717,7 +2733,7 @@ export default function MapWorkspace({
               )}
             </>
           ) : null}
-          {!draft && tab === "parcels" ? (
+          {!draft && !selectionDetails && tab === "parcels" ? (
             <>
               {identifyBusy ? <p role="status">Identifying parcel…</p> : null}
               {identifiedParcels.length > 1 ? (
@@ -2991,7 +3007,7 @@ export default function MapWorkspace({
               )}
             </>
           ) : null}
-          {!draft && tab === "layers" ? (
+          {!draft && !selectionDetails && tab === "layers" ? (
             <>
               <div className="section-label">
                 MY LAYERS <span>{data.layers.length}</span>
@@ -3270,7 +3286,7 @@ export default function MapWorkspace({
               {officialLayers.selected ? <OfficialMapLayers controller={officialLayers} showControls={false} /> : null}
             </>
           ) : null}
-          {hasMore ? (
+          {!selectionDetails && hasMore ? (
             <button
               disabled={loadingMore || loadedPages.current >= 10}
               onClick={() => void loadMore()}
@@ -3278,7 +3294,7 @@ export default function MapWorkspace({
               {loadingMore ? "Loading…" : "Load more Workspace data"}
             </button>
           ) : null}
-          {queue.length ? (
+          {(!selectionDetails || draft) && queue.length ? (
             <section className="queue">
               <div className="section-label">
                 ON THIS DEVICE <span>{queue.length}</span>

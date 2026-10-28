@@ -1,5 +1,9 @@
 # LandOS status
 
+## Workspace UI V2.1 release candidate — 28 October 2026
+
+The map now reaches the top of the viewport, with a floating workspace toolbar; device drafts use the dark theme, and a compact selection chip opens the full list in the Inspector. Local lint, typecheck, 43 unit tests, production build, and browser workflow and responsive checks passed. The original ten-frame performance assertion remains unchanged and failed at 3,248 ms under Chromium SwiftShader; its functional checks passed. This lies within the previously documented software-rendering baseline range, but real-device performance has not been established. See MAP_PERFORMANCE_RELEASE.md. Rollback baseline: `f8eb47c203b4e1a450c466b99031e8592c4d8db8`. Production deployment requires verification against the pushed commit.
+
 ## Parcel multi-selection release candidate — 28 October 2026
 
 Desktop Shift and touch multi-selection, source-aware geodesic area summaries, layer-child selection, pagination, overlap warnings and stable legacy render identities are implemented. Local lint, typecheck, 43 unit tests, build, RLS/concurrency and critical browser regressions passed; production verification remains. The unchanged 2,000 ms performance assertion failed at 2,365 ms under SwiftShader on the preceding candidate. See PARCEL_MULTISELECT_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md. Rollback baseline: `4027b6b798bbf36c78e51e63424ea45d2509e483`.
