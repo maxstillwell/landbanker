@@ -1,0 +1,16 @@
+{
+  "tilejson": "3.0.0",
+  "scheme": "xyz",
+  "tiles": [
+    "https://landbanker.vercel.app/terrain-poc/{z}/{x}/{y}.png"
+  ],
+  "minzoom": 11,
+  "maxzoom": 11,
+  "bounds": [
+    148.18359375,
+    -36.45663601159621,
+    148.359375,
+    -36.3151251474805
+  ],
+  "attribution": "\u00a9 Commonwealth of Australia (Geoscience Australia), SRTM-derived 1 Second DEM v1.0, CC BY 4.0"
+}
