@@ -304,6 +304,7 @@ export default function MapWorkspace({
   const [hillshade, setHillshade] = useState(false);
   const [terrainExaggeration, setTerrainExaggeration] = useState(1);
   const [pointElevation, setPointElevation] = useState<number | null>(null);
+  const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "available" | "unavailable">("unknown");
   const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION), []);
   useEffect(() => {
     const m = map.current;
@@ -311,6 +312,22 @@ export default function MapWorkspace({
     try { applyTerrain(m, dem, mapMode === "3d", hillshade, terrainExaggeration); }
     catch { setNotice("Terrain is unavailable. Your map and saved work are preserved."); }
   }, [styleRevision, mapMode, hillshade, terrainExaggeration, dem]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !styleRevision || mapMode !== "3d" || !dem) return;
+    const update = () => {
+      try {
+        const c = m.getCenter();
+        const value = terrainElevation(m, [c.lng, c.lat], terrainExaggeration);
+        setTerrainCoverage(value === null ? "unavailable" : "available");
+      } catch { setTerrainCoverage("unavailable"); }
+    };
+    update();
+    m.on("sourcedata", update);
+    m.on("moveend", update);
+    m.on("idle", update);
+    return () => { m.off("sourcedata", update); m.off("moveend", update); m.off("idle", update); };
+  }, [styleRevision, mapMode, terrainExaggeration, dem]);
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -2351,6 +2368,7 @@ export default function MapWorkspace({
           ⚙
         </Link>
       </header>
+      {mapMode === "3d" && terrainCoverage !== "available" && <div className="map-topline" role="status">Terrain data at the map centre is unavailable or still loading. Missing terrain is not shown; surrounding areas may also have gaps.</div>}
       {!online || queue.some((q) => q.status !== "draft") ? (
         <div className="map-topline" role="status">
           {!online

@@ -1,0 +1,16 @@
+{
+  "tilejson": "3.0.0",
+  "scheme": "xyz",
+  "tiles": [
+    "https://landbanker.vercel.app/terrain-poc-dunoon/{z}/{x}/{y}.png"
+  ],
+  "minzoom": 11,
+  "maxzoom": 11,
+  "bounds": [
+    153.28125,
+    -28.76765910569124,
+    153.45703125,
+    -28.61345942400442
+  ],
+  "attribution": "\u00a9 Commonwealth of Australia (Geoscience Australia), SRTM-derived 1 Second DEM v1.0, CC BY 4.0"
+}
