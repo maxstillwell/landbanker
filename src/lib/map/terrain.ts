@@ -57,3 +57,32 @@ export function profileSummary(profile: HeightSample[]) {
   const rise = values.at(-1)! - values[0], gradient = rise / distance;
   return { min: Math.min(...values), max: Math.max(...values), average: values.reduce((a, b) => a + b, 0) / values.length, difference: Math.max(...values) - Math.min(...values), slopePercent: gradient * 100, slopeDegrees: Math.atan(gradient) * 180 / Math.PI };
 }
+
+/** Uniform interior grid estimates only: never return a partial parcel as complete. */
+export function parcelElevation(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon, sample: (p: Position) => number | null) {
+  const polygons = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  const points = polygons.flat(2);
+  if (!points.length || points.some((p) => !Number.isFinite(p[0]) || !Number.isFinite(p[1]))) return null;
+  const xs = points.map((p) => p[0]), ys = points.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (minX >= maxX || minY >= maxY || maxX - minX > 2 || maxY - minY > 2) return null;
+  const inRing = (point: Position, ring: number[][]) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > point[1]) !== (yj > point[1]) && point[0] < (xj - xi) * (point[1] - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+  const heights: number[] = [];
+  for (let x = 0; x < 20; x++) for (let y = 0; y < 20; y++) {
+    const p: Position = [minX + (x + 0.5) * (maxX - minX) / 20, minY + (y + 0.5) * (maxY - minY) / 20];
+    if (!polygons.some((polygon) => polygon.length && inRing(p, polygon[0]) && !polygon.slice(1).some((ring) => inRing(p, ring)))) continue;
+    const height = sample(p);
+    if (height === null || !Number.isFinite(height)) return null;
+    heights.push(height);
+  }
+  if (!heights.length) return null;
+  const min = Math.min(...heights), max = Math.max(...heights);
+  return { min, max, difference: max - min, average: heights.reduce((a, b) => a + b, 0) / heights.length, samples: heights.length };
+}

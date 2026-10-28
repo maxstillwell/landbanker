@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { terrainConfig, terrainElevation, applyTerrain, TERRAIN_SOURCE, elevationProfile, profileSummary } from "../src/lib/map/terrain";
+import { terrainConfig, terrainElevation, applyTerrain, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation } from "../src/lib/map/terrain";
 
 test("terrain requires a secure source and attribution", () => {
   assert.equal(terrainConfig("https://example.test/dem.json", ""), null);
@@ -26,3 +26,10 @@ test("terrain setup reinstalls sources and divides exaggerated heights; missing 
  const summary = profileSummary(p); assert.ok(summary); assert.ok(summary.slopePercent > 0); assert.equal(summary.min, 0);
  assert.equal(profileSummary(elevationProfile([[145,-37],[145.001,-37]], () => null)), null);
  });
+
+test("parcel estimates respect holes, zero, and unavailable samples", () => {
+ const geometry = {type:"Polygon" as const, coordinates: [[[0,0],[2,0],[2,2],[0,2],[0,0]], [[0.5,0.5],[1.5,0.5],[1.5,1.5],[0.5,1.5],[0.5,0.5]]]};
+ const result = parcelElevation(geometry, ([x,y]) => x < 0.2 ? 0 : x+y);
+ assert.ok(result); assert.equal(result.min, 0); assert.equal(result.samples, 300);
+ assert.equal(parcelElevation(geometry, ([x]) => x > 1 ? null : 0), null);
+});

@@ -21,7 +21,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
-import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE, elevationProfile, profileSummary, type Position, type HeightSample } from "@/lib/map/terrain";
+import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
@@ -287,13 +287,15 @@ export default function MapWorkspace({
     return () => clearTimeout(timer);
   }, [leftOpen, drawer]);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
+  const [parcelHeights, setParcelHeights] = useState<ReturnType<typeof parcelElevation>>(null);
+  const [parcelHeightMessage, setParcelHeightMessage] = useState("");
   const [profilePoints, setProfilePoints] = useState<Position[]>([]);
   const [profile, setProfile] = useState<HeightSample[]>([]);
   const profileMode = useRef(false);
   const [profileDrawing, setProfileDrawing] = useState(false);
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded()) return;
+    if (!m || !styleRevision) return;
     const id = "landos-elevation-profile";
     if (!m.getSource(id)) m.addSource(id, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
     if (!m.getLayer(id)) m.addLayer({ id, type: "line", source: id, paint: { "line-color": "#ffca62", "line-width": 3 } });
@@ -305,7 +307,7 @@ export default function MapWorkspace({
   const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION), []);
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded() || !dem) return;
+    if (!m || !styleRevision || !dem) return;
     try { applyTerrain(m, dem, mapMode === "3d", hillshade, terrainExaggeration); }
     catch { setNotice("Terrain is unavailable. Your map and saved work are preserved."); }
   }, [styleRevision, mapMode, hillshade, terrainExaggeration, dem]);
@@ -314,6 +316,7 @@ export default function MapWorkspace({
   );
   const [selection, setSelection] = useState<MapSelection>(null);
   const [selectedAreas, setSelectedAreas] = useState<SelectedAreaDetail[]>([]);
+  useEffect(() => { setParcelHeights(null); setParcelHeightMessage(""); }, [selectedAreas]);
   const selectedAreasRef = useRef<SelectedAreaDetail[]>([]);
   const [multiSelect, setMultiSelect] = useState(false);
   const [selectionDetails, setSelectionDetails] = useState(false);
@@ -939,7 +942,7 @@ export default function MapWorkspace({
           "Basemap source unavailable. Your saved work and device drafts are preserved.",
         );
     });
-    m.on("movestart", () => setPointElevation(null));
+    m.on("movestart", () => { setPointElevation(null); setParcelHeights(null); setParcelHeightMessage(""); });
     m.on("click", (e: maplibregl.MapMouseEvent) => {
       if (profileMode.current) { setProfilePoints((points) => points.length >= 100 ? points : [...points, [e.lngLat.lng, e.lngLat.lat]]); return; }
       if (drawing.current) {
@@ -2547,6 +2550,7 @@ export default function MapWorkspace({
         </nav>
         <div className="inspector-content">
           {!draft && selectionDetails && selectedAreas.length ? <section className="selection-inspector" aria-label="Selected parcels and features" tabIndex={-1}><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated · {Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m²</p><small>Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setSelectionDetails(false); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source}{item.detail.kind === "official-parcel" || item.detail.kind === "parcel" ? ` · ${[item.detail.record.lot, item.detail.record.plan].filter(Boolean).join(" / ") || (item.detail.kind === "official-parcel" ? item.detail.record.sourceId : item.detail.record.source_parcel_id) || "ID unavailable"}` : ""} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul><div className="actions"><button onClick={fitSelectedAreas}>Fit to All</button><button onClick={clearAreas}>Clear All</button></div></section> : null}
+          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Datum and accuracy depend on the configured source.</p>}</section>}
           {!draft && !selectionDetails && selectedAreas.length > 1 ? <button onClick={() => { setSelection(null); setSelectionDetails(true); }}>Back to Selection</button> : null}
           {draft ? (
             <section className="observation-form">
