@@ -21,7 +21,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
-import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE } from "@/lib/map/terrain";
+import { applyTerrain, terrainConfig, terrainElevation, TERRAIN_SOURCE, elevationProfile, profileSummary, type Position, type HeightSample } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
@@ -287,6 +287,18 @@ export default function MapWorkspace({
     return () => clearTimeout(timer);
   }, [leftOpen, drawer]);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
+  const [profilePoints, setProfilePoints] = useState<Position[]>([]);
+  const [profile, setProfile] = useState<HeightSample[]>([]);
+  const profileMode = useRef(false);
+  const [profileDrawing, setProfileDrawing] = useState(false);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
+    const id = "landos-elevation-profile";
+    if (!m.getSource(id)) m.addSource(id, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    if (!m.getLayer(id)) m.addLayer({ id, type: "line", source: id, paint: { "line-color": "#ffca62", "line-width": 3 } });
+    (m.getSource(id) as maplibregl.GeoJSONSource).setData({ type: "FeatureCollection", features: profilePoints.length > 1 ? [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: profilePoints } }] : [] });
+  }, [profilePoints, styleRevision]);
   const [hillshade, setHillshade] = useState(false);
   const [terrainExaggeration, setTerrainExaggeration] = useState(1);
   const [pointElevation, setPointElevation] = useState<number | null>(null);
@@ -929,6 +941,7 @@ export default function MapWorkspace({
     });
     m.on("movestart", () => setPointElevation(null));
     m.on("click", (e: maplibregl.MapMouseEvent) => {
+      if (profileMode.current) { setProfilePoints((points) => points.length >= 100 ? points : [...points, [e.lngLat.lng, e.lngLat.lat]]); return; }
       if (drawing.current) {
         setDrawPoints((points) =>
           drawKind.current === "Point"
@@ -2010,6 +2023,7 @@ export default function MapWorkspace({
   }
   function toggleMapMode() {
     if (mapMode === "2d" && !dem) { setNotice("3D terrain is unavailable: no reviewed elevation source is configured."); return; }
+    if (mapMode === "3d") { profileMode.current = false; setProfileDrawing(false); setProfile([]); }
     const next = mapMode === "2d" ? "3d" : "2d";
     map.current?.easeTo({
       pitch: next === "3d" ? 50 : 0,
@@ -2219,6 +2233,8 @@ export default function MapWorkspace({
           </button>
         </div>
       ) : null}
+      {profileDrawing && <div className="map-drawing-bar" role="status">Profile: {profilePoints.length} points <button disabled={profilePoints.length < 2} onClick={() => { const m = map.current; if (m) setProfile(elevationProfile(profilePoints, (p) => terrainElevation(m, p, terrainExaggeration))); profileMode.current = false; setProfileDrawing(false); }}>Finish profile</button><button onClick={() => { profileMode.current = false; setProfileDrawing(false); setProfilePoints([]); setProfile([]); }}>Cancel</button></div>}
+      {profile.length > 0 && <div className="map-drawing-bar" role="region" aria-label="Elevation profile"><strong>Elevation profile · approximate, not survey grade</strong><span> {profileSummary(profile) ? `Rise slope ${profileSummary(profile)!.slopeDegrees.toFixed(1)}° / ${profileSummary(profile)!.slopePercent.toFixed(1)}%; range ${profileSummary(profile)!.min.toFixed(1)}–${profileSummary(profile)!.max.toFixed(1)} m` : "Incomplete: DEM data unavailable at one or more samples."} Source: {dem?.attribution}; resolution and vertical datum depend on the configured source.</span><details><summary>Profile samples (distance m, elevation m)</summary>{profile.map((p, i) => <div key={i}>{p.distance.toFixed(0)} m: {p.elevation === null ? "unavailable" : `${p.elevation.toFixed(1)} m`}</div>)}</details><button onClick={() => { setProfile([]); setProfilePoints([]); }}>Close profile</button></div>}
       {session.error ? (
         <div className="drawing-storage-error" role="alert">
           {session.error}
@@ -2323,6 +2339,7 @@ export default function MapWorkspace({
           <button className="map-mode-toggle" aria-pressed={hillshade} onClick={() => setHillshade(!hillshade)}>Hillshade</button>
           {mapMode === "3d" && <><label>Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => setTerrainExaggeration(Number(e.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle" onClick={() => { const m = map.current; const c = m?.getCenter(); setPointElevation(m && c ? terrainElevation(m, [c.lng, c.lat], terrainExaggeration) : null); }}>Elevation at centre</button><span role="status">{pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
         </>}
+        {dem && mapMode === "3d" && <button className="map-mode-toggle" aria-pressed={profileDrawing} onClick={() => { profileMode.current = !profileDrawing; setProfileDrawing(!profileDrawing); if (!profileDrawing) { setProfilePoints([]); setProfile([]); setNotice("Click the map to draw an elevation profile; select Finish profile when ready."); } }}>Elevation profile</button>}
         <Link
           className="icon-button"
           href="/app/settings"
