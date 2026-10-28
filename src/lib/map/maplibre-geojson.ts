@@ -1,5 +1,6 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { MapData, Observation, Parcel, SpatialLayer } from "@/lib/types";
+import { validGeometry } from "@/lib/map/drawing";
 
 type WorkspaceFeature = {
   id: string;
@@ -19,10 +20,13 @@ function feature<T extends Geometry>(
 export function parcelsGeoJson(parcels: Parcel[]): FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: parcels.flatMap((parcel) =>
-      parcel.geometry
+    features: parcels.flatMap<Feature>((parcel) => {
+      const value = parcel.geometry as Geometry | Feature | null;
+      const candidate = value?.type === "Feature" ? value.geometry : value;
+      const boundary = validGeometry(candidate) && (candidate.type === "Polygon" || candidate.type === "MultiPolygon") ? candidate : null;
+      return boundary
         ? [
-            feature(parcel.id, parcel.geometry as Geometry, {
+            feature(parcel.id, boundary, {
               kind: "parcel",
               title: parcel.title,
               address: parcel.address || "",
@@ -30,6 +34,8 @@ export function parcelsGeoJson(parcels: Parcel[]): FeatureCollection {
               source: parcel.source || "",
             }),
           ]
+        : validGeometry(candidate) && candidate.type === "Point"
+          ? [feature(parcel.id, candidate, { kind: "parcel", title: parcel.title })]
         : parcel.latitude != null && parcel.longitude != null
           ? [
               feature(
@@ -41,8 +47,8 @@ export function parcelsGeoJson(parcels: Parcel[]): FeatureCollection {
                 { kind: "parcel", title: parcel.title },
               ),
             ]
-          : [],
-    ),
+          : [];
+    }),
   };
 }
 

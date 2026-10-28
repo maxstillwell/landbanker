@@ -1,5 +1,9 @@
 # LandOS status
 
+## Observation interaction fix — 28 October 2026
+
+Observation drafts now pause safely on section/tool changes or Inspector close, and can be resumed from the device queue. GeoJSON Feature-wrapped parcel boundaries render as polygons; location-only records remain labelled without fabricated boundaries. Lint, typecheck, 41 unit tests, production build and final observation/map-quality regressions passed. The formerly blocked map-pages functional checks now run before the unchanged 2,000 ms performance assertion; functional checks passed and the software-rendering assertion failed at 2,512 ms. See OBSERVATION_INTERACTION_FIX.md. Rollback baseline: `48d004aea6f1bdd2c99a2b55989b917f67f9ae8e`. Real Balliang records were not accessed or verified.
+
 ## Map interaction and geometry release — 28 October 2026
 
 The V2 layout is retained while drawing selection/editing, boundary candidate review and confirmed association, and camera Back/Forward/Home are implemented. Local lint, typecheck, 41 unit tests, production build, critical browser regressions and synthetic-property association with live VIC candidates passed. The unchanged ten-frame performance assertion failed under SwiftShader; a limited same-environment comparison found overlapping baseline/candidate ranges and similar request counts. See MAP_INTERACTION_PROGRESS.md and MAP_PERFORMANCE_RELEASE.md for exact evidence, rollback `0b3f003445f111d71a2865272ef837e93934b3a3`, and limitations. The actual Balliang property and physical devices were not tested. Verify production deployment against the pushed commit before claiming release.

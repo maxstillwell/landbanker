@@ -1,4 +1,5 @@
 import { chromium } from "./map-browser.mjs";
+import { expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 // Real local Supabase Auth/PostgREST/Storage. Never point this test at production.
@@ -89,6 +90,19 @@ try {
   await page
     .getByLabel("Field notes")
     .fill("Gate access confirmed. Desktop should see this exact record.");
+  // Switching sections must preserve the draft and release map clicks.
+  const originalLocation = await page.locator(".observation-form .coordinates").textContent();
+  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await expect(page.getByLabel("Search saved properties")).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveCount(0);
+  await page.mouse.click(150, 220);
+  await page.locator(".queue-row").filter({ hasText: title }).getByRole("button", { name: "Resume" }).click();
+  await expect(page.getByLabel("Field notes")).toHaveValue("Gate access confirmed. Desktop should see this exact record.");
+  assert.equal(await page.locator(".observation-form .coordinates").textContent(), originalLocation);
+  await page.getByRole("button", { name: "Save draft and close" }).click();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveCount(0);
+  await page.locator(".queue-row").filter({ hasText: title }).getByRole("button", { name: "Resume" }).click();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue(title);
   // Valid one-pixel PNG, uploaded to actual local private Storage.
   await page.locator("input[type=file][multiple]").setInputFiles({
     name: "field.png",

@@ -109,6 +109,10 @@ test("MapLibre workspace overlays preserve boundaries and fall back to saved loc
     type: "Point",
     coordinates: [143, -37],
   });
+  const wrapped = parcelsGeoJson([{ id: "wrapped", workspace_id: w, title: "Wrapped boundary", latitude: -37, longitude: 143, geometry: { type: "Feature", properties: {}, geometry: parcels.features[0].geometry } as GeoJsonObject, notes: null, status: "saved", metadata: {} }]);
+  assert.equal(wrapped.features[0].geometry.type, "Polygon");
+  const pointOnly = parcelsGeoJson([{ id: "point", workspace_id: w, title: "Location", latitude: null, longitude: null, geometry: { type: "Point", coordinates: [143, -37] } as GeoJsonObject, notes: null, status: "saved", metadata: {} }]);
+  assert.equal(pointOnly.features[0].geometry.type, "Point");
   const observations = observationsGeoJson([
     {
       id: "field-note",

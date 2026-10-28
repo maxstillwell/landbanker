@@ -262,17 +262,6 @@ export default function MapWorkspace({
       /* Device preference is optional. */
     }
   }, [layoutKey, layoutScope, leftOpen, rightOpen, inspectorSize, drawer]);
-  useEffect(() => {
-    const openSearch = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setDrawer("search");
-        setLeftOpen(true);
-      }
-    };
-    window.addEventListener("keydown", openSearch);
-    return () => window.removeEventListener("keydown", openSearch);
-  }, []);
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
@@ -286,6 +275,11 @@ export default function MapWorkspace({
       : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
   const selectedBoundary = useMemo(() => propertyGeometry(selectedParcel?.geometry), [selectedParcel?.geometry]);
+  const selectedLocation = useMemo(() => {
+    const value = selectedParcel?.geometry as import("geojson").Geometry | import("geojson").Feature | null | undefined;
+    const candidate = value?.type === "Feature" ? value.geometry : value;
+    return candidate?.type === "Point" && isLocationGeometry(candidate) ? candidate : null;
+  }, [selectedParcel?.geometry]);
   const selectedDrawing = selection?.kind === "drawing"
     ? selection.record.geojson?.features.find((f) => String(f.id) === selection.featureId)
     : null;
@@ -672,6 +666,36 @@ export default function MapWorkspace({
     },
     [reloadQueue],
   );
+  const pauseObservation = useCallback(async () => {
+    const current = draftRef.current;
+    if (!current) return true;
+    if (current.status === "uploading" || photoProcessing.current || (current.photoSelection && nativePhotoActive.current)) {
+      setNotice("Wait for the current photo or upload operation to finish.");
+      return false;
+    }
+    try {
+      await storeDraft(current);
+      if (draftRef.current?.id === current.id) {
+        draftRef.current = null;
+        setDraft(null);
+      }
+      await reloadQueue();
+      return true;
+    } catch {
+      setNotice("Unable to preserve this draft on device. Keep this screen open until it is saved.");
+      return false;
+    }
+  }, [reloadQueue]);
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        void pauseObservation().then((saved) => { if (saved) { setDrawer("search"); setLeftOpen(true); } });
+      }
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
+  }, [pauseObservation]);
   const updateLocation = useCallback((location: LocationFix) => {
     setLocating(false);
     if (locationTimer.current) clearTimeout(locationTimer.current);
@@ -1102,6 +1126,7 @@ export default function MapWorkspace({
           ]
         : selectedParcel?.latitude != null && selectedParcel.longitude != null
           ? [geometryFeature({ type: "Point", coordinates: [selectedParcel.longitude, selectedParcel.latitude] })]
+          : selectedLocation ? [geometryFeature(selectedLocation)]
           : selected ? [geometryFeature({ type: "Point", coordinates: [selected.longitude, selected.latitude] })] : [],
     );
     setSceneData(
@@ -1124,6 +1149,7 @@ export default function MapWorkspace({
     localLayer,
     draft,
     selectedBoundary,
+    selectedLocation,
     selectedParcel?.id,
     selectedParcel?.latitude,
     selectedParcel?.longitude,
@@ -2130,7 +2156,7 @@ export default function MapWorkspace({
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
         <WorkspaceSelector name={workspaceName} />
-        <button className="global-map-search" onClick={() => { setDrawer("search"); setLeftOpen(true); }} aria-label="Search address or parcel">⌕ <span>Search address or parcel</span><kbd>⌘ K</kbd></button>
+        <button className="global-map-search" onClick={async () => { if (!(await pauseObservation())) return; setDrawer("search"); setLeftOpen(true); }} aria-label="Search address or parcel">⌕ <span>Search address or parcel</span><kbd>⌘ K</kbd></button>
         <BasemapSelector
           value={basemap}
           onChange={(next) => {
@@ -2190,12 +2216,13 @@ export default function MapWorkspace({
         {([
           ["search", "Search", "⌕"], ["layers", "Layers", "▱"],
           ["spatial", "Spatial Tools", "✎"], ["observations", "Observations", "◎"], ["views", "Saved Views", "▤"],
-        ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={() => {
+        ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={async () => {
+          if (!(await pauseObservation())) return;
           if (id === "spatial") { if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
           setPaletteOpen(false); if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
         }}><span aria-hidden="true">{icon}</span>{id === "spatial" ? <small aria-hidden="true">Draw</small> : null}</button>)}
         {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋</button> : null}
-        <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={() => { setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
+        <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
       </nav>
       <aside className={`workspace-library ${leftOpen ? "open" : ""}`} aria-label="Workspace library" aria-hidden={!leftOpen} inert={!leftOpen}>
         <div className="workspace-library-head"><strong>{drawer === "search" ? "SEARCH" : drawer === "layers" ? "LAYERS" : drawer === "observations" ? "OBSERVATIONS" : "SAVED VIEWS"}</strong><button type="button" onClick={() => setLeftOpen(false)} aria-label="Close library">×</button></div>
@@ -2206,7 +2233,7 @@ export default function MapWorkspace({
           <div hidden={drawer !== "views"}>{savedViewsPanel}</div>
         </div>
       </aside>
-      <button className="workspace-right-toggle" onClick={() => setRightOpen((v) => !v)} aria-label={rightOpen ? "Collapse Inspector" : "Open Inspector"} aria-expanded={rightOpen}>{rightOpen ? "›" : "‹"}</button>
+      <button className="workspace-right-toggle" onClick={async () => { if (rightOpen && !(await pauseObservation())) return; setRightOpen((v) => !v); }} aria-label={rightOpen ? "Collapse Inspector" : "Open Inspector"} aria-expanded={rightOpen}>{rightOpen ? "›" : "‹"}</button>
       {paletteOpen ? (
       <FloatingMapWidget
         title="Spatial Tools"
@@ -2317,9 +2344,7 @@ export default function MapWorkspace({
           </div>
           <button type="button" className="inspector-size" onClick={() => setInspectorSize((v) => v === "compact" ? "expanded" : "compact")} aria-label={inspectorSize === "compact" ? "Expand inspector" : "Compact inspector"}>{inspectorSize === "compact" ? "⤢" : "⤡"}</button>
           <button
-            onClick={() => {
-              setRightOpen(false);
-            }}
+            onClick={() => { void pauseObservation().then((saved) => { if (saved) setRightOpen(false); }); }}
             disabled={
               processingPhotos > 0 ||
               Boolean(draft?.photoSelection && nativePhotoActive.current)
@@ -2334,7 +2359,8 @@ export default function MapWorkspace({
             <button
               key={t}
               className={tab === t ? "active" : ""}
-              onClick={() => {
+              onClick={async () => {
+                if (t !== "observations" && !(await pauseObservation())) return;
                 setTab(t);
                 setSelection(null);
                 setSheet("medium");
@@ -2480,6 +2506,9 @@ export default function MapWorkspace({
                   {draft.status === "uploading"
                     ? "Uploading…"
                     : "Save to Workspace ↗"}
+                </button>
+                <button type="button" className="full" disabled={processingPhotos > 0 || Boolean(draft.photoSelection && nativePhotoActive.current)} onClick={() => void pauseObservation().then((saved) => { if (saved) setNotice("Observation draft saved on this device. Resume it from On this device."); })}>
+                  Save draft and close
                 </button>
               </fieldset>
             </section>
@@ -3138,6 +3167,8 @@ export default function MapWorkspace({
                       onClick={() => {
                         draftRef.current = d;
                         setDraft(d);
+                        setTab("observations");
+                        setRightOpen(true);
                         setSheet("expanded");
                       }}
                     >

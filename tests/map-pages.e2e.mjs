@@ -330,7 +330,6 @@ try {
         requestAnimationFrame(frame);
       }),
   );
-  assert(frameMs < 2000, `ten frames remain responsive during scale pan (measured ${frameMs.toFixed(0)} ms)`);
   await page.getByRole("button", { name: "layers", exact: true }).click();
   await page
     .locator(".saved-layer summary")
@@ -448,9 +447,12 @@ try {
     `Viewport baseline: three first-page requests; bytes ${viewportSizes.join(", ")}; ms ${viewportTimings.join(", ")}; 502 normalized features, exact crossing/hole and point-outside polygon intersection, cursor/delta, anonymous/nonmember isolation passed.`,
   );
   console.log(
-    "PASS: 500 parcels/polygons and 500 observations and 10 persisted active official layers; stable 100-row pages, deduplication, bounded payloads, point bbox filter, validation and browser load-more. Local page response ms: " +
+    "PASS functional checks: 500 parcels/polygons and 500 observations and 10 persisted active official layers; stable 100-row pages, deduplication, bounded payloads, point bbox filter, validation and browser load-more. Local page response ms: " +
       timings.join(", "),
   );
+  // Keep the original performance threshold, but only report it after the
+  // independent functional checks have run.
+  assert(frameMs < 2000, `ten frames remain responsive during scale pan (measured ${frameMs.toFixed(0)} ms)`);
 } finally {
   await browser.close();
 }
