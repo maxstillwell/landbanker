@@ -32,7 +32,7 @@ try{
   await page.getByRole('button',{name:'Hillshade',exact:true}).click();await expect(page.getByRole('button',{name:'Hillshade',exact:true})).toHaveAttribute('aria-pressed','true');
   result.push({name,centre:[lon,lat],elevation,requests:requests.length-before});console.log('LIVE AWS',JSON.stringify(result.at(-1)));
  }
- if(!mobile){
+ if(!mobile && !process.env.TERRAIN_SAMPLE_ONLY){
   const base=await sample();for(const size of ['1.5','2','1']){await page.getByLabel('Terrain exaggeration').selectOption(size);await page.waitForTimeout(1200);const reading=await sample();assert.ok(Math.abs(reading-base)<2,`unexaggerated elevation changed: ${base} vs ${reading}`)}
   const beforePan=new Set(requests);await page.mouse.move(400,300);await page.mouse.down();await page.mouse.move(750,300,{steps:8});await page.mouse.up();await expect.poll(()=>requests.some(r=>!beforePan.has(r)),{timeout:45000}).toBe(true);console.log('PAN additional distinct AWS tiles',new Set(requests.filter(r=>!beforePan.has(r))).size);
   const beforeZoom=requests.length;await page.getByRole('button',{name:'Zoom in'}).click();await page.waitForTimeout(3000);console.log('ZOOM additional AWS requests',requests.length-beforeZoom);
