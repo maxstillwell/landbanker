@@ -960,6 +960,10 @@ export default function MapWorkspace({
     m.on("error", (event) => {
       const source = (event as { sourceId?: string }).sourceId;
       if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
+      if (basemapRef.current === "nsw-aerial" && source === "nsw-aerial") {
+        basemapRef.current = "satellite"; setBasemap("satellite"); m.setStyle(basemapStyle("satellite"));
+        setNotice("NSW aerial imagery is unavailable. Showing regional satellite imagery."); return;
+      }
       if (
         (basemapRef.current === "fiord" && !source) ||
         ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite")

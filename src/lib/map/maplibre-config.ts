@@ -1,10 +1,15 @@
 export type MapLibreBasemap =
-  "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid";
+  "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid" | "nsw-aerial";
 
 export const MAPLIBRE_BASEMAPS: Record<
   MapLibreBasemap,
   { label: string; styleUrl: string; description: string }
 > = {
+  "nsw-aerial": {
+    label: "NSW Aerial",
+    styleUrl: "https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer",
+    description: "NSW Spatial Services imagery mosaic; date and resolution vary by location, with DEA regional fallback",
+  },
   hybrid: {
     label: "Regional Hybrid",
     styleUrl: "https://ows.dea.ga.gov.au/",
@@ -66,10 +71,11 @@ export function terrainTileJsonUrl(value: string | undefined) {
 
 export function basemapAttribution(value: MapLibreBasemap) {
   return (
-    (value === "satellite" || value === "hybrid"
+    (value === "satellite" || value === "hybrid" || value === "nsw-aerial"
       ? "© Commonwealth of Australia (Geoscience Australia) · DEA GeoMAD 2025 · CC BY 4.0"
       : OPENFREEMAP_ATTRIBUTION) +
     (value === "hybrid" ? ` · ${OPENFREEMAP_ATTRIBUTION}` : "") +
+    (value === "nsw-aerial" ? " · © State of NSW (Spatial Services), CC BY 3.0 · © AAM 2011, 2012 · © Jacobs Group Ausimage 2002, 2006, 2009, 2014 · Landsat 2014" : "") +
     (["light", "dark", "fiord"].includes(value)
       ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
       : "")
@@ -80,12 +86,13 @@ export function basemapAttribution(value: MapLibreBasemap) {
 export function basemapStyle(
   value: MapLibreBasemap,
 ): string | import("maplibre-gl").StyleSpecification {
-  if (value !== "satellite" && value !== "hybrid") return MAPLIBRE_BASEMAPS[value].styleUrl;
+  if (value !== "satellite" && value !== "hybrid" && value !== "nsw-aerial") return MAPLIBRE_BASEMAPS[value].styleUrl;
   return {
     version: 8,
     ...(value === "hybrid" ? { glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf" } : {}),
     sources: {
       ...(value === "hybrid" ? { openmaptiles: { type: "vector" as const, url: "https://tiles.openfreemap.org/planet", attribution: OPENFREEMAP_ATTRIBUTION } } : {}),
+      ...(value === "nsw-aerial" ? { "nsw-aerial": { type: "raster" as const, tiles: ["https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}"], tileSize: 256, minzoom: 5, maxzoom: 20, bounds: [138.4, -38.7, 159.3, -26.4] as [number,number,number,number], attribution: "© State of NSW (Spatial Services), CC BY 3.0 · © AAM 2011, 2012 · © Jacobs Group Ausimage 2002, 2006, 2009, 2014 · Landsat 2014" } } : {}),
       "dea-satellite": {
         type: "raster",
         tiles: [
@@ -104,6 +111,7 @@ export function basemapStyle(
         paint: { "background-color": "#26383a" },
       },
       { id: "dea-satellite-raster", type: "raster", source: "dea-satellite" },
+      ...(value === "nsw-aerial" ? [{ id: "nsw-aerial-raster", type: "raster" as const, source: "nsw-aerial" }] : []),
       ...(value === "hybrid" ? [
         { id: "hybrid-road-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "transportation_name", minzoom: 12, layout: { "symbol-placement": "line" as const, "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 11 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
         { id: "hybrid-place-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "place", layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },

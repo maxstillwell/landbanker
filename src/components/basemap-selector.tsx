@@ -4,6 +4,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 const swatches: Record<MapLibreBasemap, string> = {
+  "nsw-aerial": "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   hybrid: "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   satellite:
     "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
@@ -17,7 +18,7 @@ const swatches: Record<MapLibreBasemap, string> = {
   terrain:
     "linear-gradient(135deg,#cee2b5 40%,#ead6ae 40%,#ead6ae 45%,#cee2b5 45%,#cee2b5 70%,#8fcae0 70%)",
 };
-const basemapOrder: MapLibreBasemap[] = ["streets", "light", "dark", "terrain", "fiord", "satellite", "hybrid"];
+const basemapOrder: MapLibreBasemap[] = ["streets", "light", "dark", "terrain", "fiord", "satellite", "hybrid", "nsw-aerial"];
 export function BasemapSelector({
   value,
   onChange,
@@ -66,7 +67,7 @@ export function BasemapSelector({
           DEM terrain. Regional Satellite and Regional Hybrid use the 2025 DEA
           annual Landsat composite at approximately 30 m resolution, with
           Australian coverage. They are not parcel-scale aerial imagery. Hybrid
-          adds OpenStreetMap place and road labels.
+          adds OpenStreetMap place and road labels. NSW Aerial uses the NSW imagery mosaic, with date and resolution varying by location; the regional satellite image remains underneath.
         </small>
       </div>
     </details>
