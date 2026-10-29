@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { terrainConfig, terrainElevation, visibleTerrainCoverage, applyTerrain, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation } from "../src/lib/map/terrain";
+import { terrainConfig, terrainElevation, waitForTerrainSample, visibleTerrainCoverage, applyTerrain, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation } from "../src/lib/map/terrain";
 
 test("terrain requires a secure source and attribution", () => {
   assert.equal(terrainConfig("https://example.test/dem.json", ""), null);
@@ -62,3 +62,14 @@ test('provider switching replaces only owned DEM resources and does not reload a
  assert.equal(events.filter(e=>e==='remove-source').length,1);
  assert.ok(sources.has('parcels'));assert.ok(layers.has('parcel-boundaries'));
 });
+
+ test("sampling waits for rendered DEM, preserves zero and cleans up on timeout, error and cancellation", async () => {
+ let value: number | undefined; const listeners = new Map<string, Set<(arg?: never)=>void>>();
+ const m = {getTerrain:()=>({}), terrain:{getDrawnElevationForLngLat:()=>value}, on:(event:string,fn:(arg?: never)=>void)=>{if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event)!.add(fn)}, off:(event:string,fn:(arg?: never)=>void)=>listeners.get(event)?.delete(fn), triggerRepaint:()=>{}} as unknown as MapLibreMap;
+ const emit=(event:string,arg?:never)=>listeners.get(event)?.forEach(fn=>fn(arg));
+ const controller=new AbortController(); const pending=waitForTerrainSample(m,[0,0],2,controller.signal,100);
+ value=0;emit('render'); assert.deepEqual(await pending,{status:'available',value:0}); assert.equal([...listeners.values()].reduce((n,x)=>n+x.size,0),0);
+ value=undefined; assert.deepEqual(await waitForTerrainSample(m,[0,0],1,new AbortController().signal,10),{status:'timed-out'});
+ const err=waitForTerrainSample(m,[0,0],1,new AbortController().signal,100); emit('error',{sourceId:'landos-terrain-dem'} as never);assert.deepEqual(await err,{status:'provider-error'});
+ const aborted=new AbortController(); const cancel=waitForTerrainSample(m,[0,0],1,aborted.signal,100);aborted.abort();assert.deepEqual(await cancel,{status:'cancelled'});assert.equal([...listeners.values()].reduce((n,x)=>n+x.size,0),0);
+ });

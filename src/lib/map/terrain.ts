@@ -109,3 +109,32 @@ export function parcelElevation(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon
   const min = Math.min(...heights), max = Math.max(...heights);
   return { min, max, difference: max - min, average: heights.reduce((a, b) => a + b, 0) / heights.length, samples: heights.length };
 }
+
+export type TerrainSampleResult = { status: 'available'; value: number } | { status: 'unavailable' | 'timed-out' | 'provider-error' | 'cancelled' };
+/** Wait for rendered DEM coverage, with explicit termination and listener cleanup. */
+export function waitForTerrainSample(map: MapLibreMap, point: Position, exaggeration: number, signal: AbortSignal, timeoutMs = 8000): Promise<TerrainSampleResult> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (result: TerrainSampleResult) => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      map.off('render', check); map.off('sourcedata', check); map.off('idle', check); map.off('error', onError);
+      signal.removeEventListener('abort', onAbort);
+      resolve(result);
+    };
+    const onAbort = () => finish({status:'cancelled'});
+    const onError = (event: import('maplibre-gl').ErrorEvent) => { if ((event as unknown as {sourceId?: string}).sourceId === TERRAIN_SOURCE) finish({status:'provider-error'}); };
+    const check = () => {
+      try { const value = terrainElevation(map, point, exaggeration); if (value !== null) finish({status:'available',value}); }
+      catch { finish({status:'unavailable'}); }
+    };
+    const timer = setTimeout(() => finish({status:'timed-out'}), timeoutMs);
+    if (signal.aborted) return finish({status:'cancelled'});
+    if (!map.getTerrain()) return finish({status:'unavailable'});
+    map.on('render', check); map.on('sourcedata', check); map.on('idle', check); map.on('error', onError);
+    signal.addEventListener('abort', onAbort, {once:true});
+    check();
+    if (!done) map.triggerRepaint();
+  });
+}
