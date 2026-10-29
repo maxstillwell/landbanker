@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     let observations = client
       .from("field_observations")
       .select(
-        "id,workspace_id,latitude,longitude,title,notes,observed_at,linked_parcel_id,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)",
+        "id,workspace_id,latitude,longitude,title,notes,observed_at,linked_parcel_id,linked_research_area_id,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)",
       )
       .eq("workspace_id", workspaceId)
       .order("observed_at", { ascending: false })

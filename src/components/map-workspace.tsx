@@ -95,6 +95,7 @@ import {
 } from "@/lib/map/drawing";
 import type { Feature } from "geojson";
 import { isOfficialParcelSource, officialSelectionId, summarizeAreas, updateSelectedAreas, type SelectedArea } from "@/lib/map/selection-summary";
+import { ResearchRelations } from "./research-relations";
 import { safeStoredFeatureIds, stableFeatureId } from "@/lib/map/feature-identity";
 import {
   formatArea,
@@ -719,6 +720,7 @@ export default function MapWorkspace({
   const drawing = useRef(false);
   const drawKind = useRef<DrawingKind>("Polygon");
   const [toolsOpen, setToolsOpen] = useState(false);
+  const canManage = ["owner", "admin"].includes(role);
   const canWrite = ["owner", "admin", "editor"].includes(role);
   const reload = useCallback(async () => {
     const generation = ++requestGeneration.current;
@@ -2733,7 +2735,7 @@ export default function MapWorkspace({
           ))}
         </nav>
         <div className="inspector-content">
-          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><button onClick={() => exportFeatures(selectedResearch.features, "geojson", selectedResearch.layer.name)}>Export GeoJSON</button><button onClick={() => exportFeatures(selectedResearch.features, "kml", selectedResearch.layer.name)}>Export KML</button><button onClick={clearAreas}>Clear selection</button></div></section>}
+          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3><ResearchRelations key={selectedResearch.layer.id} id={selectedResearch.layer.id} properties={data.parcels} editable={canWrite} /><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><button onClick={() => exportFeatures(selectedResearch.features, "geojson", selectedResearch.layer.name)}>Export GeoJSON</button><button onClick={() => exportFeatures(selectedResearch.features, "kml", selectedResearch.layer.name)}>Export KML</button><button onClick={clearAreas}>Clear selection</button></div></section>}
           {spatialImport && <section className="local-layer" aria-label="Spatial import preview"><h3>Import spatial data</h3><p>Preview only · not saved yet</p><p>{spatialImport.geojson.features.length} features · {[...new Set(spatialImport.geojson.features.map((feature) => feature.geometry.type))].join(", ")}</p><p>Estimated bounds: {geometryBounds(spatialImport.geojson).getSouthWest().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getSouthWest().lng.toFixed(4)} to {geometryBounds(spatialImport.geojson).getNorthEast().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getNorthEast().lng.toFixed(4)}</p><p>Approximate area: {formatArea(spatialImport.geojson.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}. Imported geometry is user supplied, not official cadastre.</p><details><summary>Feature names</summary>{spatialImport.geojson.features.slice(0, 50).map((feature, index) => <p key={String(feature.id)}>{String(feature.properties?.name || `Feature ${index + 1}`)}</p>)}</details><label>Destination<select aria-label="Import destination" value={spatialImport.destination} onChange={(event) => setSpatialImport({ ...spatialImport, destination: event.target.value as typeof spatialImport.destination })}><option value="property">Property</option><option value="research">Research Area</option><option value="layer">Custom Layer</option></select></label>{spatialImport.destination === "research" && <label>Research Area type<select value={spatialImport.subtype || "general"} onChange={(event) => setSpatialImport({ ...spatialImport, subtype: event.target.value as NonNullable<SpatialImportDraft["subtype"]> })}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label>}<label>Name<input aria-label="Import name" value={spatialImport.name} maxLength={160} onChange={(event) => setSpatialImport({ ...spatialImport, name: event.target.value })} /></label><label>Description<textarea value={spatialImport.description} maxLength={2000} onChange={(event) => setSpatialImport({ ...spatialImport, description: event.target.value })} /></label><div className="actions"><button disabled={importSaving || !spatialImport.name.trim()} onClick={() => void saveSpatialImport()}>{importSaving ? "Saving…" : "Save import"}</button><button disabled={importSaving} onClick={() => { if (window.confirm("Discard this unsaved import preview?")) setSpatialImport(null); }}>Discard preview</button></div></section>}
           {isMobile && !draft && officialParcel && !selectionDetails && <section className="mobile-parcel-summary" aria-label="Selected parcel summary">
             <strong>{[officialParcel.lot, officialParcel.plan].filter(Boolean).join(" / ") || officialParcel.sourceId}</strong>
@@ -2752,6 +2754,8 @@ export default function MapWorkspace({
             <section className="observation-form">
               <fieldset disabled={draft.status === "uploading"}>
                 <p className="draft-label">LOCAL DRAFT · ONLY ON THIS DEVICE</p>
+                <label>Linked Property<select value={draft.input.linked_parcel_id || ""} onChange={(event) => void saveDraft({ ...draft, input: { ...draft.input, linked_parcel_id: event.target.value || null } })}><option value="">Independent location</option>{data.parcels.map((property) => <option key={property.id} value={property.id}>{property.title}</option>)}</select></label>
+                <label>Linked Research Area<select value={draft.input.linked_research_area_id || ""} onChange={(event) => void saveDraft({ ...draft, input: { ...draft.input, linked_research_area_id: event.target.value || null } })}><option value="">None</option>{data.layers.filter((layer) => layer.layer_kind === "research_area").map((layer) => <option key={layer.id} value={layer.id}>{layer.name}</option>)}</select></label>
                 {draft.input.linked_parcel_id ? (
                   <p>
                     Linked property:{" "}
@@ -2896,6 +2900,10 @@ export default function MapWorkspace({
               <p className="coordinates">
                 {new Date(selected.observed_at).toLocaleString()}
               </p>
+              {canWrite && <div className="actions"><button onClick={() => {
+                const next: FieldDraft = { id: selected.id, userId, workspaceId, input: { id: selected.id, workspace_id: workspaceId, title: selected.title, notes: selected.notes || "", latitude: selected.latitude, longitude: selected.longitude, observed_at: selected.observed_at, linked_parcel_id: selected.linked_parcel_id, linked_research_area_id: selected.linked_research_area_id, metadata: selected.metadata }, photos: [], status: "draft", updatedAt: Date.now() };
+                draftRef.current = next; setDraft(next); void saveDraft(next);
+              }}>Edit observation</button>{canManage && <button onClick={async () => { if (!window.confirm("Delete this saved observation and its photo records?")) return; try { await apiRequest("/api/observations", { id: selected.id }, "DELETE"); setSelected(null); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete observation</button>}</div>}
               <div className="photo-grid">
                 {selected.field_observation_media.map((m) => (
                   <figure key={m.id}>

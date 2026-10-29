@@ -9,6 +9,7 @@ export const observationInput = z.object({
   observed_at: z.iso.datetime(),
   observed_at_source: z.enum(["device", "user", "photo", "legacy"]).optional(),
   linked_parcel_id: z.uuid().nullable().optional(),
+  linked_research_area_id: z.uuid().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),
 });
 export const mediaInput = z.object({

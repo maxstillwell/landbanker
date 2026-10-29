@@ -1,5 +1,11 @@
 # LandOS status
 
+## Product upgrade release — 29 October 2026
+
+Continues local commit `5ad809b` (backed up on GitHub as tag `backup-upgrade-5ad809b`). Adds atomic, content-deduplicated spatial imports, explicit workspace-scoped Research Area / Property associations, Research Area observation links, and saved observation edit/delete controls. Original creators and metadata survive observation edits. Additive `release_data_safety` migration applied to independent LandOS project; existing rows and local IndexedDB stores preserved. Existing local drafts recover through Resume / Save to Workspace; no bulk legacy conversion or automatic historical cleanup is performed.
+
+Validation: lint, typecheck, 53 unit tests and optimized build passed. Real disposable Supabase browser sessions verified multipart KML Property and Research Area import/retrieval, repeat-import deduplication, local observation draft reload/recovery, photo upload/signing/retrieval, observation cross-session edit/delete, bidirectional relationships and unrelated-workspace denial. Transaction tests verify relationship RLS/FKs and rollback of duplicate spatial imports. Real VIC parcel selection, Esri imagery and protected Alpine DEM elevation sampling passed locally; mobile sheet gestures and five desktop navigation destinations passed. Provider approval gates are retained; advanced profile/statistics remain unavailable for unverified datum. Production authentication is not asserted from local tests. Release deployment status must be verified against the pushed commit.
+
 ## Workspace UI V2.1 release candidate — 28 October 2026
 
 The map now reaches the top of the viewport, with a floating workspace toolbar; device drafts use the dark theme, and a compact selection chip opens the full list in the Inspector. Local lint, typecheck, 43 unit tests, production build, and browser workflow and responsive checks passed. The original ten-frame performance assertion remains unchanged and failed at 3,248 ms under Chromium SwiftShader; its functional checks passed. This lies within the previously documented software-rendering baseline range, but real-device performance has not been established. See MAP_PERFORMANCE_RELEASE.md. Rollback baseline: `f8eb47c203b4e1a450c466b99031e8592c4d8db8`. Production deployment requires verification against the pushed commit.

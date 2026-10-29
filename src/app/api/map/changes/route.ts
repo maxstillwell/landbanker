@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
           kind === "parcels"
             ? "id,workspace_id,title,address,state,geometry,latitude,longitude,hectares,status,source,source_parcel_id,saved_at,notes,source_updated_at,source_url:metadata->>source_url,lot:metadata->>lot,plan:metadata->>plan,retrieved_at:metadata->>retrieved_at"
             : kind === "observations"
-              ? "id,workspace_id,title,notes,latitude,longitude,observed_at,linked_parcel_id,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)"
+              ? "id,workspace_id,title,notes,latitude,longitude,observed_at,linked_parcel_id,linked_research_area_id,field_observation_media(id,workspace_id,observation_id,storage_path,mime_type,original_filename,captured_at,upload_status)"
               : "id,workspace_id,layer_id,feature";
         const result = await c.client
           .from(table)

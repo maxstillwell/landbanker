@@ -142,7 +142,7 @@ export function LayerLibrary({
         {open ? "Close library" : "Add Layer"}
       </button>
       {open ? (
-        <div className="catalog-search">
+        <div className="catalog-search"><p>Official layers · Featured sources are marked below. Future premium datasets are not yet available.</p>
           <label>
             Search layers
             <input
@@ -161,7 +161,7 @@ export function LayerLibrary({
             <div className="catalog-result" key={layer.id}>
               <strong>{layer.name}</strong>
               <small>
-                {layer.state} · {layer.category} · {layer.provider}
+                {layer.state} · {layer.category} · {layer.provider} · {layer.premium_tier === "free" ? "Official / free" : "Premium"}{["vic-zoning", "nsw-zoning"].includes(layer.id) ? " · Featured" : ""}
               </small>
               <p>{layer.description}</p>
               <button

@@ -62,8 +62,9 @@ export async function GET(
               p_updated_since: null,
             })
           : Promise.resolve({ data: [], error: null });
-      const [l, v, s] = await Promise.all([linked, views, spatial]);
-      for (const r of [l, v, s]) if (r.error) throw r.error;
+      const related = c.client.from("research_property_links").select("research_area_id,spatial_layers!research_property_links_workspace_id_research_area_id_fkey(name)").eq("workspace_id", c.workspaceId).eq("property_id", id).range(page * 100, page * 100 + 100);
+      const [l, v, s, r] = await Promise.all([linked, views, spatial, related]);
+      for (const result of [l, v, s, r]) if (result.error) throw result.error;
       const candidates = (s.data || []) as {
         id: string;
         layer_id: string;
@@ -85,6 +86,7 @@ export async function GET(
         name: String(row.feature.properties?.name || "Shape").slice(0, 200),
       });
       return json({
+        research_areas: (r.data || []).slice(0, 100).map((row) => ({ id: row.research_area_id, name: (row.spatial_layers as unknown as { name: string })?.name || "Research Area" })),
         linked: (l.data || []).slice(0, 100).map(projection),
         intersects: intersects.map(projection),
         views: (v.data || []).slice(0, 100),

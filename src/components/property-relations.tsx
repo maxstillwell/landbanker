@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { Observation } from "@/lib/types";
 type Result = {
   observations?: Observation[];
+  research_areas?: { id: string; name: string }[];
   linked?: { id: string; name: string }[];
   intersects?: { id: string; name: string }[];
   views?: { id: string; name: string }[];
@@ -109,6 +110,7 @@ export function PropertyRelations({
           {!data.intersects?.length ? (
             <p>No intersecting features returned on this page.</p>
           ) : null}
+          <h3>Related Research Areas</h3>{data.research_areas?.map((area) => <p key={area.id}>{area.name}</p>)}{!data.research_areas?.length && <p>No explicitly associated Research Areas.</p>}
           <h3>Saved Views containing this Property</h3>
           {data.views?.map((v) => (
             <p key={v.id}>{v.name}</p>

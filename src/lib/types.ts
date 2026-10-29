@@ -31,6 +31,7 @@ export type Observation = {
   notes: string | null;
   observed_at: string;
   linked_parcel_id?: string | null;
+  linked_research_area_id?: string | null;
   metadata: Record<string, unknown>;
   field_observation_media: Media[];
 };
