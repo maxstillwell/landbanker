@@ -1,22 +1,11 @@
 export type MapLibreBasemap =
-  "esri-satellite" | "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid";
+  "esri-satellite" | "streets" | "light" | "dark" | "terrain" | "fiord";
 
 export const MAPLIBRE_BASEMAPS: Record<
   MapLibreBasemap,
   { label: string; styleUrl: string; description: string }
 > = {
-  "esri-satellite": { label: "Esri Satellite", styleUrl: "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer", description: "Esri World Imagery" },
-  hybrid: {
-    label: "Hybrid",
-    styleUrl: "https://ows.dea.ga.gov.au/",
-    description: "Sentinel-2 bare-earth composite with OpenStreetMap place and road labels",
-  },
-  satellite: {
-    label: "Sentinel-2",
-    styleUrl: "https://ows.dea.ga.gov.au/",
-    description:
-      "Sentinel-2 bare-earth composite through September 2020; Australian coverage",
-  },
+  "esri-satellite": { label: "Satellite", styleUrl: "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer", description: "Esri World Imagery" },
   streets: {
     label: "Streets",
     styleUrl: "https://tiles.openfreemap.org/styles/liberty",
@@ -77,55 +66,14 @@ export function terrainTileJsonUrl(value: string | undefined) {
 }
 
 export function basemapAttribution(value: MapLibreBasemap) {
-  return (
-    (value === "esri-satellite" ? ESRI_IMAGERY_ATTRIBUTION : value === "satellite" || value === "hybrid"
-      ? "© Commonwealth of Australia (Geoscience Australia) · Copernicus Sentinel data · CC BY 4.0"
-      : OPENFREEMAP_ATTRIBUTION) +
-    (value === "hybrid" ? ` · ${OPENFREEMAP_ATTRIBUTION}` : "") +
-    (["light", "dark", "fiord"].includes(value)
-      ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
-      : "")
-  );
+  return value === "esri-satellite" ? ESRI_IMAGERY_ATTRIBUTION : OPENFREEMAP_ATTRIBUTION;
 }
 
-/** DEA Sentinel-2 bare-earth true-colour composite, based on observations through September 2020. */
+/** Esri Location Platform World Imagery, using a browser-restricted API key. */
 export function basemapStyle(
   value: MapLibreBasemap,
   esriApiKey?: string,
 ): string | import("maplibre-gl").StyleSpecification {
-  if (value === "esri-satellite") {
-    if (!esriApiKey) return basemapStyle("satellite");
-    return { version: 8, sources: { "esri-imagery": { type: "raster", tiles: [`https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(esriApiKey)}`], tileSize: 256, maxzoom: 19, attribution: ESRI_IMAGERY_ATTRIBUTION } }, layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }] };
-  }
-  if (value !== "satellite" && value !== "hybrid") return MAPLIBRE_BASEMAPS[value].styleUrl;
-  return {
-    version: 8,
-    ...(value === "hybrid" ? { glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf" } : {}),
-    sources: {
-      ...(value === "hybrid" ? { openmaptiles: { type: "vector" as const, url: "https://tiles.openfreemap.org/planet", attribution: OPENFREEMAP_ATTRIBUTION } } : {}),
-      "dea-satellite": {
-        type: "raster",
-        tiles: [
-          "https://ows.dea.ga.gov.au/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=s2_barest_earth&STYLE=simple_rgb&FORMAT=image%2Fpng&TILEMATRIXSET=WholeWorld_WebMercator&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
-        ],
-        tileSize: 256,
-        bounds: [112.32, -43.94, 154.71, -8.82],
-        maxzoom: 14,
-        attribution:
-          "© Commonwealth of Australia (Geoscience Australia) · Copernicus Sentinel data · CC BY 4.0",
-      },
-    },
-    layers: [
-      {
-        id: "dea-satellite-background",
-        type: "background",
-        paint: { "background-color": "#26383a" },
-      },
-      { id: "dea-satellite-raster", type: "raster", source: "dea-satellite" },
-      ...(value === "hybrid" ? [
-        { id: "hybrid-road-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "transportation_name", minzoom: 12, layout: { "symbol-placement": "line" as const, "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 11 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
-        { id: "hybrid-place-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "place", layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
-      ] : []),
-    ],
-  };
+  if (value !== "esri-satellite" || !esriApiKey) return MAPLIBRE_BASEMAPS.streets.styleUrl;
+  return { version: 8, sources: { "esri-imagery": { type: "raster", tiles: [`https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(esriApiKey)}`], tileSize: 256, maxzoom: 19, attribution: ESRI_IMAGERY_ATTRIBUTION } }, layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }] };
 }

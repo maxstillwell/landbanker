@@ -75,22 +75,17 @@ test("only valid location points are eligible for preserving an original geometr
 });
 test("MapLibre preview configuration is scoped and only accepts secure terrain configuration", () => {
   assert.equal(isMapLibreBasemap("dark"), true);
-  assert.equal(isMapLibreBasemap("satellite"), true);
-  const satellite = basemapStyle("satellite");
+  assert.equal(isMapLibreBasemap("esri-satellite"), true);
+  assert.equal(isMapLibreBasemap("satellite"), false);
+  const satellite = basemapStyle("esri-satellite", "fixture-key");
   assert.equal(typeof satellite, "object");
   if (typeof satellite !== "string") {
-    const source = satellite.sources["dea-satellite"];
+    const source = satellite.sources["esri-imagery"];
     assert(source && source.type === "raster");
-    assert.match(source.tiles?.[0] || "", /ga_ls8cls9c_gm_cyear_3/);
-    assert.match(source.attribution || "", /Geoscience Australia/);
+    assert.match(source.tiles?.[0] || "", /World_Imagery\/MapServer\/tile\/\{z\}\/\{y\}\/\{x\}/);
+    assert.match(source.attribution || "", /Esri/);
   }
-  const hybrid = basemapStyle("hybrid");
-  assert.notEqual(typeof hybrid, "string");
-  if (typeof hybrid !== "string") {
-    assert.equal(hybrid.sources.openmaptiles?.type, "vector");
-    assert(hybrid.layers.some((layer) => layer.id === "hybrid-place-labels"));
-    assert(hybrid.layers.some((layer) => layer.id === "hybrid-road-labels"));
-  }
+  assert.equal(typeof basemapStyle("esri-satellite"), "string");
   assert.notEqual(
     scopedMapLibrePreference("owner-a", w),
     scopedMapLibrePreference("owner-b", w),

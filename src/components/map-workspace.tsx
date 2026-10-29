@@ -21,7 +21,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
-import { terrainProvider, availableTerrainProviders } from "@/lib/map/terrain-provider";
+import { terrainProvider, availableTerrainProviders, TILEZEN_TEST_PROVIDER } from "@/lib/map/terrain-provider";
 import { applyTerrain, terrainElevation, waitForTerrainSample, visibleTerrainCoverage, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -124,6 +124,7 @@ type Props = {
   workspaceName: string;
   role: string;
   esriApiKey?: string;
+  adminTerrainPreview?: boolean;
 };
 type CameraView = { center: [number, number]; zoom: number; bearing: number; pitch: number };
 type SelectedAreaDetail = SelectedArea & { detail: NonNullable<MapSelection> };
@@ -140,6 +141,7 @@ export default function MapWorkspace({
   workspaceName,
   role,
   esriApiKey,
+  adminTerrainPreview,
 }: Props) {
   const mapNode = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -310,7 +312,7 @@ export default function MapWorkspace({
   const [pointStatus, setPointStatus] = useState<"unavailable" | "loading" | "available" | "timed-out" | "provider-error">("unavailable");
   const sampleAbort = useRef<AbortController | null>(null);
   const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "partial" | "loaded">("unknown");
-  const providers = useMemo(() => availableTerrainProviders(terrainProvider({
+  const providers = useMemo(() => [...availableTerrainProviders(terrainProvider({
     id: "configured", label: "Configured DEM", url: process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL || undefined,
     tiles: process.env.NEXT_PUBLIC_TERRAIN_XYZ_URL ? [process.env.NEXT_PUBLIC_TERRAIN_XYZ_URL] : undefined,
     tileSize: process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE === "256" ? 256 : (!process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE || process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE === "512") ? 512 : undefined,
@@ -320,7 +322,7 @@ export default function MapWorkspace({
     resolution: process.env.NEXT_PUBLIC_TERRAIN_RESOLUTION,
     datum: process.env.NEXT_PUBLIC_TERRAIN_DATUM,
     accuracy: process.env.NEXT_PUBLIC_TERRAIN_ACCURACY,
-  }), process.env.NEXT_PUBLIC_TERRAIN_TEST_TILEZEN === "1", process.env.NODE_ENV === "development"), []);
+  }), process.env.NEXT_PUBLIC_TERRAIN_TEST_TILEZEN === "1", process.env.NODE_ENV === "development"), ...(adminTerrainPreview ? [{ ...TILEZEN_TEST_PROVIDER, id: "admin-preview", label: "Administrator terrain preview", tiles: ["/api/terrain-preview/{z}/{x}/{y}"] }] : [])], [adminTerrainPreview]);
   const [providerId, setProviderId] = useState(process.env.NEXT_PUBLIC_TERRAIN_PROVIDER || "configured");
   const dem = providers.find((provider) => provider.id === providerId) || providers[0] || null;
   useEffect(() => () => { sampleAbort.current?.abort(); }, [providerId, styleRevision, mapMode, terrainExaggeration]);
@@ -924,8 +926,8 @@ export default function MapWorkspace({
           pitch: 0,
         });
       }
-      if (isMapLibreBasemap(stored?.basemap) || stored?.basemap === "nsw-aerial") {
-        const restoredBasemap: MapLibreBasemap = stored.basemap === "esri-satellite" ? (esriApiKey ? "esri-satellite" : "satellite") : stored.basemap === "satellite" || stored.basemap === "hybrid" ? stored.basemap : "streets";
+      if (isMapLibreBasemap(stored?.basemap) || ["satellite", "hybrid", "nsw-aerial"].includes(stored?.basemap)) {
+        const restoredBasemap: MapLibreBasemap = ["esri-satellite", "satellite", "hybrid"].includes(stored.basemap) && esriApiKey ? "esri-satellite" : "streets";
         setBasemap(restoredBasemap);
         basemapRef.current = restoredBasemap;
         m.setStyle(basemapStyle(restoredBasemap, esriApiKey));
@@ -963,19 +965,10 @@ export default function MapWorkspace({
       const source = (event as { sourceId?: string }).sourceId;
       if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
       if (basemapRef.current === "esri-satellite" && source === "esri-imagery") {
-        basemapRef.current = "satellite";
-        setBasemap("satellite");
-        m.setStyle(basemapStyle("satellite"));
-        setNotice("Esri imagery is unavailable. Showing Sentinel-2; your workspace selection and drafts are preserved.");
-        return;
-      }
-      if ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite") {
         basemapRef.current = "streets";
         setBasemap("streets");
         m.setStyle(MAPLIBRE_BASEMAPS.streets.styleUrl);
-        setNotice(
-          "The selected basemap is unavailable. Showing Streets; your workspace selection and drafts are preserved.",
-        );
+        setNotice("Satellite imagery is unavailable. Showing Streets; your workspace selection and drafts are preserved.");
         return;
       }
       if (source?.startsWith("landos-reference-"))

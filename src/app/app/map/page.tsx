@@ -1,4 +1,5 @@
 import MapLibreWorkspace from "@/components/maplibre-loader";
+import { canPreviewTerrain } from "@/lib/terrain-preview";
 import { workspaceContext } from "@/lib/workspace";
 export default async function Page() {
   const c = await workspaceContext();
@@ -13,6 +14,7 @@ export default async function Page() {
       workspaceId={c.workspaceId}
       workspaceName={name}
       role={c.role}
+      adminTerrainPreview={canPreviewTerrain(c.user.id, c.role)}
       esriApiKey={process.env.ESRI_IMAGERY_ENABLED === "true" ? process.env.ARCGIS_API_KEY : undefined}
     />
   );

@@ -52,10 +52,8 @@ try {
  const observationsToggle=page.getByLabel("Observations",{exact:true});
  await observationsToggle.uncheck(); await expect(observationsToggle).not.toBeChecked();
  await observationsToggle.check(); await page.getByRole("button",{name:"Layers",exact:true}).click();
- await page.getByLabel("Basemap previews").click(); await page.getByLabel("Basemap",{exact:true}).selectOption("satellite");
- await expect(page.locator(".maplibre-attribution")).toContainText("Geoscience Australia"); await page.screenshot({path:"artifacts/workspace-satellite.png"});
- await page.getByLabel("Basemap",{exact:true}).selectOption("hybrid");
- await expect(page.locator(".maplibre-attribution")).toContainText("OpenFreeMap");
+ await page.getByLabel("Basemap previews").click();
+ await expect(page.getByLabel("Basemap",{exact:true}).locator("option")).toHaveCount(2);
  await page.getByLabel("Basemap previews").click();
  await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(400);
  const touchHandle=page.getByRole("button",{name:"Move Spatial Tools"}); const touchStart=await touchHandle.boundingBox();
