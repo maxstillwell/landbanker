@@ -900,6 +900,7 @@ export default function MapWorkspace({
     map.current = m;
     m.addControl(new maplibregl.NavigationControl(), "bottom-left");
     m.on("style.load", () => {
+      sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null);
       installScene(m);
       setStyleRevision((n) => n + 1);
     });
