@@ -1,0 +1,212 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "home-1440.png"
+    },
+    {
+      "path": "/features",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "features-1440.png"
+    },
+    {
+      "path": "/layers",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "layers-1440.png"
+    },
+    {
+      "path": "/solutions",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "solutions-1440.png"
+    },
+    {
+      "path": "/pricing",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "pricing-1440.png"
+    },
+    {
+      "path": "/about",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "about-1440.png"
+    },
+    {
+      "path": "/contact",
+      "width": 1440,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "contact-1440.png"
+    },
+    {
+      "path": "/",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "home-768.png"
+    },
+    {
+      "path": "/features",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "features-768.png"
+    },
+    {
+      "path": "/layers",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "layers-768.png"
+    },
+    {
+      "path": "/solutions",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "solutions-768.png"
+    },
+    {
+      "path": "/pricing",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "pricing-768.png"
+    },
+    {
+      "path": "/about",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "about-768.png"
+    },
+    {
+      "path": "/contact",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "contact-768.png"
+    },
+    {
+      "path": "/",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "home-390.png"
+    },
+    {
+      "path": "/features",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "features-390.png"
+    },
+    {
+      "path": "/layers",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "layers-390.png"
+    },
+    {
+      "path": "/solutions",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "solutions-390.png"
+    },
+    {
+      "path": "/pricing",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "pricing-390.png"
+    },
+    {
+      "path": "/about",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "about-390.png"
+    },
+    {
+      "path": "/contact",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "screenshot": "contact-390.png"
+    },
+    {
+      "path": "/",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/features",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/layers",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/solutions",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/pricing",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/about",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    },
+    {
+      "path": "/contact",
+      "width": 320,
+      "status": 200,
+      "overflow": false,
+      "screenshot": null
+    }
+  ],
+  "interactions": [
+    "Mobile navigation: keyboard, Escape, focus, link navigation and active state",
+    "Keyboard skip link",
+    "Illustrative pillar selector and image load",
+    "Pricing FAQ opens with correct disclosure",
+    "Enquiry download with explicit no-send state",
+    "Real signup and login CTA navigation; forms render without marketing styles",
+    "Sitemap limited to seven marketing URLs, crawler exclusions, social image"
+  ],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "unexpectedProductRequests": []
+}

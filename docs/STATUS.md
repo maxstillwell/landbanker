@@ -1,5 +1,11 @@
 # LandOS status
 
+## Public marketing website V1 — isolated review branch, 30 October 2026 AEDT
+
+`website/public-site`, based on main `cbb7638`, implements `/`, `/features`, `/layers`, `/solutions`, `/pricing`, `/about` and `/contact` with scoped marketing components/CSS, existing Terrain Layers branding, illustrative spatial artwork, metadata, sitemap and robots policy. Current capabilities are grounded in repository evidence; professional curated layers and commercial plans remain future. No app/GIS/Auth/proxy/share/Supabase/global CSS/shared brand/dependency change. No merge or production deployment is authorised in this workstream.
+
+Local lint, typecheck, 53 existing tests and production build pass. Browser checks cover all seven pages at 1440/768/390/320 px, keyboard/mobile navigation, enquiry download, real signup/login links and SEO. Full authenticated production/GIS/database E2E and physical-device acceptance remain unverified. No public contact address was supplied; the explicit download-only enquiry fallback is used until an owner-approved `LANDOS_CONTACT_EMAIL` is configured. See [marketing/V1.md](marketing/V1.md) for source claims, screenshots, evidence and exact integration steps. Next: review the focused PR, update against latest main, then separately authorise integration; do not infer deployment from this entry.
+
 ## Map-first workflow refinement — 29 October 2026
 
 Continues deployed `32e3ea4` on main, using MaxQI spatial tools as a read-only interaction reference. Drawing completion/recovery now stays in compact map cards with explicit save destinations, rectangle drag, point undo/clear/cancel and discard undo. Contextual inspectors no longer duplicate global tabs or lists. Property/Research actions use menus; observation drafts are collapsed; Map Display independently controls user objects. The catalogue has Added to Map / Catalogue views; legacy classification is explicit and preserves original features/type. Scoped detail reads now include existing import metadata. Basemap selection uses one picker with a restrained dark palette, and terrain uses inline status. No provider, schema, authentication, RLS or paid-infrastructure changes.

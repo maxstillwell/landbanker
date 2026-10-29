@@ -1,39 +1,17 @@
-import Link from "next/link";
-import { BrandLockup } from "@/components/brand-lockup";
+import { HomePage } from "@/components/marketing/home";
+import { MarketingSite } from "@/components/marketing/site";
+import { pageMetadata } from "@/components/marketing/seo";
+
+export const metadata = pageMetadata(
+  "/",
+  "Australian Land Intelligence Platform",
+  "Your land. Your research. Your intelligence. Bring Properties, Research Areas and spatial Layers together in your own LandOS workspace.",
+);
+
 export default function Home() {
   return (
-    <main className="landing">
-      <BrandLockup tagline="MAP · ANALYSE · MANAGE LAND" />
-      <div className="landing-copy">
-        <p className="eyebrow">GROUND YOUR NEXT MOVE</p>
-        <h1>
-          The operating system
-          <br />
-          for land.
-        </h1>
-        <p>
-          Your parcels, observations and spatial layers.
-          <br />
-          One private workspace, on every screen.
-        </p>
-        <div className="actions">
-          <Link className="primary" href="/signup">
-            Create your workspace ↗
-          </Link>
-          <Link className="secondary" href="/login">
-            Sign in
-          </Link>
-        </div>
-        <small>
-          Independent land intelligence · Built for iPhone, iPad and web
-        </small>
-      </div>
-      <div className="contours" aria-hidden="true">
-        <div />
-        <div />
-        <div />
-        <div />
-      </div>
-    </main>
+    <MarketingSite>
+      <HomePage />
+    </MarketingSite>
   );
 }

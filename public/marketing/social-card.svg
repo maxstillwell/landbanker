@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#11191E"/>
+  <path d="M64 126h1072M64 562h1072" stroke="#759CA7" stroke-opacity=".28"/>
+  <image href="/brand/landos-mark.svg" x="64" y="46" width="52" height="52"/>
+  <text x="130" y="82" fill="#F4F3E9" font-family="Manrope, system-ui, sans-serif" font-size="30" font-weight="700">Land<tspan fill="#638A54">OS</tspan></text>
+  <text x="1136" y="77" text-anchor="end" fill="#ADBDB3" font-family="DM Sans, system-ui, sans-serif" font-size="13" letter-spacing="2">AUSTRALIAN LAND INTELLIGENCE</text>
+  <g font-family="Manrope, system-ui, sans-serif" font-size="70" letter-spacing="-3" fill="#F4F3E9"><text x="64" y="237">Your land.</text><text x="64" y="325">Your research.</text><text x="64" y="413" fill="#B7C4B9">Your intelligence.</text></g>
+  <g fill="#759CA7" fill-opacity=".08" stroke="#759CA7" stroke-opacity=".6"><path d="m820 313 150-86 150 86-150 87Z"/><path d="m820 263 150-86 150 86-150 87Z"/><path d="m820 213 150-86 150 86-150 87Z"/></g>
+  <path d="m936 203 50-21 39 29-26 26-54-7Z" stroke="#D4FC34" stroke-width="2" fill="#D4FC34" fill-opacity=".2"/>
+  <text x="64" y="518" fill="#ADBDB3" font-family="DM Sans, system-ui, sans-serif" font-size="19">Properties. Research. Layers.</text>
+  <text x="64" y="599" fill="#ADBDB3" font-family="DM Sans, system-ui, sans-serif" font-size="12" letter-spacing="1">YOUR OWN LAND RESEARCH WORKSPACE</text>
+</svg>
