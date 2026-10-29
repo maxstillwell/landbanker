@@ -34,20 +34,6 @@ export function BasemapSelector({
         {MAPLIBRE_BASEMAPS[value].label}
       </summary>
       <div className="basemap-options">
-        <label>
-          Basemap
-          <select
-            aria-label="Basemap"
-            value={value}
-            onChange={(e) => onChange(e.target.value as MapLibreBasemap)}
-          >
-            {basemapOrder.map((id) => (
-              <option key={id} value={id} disabled={(id === "esri-satellite" || id === "hybrid") && !esriEnabled}>
-                {MAPLIBRE_BASEMAPS[id].label}
-              </option>
-            ))}
-          </select>
-        </label>
         <div role="group" aria-label="Basemap styles">
           {basemapOrder.map((id) => (
             <button

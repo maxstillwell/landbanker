@@ -1,117 +1,17 @@
 "use client";
+import { useState } from "react";
 import type { LocalLayerDraft } from "@/lib/layer-draft";
 import type { SpatialLayer } from "@/lib/types";
-import {
-  geometryMeasurement,
-  formatArea,
-  formatDistance,
-} from "@/lib/map/measurement";
-import { useState } from "react";
-export function ShapeDraft({
-  draft,
-  layers,
-  onChange,
-  onSave,
-  onDiscard,
-  onSaveResearch,
-}: {
-  draft: LocalLayerDraft;
-  layers: SpatialLayer[];
-  onChange: (draft: LocalLayerDraft) => void;
-  onSave: () => Promise<void>;
-  onDiscard: () => void;
-  onSaveResearch?: () => Promise<void>;
+import { geometryMeasurement, formatArea, formatDistance } from "@/lib/map/measurement";
+export function ShapeDraft({ draft, layers, onChange, onSave, onDiscard, onSaveResearch, onSaveProperty, onEdit }: {
+ draft: LocalLayerDraft; layers: SpatialLayer[]; onChange: (draft: LocalLayerDraft) => void; onSave: () => Promise<void>; onDiscard: () => void; onSaveResearch?: () => Promise<void>; onSaveProperty?: () => Promise<void>; onEdit?: () => void;
 }) {
-  const [saving, setSaving] = useState(false);
-  const first = draft.geojson.features[0];
-  const measurement = first ? geometryMeasurement(first.geometry) : null;
-  function changeProperty(key: string, value: string) {
-    onChange({
-      ...draft,
-      geojson: {
-        ...draft.geojson,
-        features: draft.geojson.features.map((f, i) =>
-          i === 0 ? { ...f, properties: { ...f.properties, [key]: value } } : f,
-        ),
-      },
-    });
-  }
-  return (
-    <div className="local-layer">
-      <p className="draft-label">Local Draft · Only on this device</p>
-      {measurement?.areaM2 ? (
-        <strong>{formatArea(measurement.areaM2)}</strong>
-      ) : measurement?.distanceM ? (
-        <strong>{formatDistance(measurement.distanceM)}</strong>
-      ) : null}
-      <label>
-        Shape name
-        <input
-          value={String(first?.properties?.name || "")}
-          onChange={(e) => changeProperty("name", e.target.value)}
-          maxLength={160}
-        />
-      </label>
-      <label>
-        Note
-        <textarea
-          value={String(first?.properties?.note || "")}
-          onChange={(e) => changeProperty("note", e.target.value)}
-          maxLength={10000}
-        />
-      </label>
-      <label>
-        Layer
-        <select
-          value={draft.targetLayerId || ""}
-          onChange={(e) =>
-            onChange({ ...draft, targetLayerId: e.target.value || undefined })
-          }
-        >
-          <option value="">New layer</option>
-          {layers
-            .filter((l) => l.geojson)
-            .map((l) => (
-              <option value={l.id} key={l.id}>
-                {l.name}
-              </option>
-            ))}
-        </select>
-      </label>
-      {!draft.targetLayerId ? (
-        <label>
-          New layer name
-          <input
-            value={draft.name}
-            onChange={(e) => onChange({ ...draft, name: e.target.value })}
-            maxLength={160}
-          />
-        </label>
-      ) : null}
-      <div className="actions">
-        <button
-          className="primary"
-          disabled={
-            saving ||
-            !String(first?.properties?.name || "").trim() ||
-            (!draft.targetLayerId && !draft.name.trim())
-          }
-          onClick={async () => {
-            setSaving(true);
-            try {
-              await onSave();
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          {saving ? "Saving…" : "Save to Workspace"}
-        </button>
-        {onSaveResearch && !draft.targetLayerId && <button disabled={saving || !draft.name.trim()} onClick={async () => { setSaving(true); try { await onSaveResearch(); } finally { setSaving(false); } }}>Save as Research Area</button>}
-        <button disabled={saving} onClick={onDiscard}>
-          Discard draft
-        </button>
-      </div>
-    </div>
-  );
+ const [saving,setSaving]=useState(false),[naming,setNaming]=useState(false),[destination,setDestination]=useState("research");
+ const first=draft.geojson.features[0],measurement=first?geometryMeasurement(first.geometry):null;
+ function property(key:string,value:unknown){onChange({...draft,geojson:{...draft.geojson,features:draft.geojson.features.map((f,i)=>i===0?{...f,properties:{...f.properties,[key]:value}}:f)}});}
+ async function save(){setSaving(true);try {if(draft.targetLayerId) await onSave();else if(destination==="property")await onSaveProperty?.();else if(destination==="research")await onSaveResearch?.();else await onSave();}finally{setSaving(false);}}
+ return <section className="local-layer" aria-label="Completed drawing"><strong>{String(first?.properties?.drawing_kind || first?.geometry.type || "Drawing")}</strong><p className="draft-label">On this device · not cloud saved</p>{measurement&&<p>{measurement.areaM2?formatArea(measurement.areaM2):formatDistance(measurement.distanceM)}</p>}
+ <label><input type="checkbox" checked={first?.properties?.measurement_area !== false} onChange={e=>property("measurement_area",e.target.checked)} />Show area / total length</label><label><input type="checkbox" checked={first?.properties?.measurement_edges === true} onChange={e=>property("measurement_edges",e.target.checked)} />Show edge lengths</label>
+ {naming&&<div className="drawing-save-fields"><label>Name<input aria-label="Shape name" value={draft.name} maxLength={160} onChange={e=>onChange({...draft,name:e.target.value,geojson:{...draft.geojson,features:draft.geojson.features.map((f,i)=>i===0?{...f,properties:{...f.properties,name:e.target.value}}:f)}})} /></label><label>Notes<textarea value={String(first?.properties?.note||"")} maxLength={2000} onChange={e=>property("note",e.target.value)} /></label>{!draft.targetLayerId&&<label>Save as<select aria-label="Drawing destination" value={destination} onChange={e=>setDestination(e.target.value)}><option value="research">Research Area</option>{measurement?.areaM2? <option value="property">Property</option>:null}<option value="layer">Custom Data Layer</option></select></label>}{draft.targetLayerId&&<small>Updates {layers.find(l=>l.id===draft.targetLayerId)?.name||"the original saved object"}; other features are preserved.</small>}</div>}
+ <div className="actions"><button className="primary" disabled={saving || (naming&&!draft.name.trim())} onClick={()=>{if(!naming)setNaming(true);else void save();}}>{saving?"Saving…":naming?"Confirm save":"Save"}</button>{onEdit&&<button disabled={saving} onClick={onEdit}>Edit</button>}<button disabled={saving} onClick={()=>{if(window.confirm("Discard this device drawing? Saved records will be preserved."))onDiscard();}}>Discard</button></div><small>Approximate horizontal GIS measurement.</small></section>;
 }

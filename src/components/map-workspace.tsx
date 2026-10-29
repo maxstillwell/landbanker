@@ -95,6 +95,8 @@ import {
 } from "@/lib/map/drawing";
 import type { Feature } from "geojson";
 import { isOfficialParcelSource, officialSelectionId, summarizeAreas, updateSelectedAreas, type SelectedArea } from "@/lib/map/selection-summary";
+import { polishDarkBasemap } from "@/lib/map/dark-style";
+import { ExportMenu } from "./export-menu";
 import { ResearchRelations } from "./research-relations";
 import { safeStoredFeatureIds, stableFeatureId } from "@/lib/map/feature-identity";
 import {
@@ -236,7 +238,6 @@ export default function MapWorkspace({
         .concat(data.layers.filter((l) => l.layer_kind === "radius")),
     };
   }, [data, viewport.ready, viewport.rows, workspaceId]);
-  const [propertyFilter, setPropertyFilter] = useState("");
   const [parcelState, setParcelState] = useState<SupportedState>("VIC");
   const [identifyState, setIdentifyState] = useState<SupportedState | null>(
     null,
@@ -279,7 +280,21 @@ export default function MapWorkspace({
   const [rightOpen, setRightOpen] = useState(false);
   const [drawer, setDrawer] = useState<"search" | "layers" | "properties" | "research" | "observations" | "views">("layers");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [displayOpen,setDisplayOpen]=useState(false);
+  const [researchVisible,setResearchVisible]=useState(true);
+  const [highlightsVisible,setHighlightsVisible]=useState(true);
+  const [labelsVisible,setLabelsVisible]=useState(true);
+  const [recordSearch,setRecordSearch]=useState("");
+  const [researchSearch,setResearchSearch]=useState("");
+  const [observationSearch,setObservationSearch]=useState("");
+  const [importDestination,setImportDestination]=useState<"property"|"research"|"layer">("layer");
   const [radiusOpen, setRadiusOpen] = useState(false);
+  const [radiusPlacement, setRadiusPlacement] = useState(false);
+  const radiusPlacementRef = useRef(false);
+  const radiusClickRef = useRef<(lat:number,lng:number)=>void>(()=>{});
+  const finishDrawingRef = useRef<()=>Promise<void>>(async()=>{});
+  const rectangleDrag = useRef(false);
+  const [discardedDraft,setDiscardedDraft] = useState<LocalLayerDraft|null>(null);
   const [inspectorSize, setInspectorSize] = useState<"compact" | "expanded">("expanded");
   const [layoutScope, setLayoutScope] = useState("");
   useEffect(() => {
@@ -330,6 +345,8 @@ export default function MapWorkspace({
   const [pointElevation, setPointElevation] = useState<number | null>(null);
   const [pointStatus, setPointStatus] = useState<"unavailable" | "loading" | "available" | "timed-out" | "provider-error">("unavailable");
   const sampleAbort = useRef<AbortController | null>(null);
+  const [terrainFailed,setTerrainFailed]=useState(false);
+  const [terrainWaited,setTerrainWaited]=useState(false);
   const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "partial" | "loaded">("unknown");
   const providers = useMemo(() => [...availableTerrainProviders(terrainProvider({
     id: "configured", label: "Configured DEM", url: process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL || undefined,
@@ -346,7 +363,7 @@ export default function MapWorkspace({
   const dem = providers.find((provider) => provider.id === providerId) || providers[0] || null;
   const exaggerationRef = useRef(terrainExaggeration);
   exaggerationRef.current = terrainExaggeration;
-  useEffect(() => { const m = map.current; if (!m || !elevationPosition || pointElevation === null) return; const el = document.createElement("div"); el.className = "map-measurement-label"; el.textContent = `${pointElevation.toFixed(1)} m (approx.)`; const marker = new maplibregl.Marker({ element: el }).setLngLat(elevationPosition).addTo(m); return () => { marker.remove(); }; }, [elevationPosition, pointElevation, styleRevision]);
+  useEffect(() => { const m = map.current; if (!m || !elevationPosition || pointElevation === null || !labelsVisible) return; const el = document.createElement("div"); el.className = "map-measurement-label"; el.textContent = `${pointElevation.toFixed(1)} m (approx.)`; const marker = new maplibregl.Marker({ element: el }).setLngLat(elevationPosition).addTo(m); return () => { marker.remove(); }; }, [elevationPosition, pointElevation, styleRevision, labelsVisible]);
 
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key === "Escape" && (elevationMode.current || profileMode.current)) { elevationMode.current = false; setElevationActive(false); profileMode.current = false; setProfileDrawing(false); setProfilePoints([]); sampleAbort.current?.abort(); setPointStatus("unavailable"); } }; window.addEventListener("keydown", cancel); return () => window.removeEventListener("keydown", cancel); }, []);
   useEffect(() => () => { sampleAbort.current?.abort(); }, [providerId, styleRevision, mapMode, terrainExaggeration]);
@@ -354,7 +371,7 @@ export default function MapWorkspace({
     const m = map.current;
     if (!m || !styleRevision || !dem) return;
     try { applyTerrain(m, dem, mapMode === "3d", hillshade, terrainExaggeration); }
-    catch { setNotice("Terrain is unavailable. Your map and saved work are preserved."); }
+    catch { setTerrainFailed(true); }
   }, [styleRevision, mapMode, hillshade, terrainExaggeration, dem]);
   useEffect(() => {
     const m = map.current;
@@ -446,6 +463,9 @@ export default function MapWorkspace({
   const selectedDrawing = selection?.kind === "drawing"
     ? selection.record.geojson?.features.find((f) => f.id != null && String(f.id) === selection.featureId) || mapLibreCollections({ ...emptyData, layers: [selection.record] }).workspace.index.get(selection.featureId)?.feature || [...mapLibreCollections({ ...emptyData, layers: [selection.record] }).workspace.index.values()].find((item) => String(item.feature.id) === selection.featureId)?.feature
     : null;
+  const savedAreaPreference=selectedDrawing?.properties?.measurement_area;
+  const savedEdgePreference=selectedDrawing?.properties?.measurement_edges;
+  useEffect(()=>{if(typeof savedAreaPreference==="boolean")setShowDrawingArea(savedAreaPreference);if(typeof savedEdgePreference==="boolean")setShowDrawingEdges(savedEdgePreference);},[savedAreaPreference,savedEdgePreference,selectedDrawing?.id]);
   const selectedPropertyId = selectedParcel?.id;
   useEffect(() => {
     if (selection || draft) { if (draft || !multiSelectRef.current || !window.matchMedia("(max-width: 767px)").matches) { setRightOpen(true); if (window.matchMedia("(max-width: 767px)").matches) setSheet(draft ? "expanded" : "medium"); } setLeftOpen(false); }
@@ -641,7 +661,7 @@ export default function MapWorkspace({
   const officialLayers = useOfficialMapLayers({
     map,
     revision: styleRevision,
-    blocked: Boolean(session.active || draft || identifyState || elevationActive || profileDrawing),
+    blocked: Boolean(session.active || draft || identifyState || elevationActive || profileDrawing || radiusPlacement),
     onPick: inspectOfficial,
     onParcel: selectOfficialOnMap,
   });
@@ -653,23 +673,26 @@ export default function MapWorkspace({
       clearOfficialInspector(null);
   }, [selection?.kind, clearOfficialInspector]);
   const drawMode = Boolean(session.active);
+  const activeTool = drawMode ? `draw-${session.active!.kind.toLowerCase()}` : elevationActive ? "select-elevation" : profileDrawing ? "draw-elevation-profile" : radiusPlacement ? "draw-radius" : "navigate";
+  useEffect(()=>{const m=map.current;if(!m||!(drawMode||profileDrawing||elevationActive||radiusPlacement))return;const zoom=m.doubleClickZoom.isEnabled();m.doubleClickZoom.disable();return()=>{if(zoom)m.doubleClickZoom.enable();};},[drawMode,profileDrawing,elevationActive,radiusPlacement]);
   const activeDrawing = session.active;
   const discardDrawing = session.discard;
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key !== "Escape" || !activeDrawing) return; if (!window.confirm("Cancel this unfinished drawing?")) return; drawing.current = false; void discardDrawing().catch(() => setNotice("Unable to discard the drawing; its device draft is preserved.")); }; window.addEventListener("keydown", cancel); return () => window.removeEventListener("keydown", cancel); }, [activeDrawing, discardDrawing]);
   const kind: DrawingKind = session.active?.kind || "Polygon";
-  useEffect(() => { const m = map.current; if (!m) return; m.getCanvas().style.cursor = elevationActive || profileDrawing || drawMode ? "crosshair" : ""; return () => { m.getCanvas().style.cursor = ""; }; }, [elevationActive, profileDrawing, drawMode, styleRevision]);
+  useEffect(() => { const m = map.current; if (!m) return; m.getCanvas().style.cursor = elevationActive || profileDrawing || drawMode || radiusPlacement ? "crosshair" : ""; return () => { m.getCanvas().style.cursor = ""; }; }, [elevationActive, profileDrawing, drawMode, radiusPlacement, styleRevision]);
   const drawPoints = useMemo(
     () => session.active?.points.map((p) => latLng(p[1], p[0])) || [],
     [session.active?.points],
   );
   useEffect(() => {
     const m = map.current;
-    if (!m || !styleRevision) return;
+    if (!m || !styleRevision || !labelsVisible) return;
     const editing = Boolean(session.active?.originalFeature);
-    const geometry = editing ? drawingGeometry(kind, session.active!.points) : selectedDrawing?.geometry || officialParcel?.geometry || null;
+    const geometry = drawMode ? drawingGeometry(kind, session.active!.points) : localLayer?.geojson.features[0]?.geometry || selectedDrawing?.geometry || officialParcel?.geometry || null;
     if (!geometry) return;
-    const showEdges = selectedDrawing || editing ? showDrawingEdges : showParcelEdges;
-    const showArea = Boolean((selectedDrawing || editing) && showDrawingArea);
+    const temporary = localLayer?.geojson.features[0]?.properties;
+    const showEdges = localLayer ? temporary?.measurement_edges === true : selectedDrawing || editing || drawMode ? showDrawingEdges : showParcelEdges;
+    const showArea = localLayer ? temporary?.measurement_area !== false : Boolean((selectedDrawing || editing || drawMode) && showDrawingArea);
     if (!showEdges && !showArea) return;
     const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.type === "Polygon" ? geometry.coordinates : geometry.type === "MultiPolygon" ? geometry.coordinates.flat() : [];
     const segments = lines.flatMap((line) => line.slice(1).map((point, i) => ({ a: line[i], b: point })));
@@ -686,7 +709,7 @@ export default function MapWorkspace({
       add([centre.lng, centre.lat], measurement.areaM2 ? formatArea(measurement.areaM2) : formatDistance(measurement.distanceM));
     }
     return () => markers.forEach((marker) => marker.remove());
-  }, [selectedDrawing, officialParcel, showDrawingArea, showDrawingEdges, showParcelEdges, styleRevision, session.active, kind]);
+  }, [selectedDrawing, officialParcel, showDrawingArea, showDrawingEdges, showParcelEdges, styleRevision, session.active, kind, localLayer, drawMode, labelsVisible]);
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const changeSession = session.change;
   const sessionRef = session.ref;
@@ -719,7 +742,6 @@ export default function MapWorkspace({
   );
   const drawing = useRef(false);
   const drawKind = useRef<DrawingKind>("Polygon");
-  const [toolsOpen, setToolsOpen] = useState(false);
   const canManage = ["owner", "admin"].includes(role);
   const canWrite = ["owner", "admin", "editor"].includes(role);
   const reload = useCallback(async () => {
@@ -979,6 +1001,7 @@ export default function MapWorkspace({
     m.addControl(new maplibregl.NavigationControl(), "bottom-left");
     m.on("style.load", () => {
       sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null);
+      if(basemapRef.current === "dark")polishDarkBasemap(m);
       installScene(m);
       setStyleRevision((n) => n + 1);
     });
@@ -1037,7 +1060,7 @@ export default function MapWorkspace({
     });
     m.on("error", (event) => {
       const source = (event as { sourceId?: string }).sourceId;
-      if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
+      if (source === TERRAIN_SOURCE) { setTerrainFailed(true); return; }
       if ((basemapRef.current === "esri-satellite" || basemapRef.current === "hybrid") && source === "esri-imagery") {
         basemapRef.current = "streets";
         setBasemap("streets");
@@ -1056,9 +1079,11 @@ export default function MapWorkspace({
     });
     m.on("movestart", () => { sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null); setParcelHeights(null); setParcelHeightMessage(""); });
     m.on("click", (e: maplibregl.MapMouseEvent) => {
+      if (radiusPlacementRef.current) { radiusClickRef.current(e.lngLat.lat,e.lngLat.lng); return; }
       if (elevationMode.current) { const point: [number, number] = [e.lngLat.lng, e.lngLat.lat]; sampleAbort.current?.abort(); const controller = new AbortController(); sampleAbort.current = controller; setElevationPosition(point); setPointElevation(null); setPointStatus("loading"); void waitForTerrainSample(m, point, exaggerationRef.current, controller.signal).then((result) => { if (controller.signal.aborted) return; if (result.status === "available") { setPointElevation(result.value); setPointStatus("available"); } else if (result.status !== "cancelled") setPointStatus(result.status); }); return; }
       if (profileMode.current) { setProfilePoints((points) => points.length >= 100 ? points : [...points, [e.lngLat.lng, e.lngLat.lat]]); return; }
       if (drawing.current) {
+        if (rectangleDrag.current) return;
         setDrawPoints((points) =>
           drawKind.current === "Point"
             ? [e.lngLat]
@@ -1302,14 +1327,14 @@ export default function MapWorkspace({
         (p) => !visibleParcelIds || visibleParcelIds.has(p.id),
       ),
       layers: renderedData.layers.filter(
-        (l) => !visibleUserLayerIds || visibleUserLayerIds.has(l.id),
+        (l) => (l.layer_kind === "research_area" ? researchVisible : workspaceVisibility.features) && (!visibleUserLayerIds || visibleUserLayerIds.has(l.id)),
       ),
     };
     const collections = mapLibreCollections(visible);
     setSceneData(m, "parcels", collections.parcels.features);
     setSceneData(m, "observations", collections.observations.features);
     setSceneData(m, "features", collections.workspace.collection.features);
-    setSceneData(m, "local", spatialImport?.geojson.features || localLayer?.geojson.features || []);
+    setSceneData(m, "local", spatialImport?.geojson.features || (workspaceVisibility.features ? localLayer?.geojson.features : []) || []);
     setSceneData(
       m,
       "draft",
@@ -1325,7 +1350,7 @@ export default function MapWorkspace({
     setSceneData(
       m,
       "selected",
-      selectedResearch ? selectedResearch.features : selectedAreas.length ? selectedAreas.flatMap((item) => item.geometry || item.previewGeometry ? [geometryFeature((item.geometry || item.previewGeometry)!)] : item.location ? [geometryFeature({ type: "Point", coordinates: item.location })] : []) : selectedDrawing?.geometry
+      !highlightsVisible ? [] : selectedResearch ? selectedResearch.features : selectedAreas.length ? selectedAreas.flatMap((item) => item.geometry || item.previewGeometry ? [geometryFeature((item.geometry || item.previewGeometry)!)] : item.location ? [geometryFeature({ type: "Point", coordinates: item.location })] : []) : selectedDrawing?.geometry
         ? [geometryFeature(selectedDrawing.geometry)]
         : selectedBoundary
         ? [
@@ -1341,7 +1366,7 @@ export default function MapWorkspace({
     setSceneData(
       m,
       "official",
-      officialParcel ? [geometryFeature(officialParcel.geometry)] : candidateProperty === selectedParcel?.id
+      highlightsVisible && officialParcel ? [geometryFeature(officialParcel.geometry)] : candidateProperty === selectedParcel?.id
         ? boundaryCandidates.filter((p) => previewCandidates.includes(p.sourceId)).map((p) => geometryFeature(p.geometry)) : [],
     );
     setSceneData(
@@ -1355,6 +1380,9 @@ export default function MapWorkspace({
     renderedData,
     visibleParcelIds,
     visibleUserLayerIds,
+    researchVisible,
+    workspaceVisibility.features,
+    highlightsVisible,
     localLayer,
     spatialImport,
     draft,
@@ -1378,6 +1406,7 @@ export default function MapWorkspace({
     const m = map.current;
     if (!m) return;
     for (const [name, visible] of Object.entries(workspaceVisibility)) {
+      if(name === "features")continue;
       for (const kind of ["fill", "line", "point"]) {
         const id = `landos-${name}-${kind}`;
         if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
@@ -1413,7 +1442,7 @@ export default function MapWorkspace({
   }, [fix]);
   useEffect(() => {
     const m = map.current;
-    if (!m) return;
+    if (!m || !highlightsVisible || !labelsVisible) return;
     const markers = selectedAreas.flatMap((item, index) => {
       const first = item.geometry?.type === "Polygon" ? item.geometry.coordinates[0]?.[0] : item.geometry?.type === "MultiPolygon" ? item.geometry.coordinates[0]?.[0]?.[0] : item.location;
       if (!first || !Number.isFinite(first[0]) || !Number.isFinite(first[1])) return [];
@@ -1424,7 +1453,7 @@ export default function MapWorkspace({
       return [new maplibregl.Marker({ element }).setLngLat([first[0], first[1]]).addTo(m)];
     });
     return () => markers.forEach((marker) => marker.remove());
-  }, [selectedAreas]);
+  }, [selectedAreas,highlightsVisible,labelsVisible]);
   useEffect(() => {
     const m = map.current;
     if (!m?.getSource("landos-parcels")) return;
@@ -1433,8 +1462,9 @@ export default function MapWorkspace({
           kind,
           drawPoints.map((p) => [p.lng, p.lat]),
         )
-      : null;
-    setSceneData(m, "drawing", geometry ? [geometryFeature(geometry)] : []);
+      : profileDrawing && profilePoints.length >= 2 ? { type: "LineString" as const, coordinates: profilePoints } : null;
+    const preview = geometry || (drawMode && kind === "Polygon" && drawPoints.length === 2 ? {type:"LineString" as const,coordinates:drawPoints.map(p=>[p.lng,p.lat])} : null);
+    setSceneData(m, "drawing", preview ? [geometryFeature(preview)] : []);
     if (!drawMode) return;
     // Editing takes place on the ground plane; the same MapLibre instance stays alive.
     m.jumpTo({ pitch: 0, bearing: 0 });
@@ -1549,6 +1579,8 @@ export default function MapWorkspace({
   }, [
     drawPoints,
     drawMode,
+    profileDrawing,
+    profilePoints,
     kind,
     session.ref,
     changeSession,
@@ -1900,7 +1932,7 @@ export default function MapWorkspace({
       if (localLayer || session.active || session.found || spatialImport) throw new Error("Finish your current shape or import preview before importing another file.");
       const value = await parseSpatialFile(file);
       const features = value.features.map((feature) => ({ ...feature, id: crypto.randomUUID() }));
-      setSpatialImport({ id: crypto.randomUUID(), name: file.name.replace(/\.(?:kml|kmz|geojson|json)$/i, "").slice(0, 160), description: "", sourceFile: file.name.slice(0, 160), destination: "layer", geojson: { type: "FeatureCollection", features } });
+      setSpatialImport({ id: crypto.randomUUID(), name: file.name.replace(/\.(?:kml|kmz|geojson|json)$/i, "").slice(0, 160), description: "", sourceFile: file.name.slice(0, 160), destination: importDestination, geojson: { type: "FeatureCollection", features } });
       setSelection(null); setSelectionDetails(false); setTab("layers"); setRightOpen(true); setLeftOpen(false); setSheet("expanded");
       const bounds = geometryBounds(value); if (!bounds.isEmpty()) map.current?.fitBounds(bounds, { padding: 60, maxZoom: 17 });
     } catch (e) { setNotice(e instanceof Error ? e.message : "Import failed"); }
@@ -1916,8 +1948,8 @@ export default function MapWorkspace({
     } catch (e) { setNotice(e instanceof Error ? e.message : "Import failed. The preview is still open."); }
     finally { setImportSaving(false); }
   }
-  async function createRadius() {
-    const centre = map.current?.getCenter();
+  async function createRadius(at?: {lat:number;lng:number}) {
+    const centre = at || map.current?.getCenter();
     const kilometres = Number(radiusKm);
     if (!centre || !Number.isFinite(kilometres) || kilometres <= 0 || kilometres > 500) {
       setNotice("Enter a radius between 0 and 500 kilometres.");
@@ -1932,8 +1964,8 @@ export default function MapWorkspace({
     feature.id = id;
     feature.properties = { ...feature.properties, name: `${kilometres} km radius` };
     if (await updateLocalLayer({ id, name: `${kilometres} km radius`, geojson: { type: "FeatureCollection", features: [feature] } })) {
-      setSelectionDetails(false); setTab("layers"); setRightOpen(true); setLeftOpen(false); setPaletteOpen(false); setSheet("expanded");
-      setNotice("Radius saved as a device draft. Save to Workspace to sync.");
+      clearAreas();setSelection(null);setSelectionDetails(false); setRightOpen(false); setLeftOpen(false); setPaletteOpen(false); setSheet("collapsed");
+      setNotice("");
     }
   }
   async function startDrawing(
@@ -1943,15 +1975,15 @@ export default function MapWorkspace({
   ) {
     if (!(await pauseObservation())) return;
     if (!session.ready || session.found || session.active) {
-      setRightOpen(true); setSheet("expanded");
-      setNotice("Resume or discard the unfinished drawing using the recovery controls.");
+      setRightOpen(false); setLeftOpen(false); setPaletteOpen(false); setSheet("collapsed");
+      setNotice("An unfinished drawing is available in the recovery card.");
       return;
     }
     if (spatialImport) { setRightOpen(true); setSheet("expanded"); setNotice("Finish or discard the open spatial import preview first."); return; }
-    elevationMode.current = false; setElevationActive(false); profileMode.current = false; setProfileDrawing(false); sampleAbort.current?.abort();
+    elevationMode.current = false; setElevationActive(false); profileMode.current = false; setProfileDrawing(false); radiusPlacementRef.current=false;setRadiusPlacement(false);sampleAbort.current?.abort();
     if (localLayer) {
-      setSelection(null); setSelectionDetails(false); setTab("layers"); setRightOpen(true); setLeftOpen(false); setPaletteOpen(false); setSheet("expanded");
-      setNotice(`Your unfinished shape “${localLayer.geojson.features[0]?.properties?.name || localLayer.name || "Untitled shape"}” is open below. Save it or discard it to start another drawing.`);
+      setSelection(null); setSelectionDetails(false); setRightOpen(false); setLeftOpen(false); setPaletteOpen(false); setSheet("collapsed");
+      setNotice("");
       return;
     }
     let points = feature ? editablePoints(feature.geometry) : [];
@@ -1984,11 +2016,10 @@ export default function MapWorkspace({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
-    setToolsOpen(false);
     setPaletteOpen(false);
     setSelectionDetails(false);
     setSelection(null);
-    setTab("layers");
+    setRightOpen(false); setLeftOpen(false);
     setSheet("collapsed");
     setNotice("");
   }
@@ -2006,7 +2037,7 @@ export default function MapWorkspace({
     const existing = current.originalFeature;
     const preserved = await updateLocalLayer({
       id: current.id,
-      name: current.layerName,
+      name: current.name || (kind === "LineString" ? "Field line" : kind === "Point" ? "Field point" : "Field area"),
       targetLayerId: current.targetLayerId,
       geojson: {
         type: "FeatureCollection",
@@ -2033,10 +2064,36 @@ export default function MapWorkspace({
     if (!preserved) return;
     drawing.current = false;
     await session.discard();
-    setRightOpen(true); setLeftOpen(false);
-    setSheet("expanded");
-    setNotice("Local Draft · Only on this device. Save to Workspace to sync.");
+    setRightOpen(false); setLeftOpen(false);
+    setSheet("collapsed");
+    setNotice("");
   }
+  async function saveDrawingDestination(destination:"property"|"research") {
+    if(!localLayer)return;
+    try {await apiRequest("/api/spatial-import",{id:localLayer.id,name:localLayer.name,description:String(localLayer.geojson.features[0]?.properties?.note||""),sourceFile:"Drawn in LandOS",destination,geojson:localLayer.geojson});if(!(await updateLocalLayer(null)))return;await reload();setNotice(`${destination === "property" ? "Property" : "Research Area"} saved to Workspace.`);}catch(error){setNotice(error instanceof Error?error.message:"Save failed; device draft preserved.");}
+  }
+  async function editLocalDraft() {
+    if(!localLayer||session.active||session.found)return;
+    const feature=localLayer.geojson.features[0]; if(!feature||localLayer.geojson.features.length!==1){setNotice("Multipart drawings remain view-only; all original geometry is preserved.");return;}
+    const nextKind=(feature.properties?.drawing_kind || feature.geometry.type) as DrawingKind;
+    let points=editablePoints(feature.geometry);if(nextKind==="Rectangle"&&points?.length===4)points=[points[0],points[2]];
+    if(!points||!safeSimple(nextKind,points)){setNotice("This geometry is view-only in the simple editor.");return;}
+    try {await session.start({version:1,id:localLayer.id,userId,workspaceId,kind:nextKind,points:points.map(p=>[p[0],p[1]]),name:localLayer.name,layerName:localLayer.name,targetLayerId:localLayer.targetLayerId,originalFeature:feature,createdAt:Date.now(),updatedAt:Date.now()});drawing.current=true;drawKind.current=nextKind;await updateLocalLayer(null);setRightOpen(false);setSheet("collapsed");}catch{setNotice("Unable to open the editor. Device draft preserved.");}
+  }
+  finishDrawingRef.current=finishDrawing;
+  radiusClickRef.current=(lat,lng)=>{radiusPlacementRef.current=false;setRadiusPlacement(false);void createRadius({lat,lng});};
+  useEffect(()=>{
+    const m=map.current;if(!m||!drawMode||kind!=="Rectangle")return;
+    const canvas=m.getCanvas();let first:maplibregl.LngLat|null=null;let moved=false;let last:maplibregl.LngLat|null=null;
+    const pan=m.dragPan.isEnabled();m.dragPan.disable();
+    const position=(e:PointerEvent)=>{const b=canvas.getBoundingClientRect();return m.unproject([e.clientX-b.left,e.clientY-b.top]);};
+    const down=(e:PointerEvent)=>{if(e.button!==0)return;first=position(e);last=first;moved=false;canvas.setPointerCapture(e.pointerId);};
+    const move=(e:PointerEvent)=>{if(!first)return;last=position(e);const a=m.project(first),b=m.project(last);if(a.dist(b)<5&&!moved)return;moved=true;rectangleDrag.current=true;setDrawPoints([first,last]);};
+    const up=()=>{if(!first)return;first=null;if(moved){void finishDrawingRef.current().finally(()=>{window.setTimeout(()=>{rectangleDrag.current=false;},100);});}moved=false;};
+    const cancel=()=>{first=null;moved=false;rectangleDrag.current=false;};
+    canvas.addEventListener("pointerdown",down);canvas.addEventListener("pointermove",move);canvas.addEventListener("pointerup",up);canvas.addEventListener("pointercancel",cancel);
+    return()=>{canvas.removeEventListener("pointerdown",down);canvas.removeEventListener("pointermove",move);canvas.removeEventListener("pointerup",up);canvas.removeEventListener("pointercancel",cancel);if(pan)m.dragPan.enable();};
+  },[drawMode,kind,setDrawPoints]);
   async function saveResearchDraft() {
     if (!localLayer || localLayer.targetLayerId) return;
     try {
@@ -2179,18 +2236,23 @@ export default function MapWorkspace({
     }
     if (!bounds.isEmpty()) map.current?.fitBounds(bounds, { padding: 60, maxZoom: 18 });
   }
-  function activateElevation() {
+  async function activateElevation() {
+    if(!(await pauseObservation()))return;
+    radiusPlacementRef.current=false;setRadiusPlacement(false);
     if (!dem) { setNotice("Elevation is unavailable: no reviewed terrain source is configured."); return; }
-    if (drawMode || draft || spatialImport) { setNotice("Finish the current draft or drawing before using elevation."); return; }
+    if (drawMode || spatialImport) { setNotice("Finish the current draft or drawing before using elevation."); return; }
     profileMode.current = false; setProfileDrawing(false); elevationMode.current = true; setElevationActive(true); setPaletteOpen(false); setPointStatus("unavailable");
     if (mapMode === "2d") { setMapMode("3d"); map.current?.easeTo({ pitch: 50, duration: 350 }); }
   }
-  function activateProfile() {
-    if (!dem || !dem.datumVerified) { setNotice("Elevation profile is unavailable until the terrain provider has a verified consistent vertical datum."); return; }
-    if (drawMode || draft || spatialImport) { setNotice("Finish the current draft or drawing before using the profile tool."); return; }
+  async function activateProfile() {
+    if(!(await pauseObservation()))return;
+    radiusPlacementRef.current=false;setRadiusPlacement(false);
+    if (!dem) { setNotice("Elevation profile unavailable: no reviewed terrain provider is configured."); return; }
+    if (drawMode || spatialImport) { setNotice("Finish the current draft or drawing before using the profile tool."); return; }
     elevationMode.current = false; setElevationActive(false); profileMode.current = true; setProfileDrawing(true); setProfilePoints([]); setProfile([]); setPaletteOpen(false);
     if (mapMode === "2d") { setMapMode("3d"); map.current?.easeTo({ pitch: 50, duration: 350 }); }
   }
+  useEffect(()=>{setTerrainFailed(false);setTerrainWaited(false);if(mapMode!=="3d")return;const timer=window.setTimeout(()=>setTerrainWaited(true),15000);return()=>clearTimeout(timer);},[mapMode,providerId]);
   function toggleMapMode() {
     if (mapMode === "2d" && !dem) { setNotice("3D terrain is unavailable: no reviewed elevation source is configured."); return; }
     if (mapMode === "3d") { profileMode.current = false; setProfileDrawing(false); setProfile([]); elevationMode.current = false; setElevationActive(false); }
@@ -2372,11 +2434,15 @@ export default function MapWorkspace({
         </div>
       ) : null}
       <div
+        data-tool={activeTool}
         ref={mapNode}
         className="map-canvas"
         data-basemap={basemap}
         aria-label="Land workspace map"
       />
+      {localLayer && !drawMode && !selection && !selectedResearch && <div className="drawing-result-card"><ShapeDraft key={localLayer.id} draft={localLayer} layers={data.layers} onChange={value=>void updateLocalLayer(value)} onSave={saveShape} onSaveResearch={saveResearchDraft} onSaveProperty={()=>saveDrawingDestination("property")} onEdit={()=>void editLocalDraft()} onDiscard={()=>{setDiscardedDraft(localLayer);void updateLocalLayer(null);}} /></div>}
+      {discardedDraft && !localLayer && !drawMode && <div className="drawing-undo" role="status">Device drawing discarded <button onClick={()=>{void updateLocalLayer(discardedDraft);setDiscardedDraft(null);}}>Undo discard</button><button aria-label="Dismiss drawing undo" onClick={()=>setDiscardedDraft(null)}>×</button></div>}
+      {radiusPlacement && <div className="map-drawing-bar" role="status">Tap the map to place the radius centre · {radiusKm} km<button onClick={()=>{radiusPlacementRef.current=false;setRadiusPlacement(false);}}>Cancel radius</button></div>}
       {session.found && !drawMode ? (
         <div className="drawing-recovery" role="status">
           <strong>Unfinished drawing found</strong>
@@ -2391,7 +2457,7 @@ export default function MapWorkspace({
               setSheet("collapsed");
             }}
           >
-            Continue
+            Resume drawing
           </button>
           <button
             onClick={() => { if (!window.confirm("Discard this unfinished drawing from this device?")) return; void session.discard().catch(() => setNotice("Unable to discard local drawing.")); }}
@@ -2411,7 +2477,7 @@ export default function MapWorkspace({
       {drawMode ? (
         <div className="map-drawing-bar" aria-label="Drawing controls">
           <strong>
-            Active: {kind} · {" "}
+            Active: {kind} · {kind === "Rectangle" ? "Drag between corners, or tap two corners" : "Tap to add points"} · {" "}
             {drawnMeasurement?.areaM2
               ? formatArea(drawnMeasurement.areaM2)
               : drawnMeasurement?.distanceM
@@ -2450,9 +2516,8 @@ export default function MapWorkspace({
           >
             Delete vertex
           </button>
-          <button disabled={!session.active?.undo} onClick={session.undo}>
-            Undo
-          </button>
+          <button disabled={!drawPoints.length} onClick={()=>setDrawPoints(points=>points.slice(0,-1))}>Undo last point</button>
+          <button disabled={!drawPoints.length} onClick={()=>setDrawPoints([])}>Clear drawing</button>
           <button
             onClick={() => {
               drawing.current = false;
@@ -2465,6 +2530,7 @@ export default function MapWorkspace({
           </button>
         </div>
       ) : null}
+      <div className="map-display-control"><button aria-label="Map Display" aria-expanded={displayOpen} onClick={()=>setDisplayOpen(v=>!v)}>◉<span>Display</span></button>{displayOpen&&<section aria-label="Map Display visibility"><strong>Map Display</strong>{([["parcels","My Properties"],["observations","Observations"],["features","User Drawings"]] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={workspaceVisibility[key]} onChange={e=>setWorkspaceVisibility(v=>({...v,[key]:e.target.checked}))}/>{label}</label>)}<label><input type="checkbox" checked={researchVisible} onChange={e=>setResearchVisible(e.target.checked)}/>Research Areas</label><label><input type="checkbox" checked={highlightsVisible} onChange={e=>setHighlightsVisible(e.target.checked)}/>Selected Object Highlights</label><label><input type="checkbox" checked={labelsVisible} onChange={e=>setLabelsVisible(e.target.checked)}/>Measurement Labels</label></section>}</div>
       <GlobalMapSearch properties={data.parcels} researchAreas={data.layers.filter((layer) => layer.layer_kind === "research_area")} onAddress={(address) => setView(map.current, [address.latitude, address.longitude], 17)} onPlace={(place) => setView(map.current, [place.latitude, place.longitude], 12)} onParcel={selectOfficialParcel} onProperty={(property) => { selectSavedParcel(property); setTab("parcels"); setRightOpen(true); setSheet("medium"); void timeoutFetch(`/api/properties/${encodeURIComponent(property.id)}`).then((r) => r.json()).then((body) => { const geometry = propertyGeometry(body.property?.geometry); if (geometry && map.current) map.current.fitBounds(geometryBounds(geometry), { padding: 60, maxZoom: 18 }); }).catch(() => setNotice("Property geometry is unavailable.")); }} onResearchArea={(layer) => { void openResearchArea(layer); }} />
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
@@ -2514,11 +2580,12 @@ export default function MapWorkspace({
           <button className="map-mode-toggle terrain-secondary" aria-pressed={hillshade} onClick={() => setHillshade(!hillshade)}>Hillshade</button>
           {mapMode === "3d" && <><label className="terrain-secondary">Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => { sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null); setTerrainExaggeration(Number(e.target.value)); }}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle terrain-secondary" onClick={() => { const m = map.current; const c = m?.getCenter(); sampleAbort.current?.abort(); setPointElevation(null); if (!m || !c) { setPointStatus("unavailable"); return; } const controller = new AbortController(); sampleAbort.current = controller; setPointStatus("loading"); void waitForTerrainSample(m, [c.lng,c.lat], terrainExaggeration, controller.signal).then((result) => { if (controller.signal.aborted) return; if (result.status === "available") { setPointElevation(result.value); setPointStatus("available"); } else if (result.status !== "cancelled") setPointStatus(result.status); }); }}>Elevation at centre</button><span className="terrain-secondary" role="status" title={terrainMetadata}>{pointStatus === "loading" ? "Loading elevation…" : pointStatus === "timed-out" ? "Elevation timed out" : pointStatus === "provider-error" ? "Elevation provider error" : pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
         </>}
-        {dem && mapMode === "3d" && <button className="map-mode-toggle terrain-secondary" aria-pressed={profileDrawing} onClick={() => { profileMode.current = !profileDrawing; setProfileDrawing(!profileDrawing); if (!profileDrawing) { setProfilePoints([]); setProfile([]); setNotice("Click the map to draw an elevation profile; select Finish profile when ready."); } }}>Elevation profile</button>}
+        {mapMode === "3d" && <span className="terrain-inline-status" role="status" title="Terrain coverage varies by source. Missing DEM samples remain unavailable.">{terrainCoverage === "loaded" ? "Terrain ready" : terrainCoverage === "partial" ? "Partial terrain" : terrainFailed || terrainWaited ? "Terrain unavailable" : "Loading terrain…"}{(terrainFailed||terrainWaited)&&terrainCoverage!=="loaded"&&<button onClick={toggleMapMode}>Return to 2D</button>}</span>}
+        {dem && mapMode === "3d" && <button className="map-mode-toggle terrain-secondary" aria-pressed={profileDrawing} onClick={activateProfile}>Elevation profile</button>}
         </div>
         <details className="desktop-workspace-settings"><summary aria-label="Workspace settings">⚙</summary><div className="desktop-settings-panel"><strong>Workspace</strong><WorkspaceSelector name={workspaceName} /><button onClick={() => { setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><Link href="/app/settings">Account and settings</Link></div></details>
       </header>
-      {mapMode === "3d" && terrainCoverage !== "loaded" && <div className="map-topline" role="status">Some visible terrain is unavailable or still loading. Missing elevation may appear flat; measurements in gaps are unavailable.</div>}
+
       {!online || queue.some((q) => q.status !== "draft") ? (
         <div className="map-topline" role="status">
           {!online
@@ -2543,8 +2610,9 @@ export default function MapWorkspace({
           ["spatial", "Tools", "✎"], ["layers", "Layers", "▱"], ["properties", "Properties", "⌂"], ["research", "Research Areas", "⬡"], ["observations", "Observations", "◎"],
         ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={async () => {
           if (!(await pauseObservation())) return;
-          if (id === "spatial") { if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
-          setPaletteOpen(false); if (window.matchMedia("(max-width: 767px)").matches) setRightOpen(false); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
+          setRightOpen(false);setSheet("collapsed");
+          if (id === "spatial") { setRightOpen(false);setSheet("collapsed"); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
+          setPaletteOpen(false);setRightOpen(false);setSheet("collapsed"); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
         }}><span aria-hidden="true">{icon}</span></button>)}
         {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋</button> : null}
         <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
@@ -2553,22 +2621,10 @@ export default function MapWorkspace({
         <div className="workspace-library-head"><strong>{drawer === "search" ? "SEARCH" : drawer === "layers" ? "LAYERS" : drawer === "properties" ? "PROPERTIES" : drawer === "research" ? "RESEARCH AREAS" : drawer === "observations" ? "OBSERVATIONS" : "SAVED VIEWS"}</strong><button type="button" onClick={() => setLeftOpen(false)} aria-label="Close library">×</button></div>
         <div className="workspace-library-content">
           <div hidden={drawer !== "search"}><ParcelSearch key={`${userId}:${workspaceId}`} userId={userId} workspaceId={workspaceId} state={parcelState} identifyActive={Boolean(identifyState)} onStateChange={setParcelState} onIdentify={armParcelIdentify} onSelect={selectOfficialParcel} onAddress={(p) => setView(map.current, [p.latitude, p.longitude], 17)} /></div>
-          <div hidden={drawer !== "layers"}><p className="drawer-intro">Manage planning, property and research layers.</p><div className="drawer-layer-toggles">{([ ["parcels", "Parcels"], ["observations", "Observations"], ["features", "My Layers"] ] as const).map(([id,label]) => <label key={id}><input type="checkbox" checked={workspaceVisibility[id]} onChange={(event) => setWorkspaceVisibility((current) => ({...current,[id]:event.target.checked}))} /> {label}</label>)}</div><OfficialMapLayers controller={officialLayers} showSelection={false} /><LayerLibrary catalog={catalog} active={activeLayers} onChange={changeOfficialLayer} onReorder={reorderOfficialLayers} /><div className="drawer-my-layers"><strong>MY LAYERS</strong>{canWrite && <button onClick={() => importInput.current?.click()}>Import spatial data</button>}{data.layers.filter((layer) => layer.layer_kind !== "research_area").map((layer) => <label key={layer.id}><input type="checkbox" checked={!visibleUserLayerIds || visibleUserLayerIds.has(layer.id)} onChange={(event) => setVisibleUserLayerIds((current) => { const next = new Set(current || data.layers.map((item) => item.id)); if (event.target.checked) next.add(layer.id); else next.delete(layer.id); return next; })} /> {layer.name}</label>)}{!data.layers.length ? <p>No saved layers yet.</p> : null}<button type="button" onClick={() => { setTab("layers"); setRightOpen(true); }}>Manage saved shapes</button></div><details className="drawer-future"><summary>Future add-ons</summary><p>Additional sources will appear here when available.</p></details></div>
-          <div hidden={drawer !== "layers"} className="drawer-layer-browser"><strong>FEATURES BY LAYER</strong>{data.layers.map((layer) => <LayerFeatureBrowser key={layer.id} layer={layer} opacity={layerOpacity[layer.id] ?? 1} onOpacityChange={(value) => setLayerOpacity((current) => ({ ...current, [layer.id]: value }))} onSelect={(feature) => {
-            if (!feature.geometry) { setNotice("This feature has no geometry to select."); return; }
-            const record = layer.layer_kind === "radius" ? layer : { ...layer, geojson: { type: "FeatureCollection" as const, features: [feature] } };
-            const renderKey = feature.id != null ? String(feature.id) : [...mapLibreCollections({ ...emptyData, layers: [record] }).workspace.index.keys()][0];
-            if (!renderKey) { setNotice("Unable to identify this feature."); return; }
-            const detail = { kind: "drawing" as const, record, featureId: renderKey };
-            const geometry = propertyGeometry(feature.geometry);
-            if (geometry) applyArea({ id: `feature:${layer.id}:${String(feature.id ?? renderKey)}`, label: String(feature.properties?.name || layer.name), source: `Layer: ${layer.name}`, kind: "feature", geometry, detail });
-            else { clearAreas(); setSelection(detail); }
-            setTab("layers"); setRightOpen(true); setLeftOpen(false); setSheet("medium");
-            if (map.current && !multiSelectRef.current) { const bounds = geometryBounds(feature); if (!bounds.isEmpty()) map.current.fitBounds(bounds, { padding: 60, maxZoom: 18 }); }
-          }} />)}</div>
-          <div hidden={drawer !== "properties"}><p className="drawer-intro">Your saved properties and land assets.</p>{canWrite && <><button onClick={async () => { const title = window.prompt("Property name")?.trim(); const center = map.current?.getCenter(); if (!title || !center) return; try { await apiRequest("/api/properties", { title, latitude: center.lat, longitude: center.lng }); await reload(); setNotice("Property saved with a map location. Its boundary is not verified."); } catch (e) { setNotice(e instanceof Error ? e.message : "Property creation failed"); } }}>Create property at map centre</button><button onClick={() => importInput.current?.click()}>Import property</button></>}{data.parcels.map((property) => <div key={property.id}><button className="drawer-record" onClick={() => { selectSavedParcel(property); setTab("parcels"); setRightOpen(true); setLeftOpen(false); setSheet("medium"); void timeoutFetch(`/api/properties/${encodeURIComponent(property.id)}`).then((r) => r.json()).then((body) => { const geometry = propertyGeometry(body.property?.geometry); if (geometry && map.current) map.current.fitBounds(geometryBounds(geometry), { padding: 60, maxZoom: 18 }); }).catch(() => setNotice("Property geometry unavailable.")); }}><b>{property.title}</b><small>{property.address || "Saved property"}</small></button><div className="actions"><button onClick={() => void exportProperty(property, "geojson")}>GeoJSON</button><button onClick={() => void exportProperty(property, "kml")}>KML</button><button onClick={() => void exportProperty(property, "kmz")}>KMZ</button><button onClick={() => void exportProperty(property, "csv")}>CSV</button>{canWrite && <button onClick={async () => { const title = window.prompt("Property name", property.title)?.trim(); if (!title || title === property.title) return; try { await apiRequest(`/api/properties/${encodeURIComponent(property.id)}`, { title }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Rename failed"); } }}>Rename</button>}{canWrite && <button onClick={async () => { const notes = window.prompt("Property notes", property.notes || ""); if (notes === null) return; try { await apiRequest(`/api/properties/${encodeURIComponent(property.id)}`, { notes }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Notes update failed"); } }}>Notes</button>}{["owner", "admin"].includes(role) && <button onClick={async () => { if (!window.confirm(`Delete the saved property “${property.title}”? Official records will not be changed.`)) return; try { const response = await timeoutFetch(`/api/parcels?id=${encodeURIComponent(property.id)}`, { method: "DELETE" }); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Delete failed"); clearAreas(); await reload(); setNotice("Saved property deleted."); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete</button>}<label><input type="checkbox" checked={!visibleParcelIds || visibleParcelIds.has(property.id)} onChange={(event) => setVisibleParcelIds((current) => { const next = new Set(current || data.parcels.map((item) => item.id)); if (event.target.checked) next.add(property.id); else next.delete(property.id); return next; })} /> Show</label></div></div>)}{!data.parcels.length && <p>No saved properties yet.</p>}</div>
-          <div hidden={drawer !== "research"}><p className="drawer-intro">Your user-defined study areas; these are not official planning precincts.</p>{canWrite && <button onClick={() => importInput.current?.click()}>Import research area</button>}{data.layers.filter((layer) => layer.layer_kind === "research_area").map((layer) => <div key={layer.id}><button className="drawer-record" onClick={() => { void openResearchArea(layer); }}><b>{layer.name}</b><small>Research Area · {String(layer.metadata?.research_subtype || "general")}</small></button><div className="actions"><button onClick={() => void exportResearch(layer, "geojson")}>GeoJSON</button><button onClick={() => void exportResearch(layer, "kml")}>KML</button><button onClick={() => void exportResearch(layer, "kmz")}>KMZ</button><button onClick={() => void exportResearch(layer, "csv")}>CSV</button>{canWrite && <button onClick={async () => { const name = window.prompt("Research Area name", layer.name)?.trim(); if (!name || name === layer.name) return; try { await apiRequest(`/api/research-areas/${encodeURIComponent(layer.id)}`, { name }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Rename failed"); } }}>Rename</button>}{["owner", "admin"].includes(role) && <button onClick={async () => { if (!window.confirm(`Delete the Research Area “${layer.name}” and its saved geometry?`)) return; try { await apiRequest(`/api/research-areas/${encodeURIComponent(layer.id)}`, {}, "DELETE"); clearAreas(); await reload(); setNotice("Research Area deleted."); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete</button>}<label><input type="checkbox" checked={!visibleUserLayerIds || visibleUserLayerIds.has(layer.id)} onChange={(event) => setVisibleUserLayerIds((current) => { const next = new Set(current || data.layers.map((item) => item.id)); if (event.target.checked) next.add(layer.id); else next.delete(layer.id); return next; })} /> Show</label></div></div>)}{!data.layers.some((layer) => layer.layer_kind === "research_area") && <p>No Research Areas yet.</p>}</div>
-          <div hidden={drawer !== "observations"}><p className="drawer-intro">Your field observations</p>{canWrite ? <button className="drawer-add" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋ Add observation</button> : null}{data.observations.map((observation) => <button className="drawer-record" key={observation.id} onClick={() => { setSelection({kind:"observation", record:observation}); setView(map.current,[observation.latitude, observation.longitude],16); }}><b>{observation.title}</b><small>{new Date(observation.observed_at).toLocaleDateString()}</small></button>)}{!data.observations.length ? <p>No observations yet. Add one from the map.</p> : null}{queue.length > 0 && <section aria-label="Observation drafts on this device"><strong>Observation drafts on this device</strong>{queue.map((item) => <div className="drawer-record" key={item.id}><b>{item.input.title || "Untitled observation"}</b><small>{item.status} · Updated {new Date(item.updatedAt).toLocaleString()}</small><div className="actions"><button onClick={() => { draftRef.current = item; setDraft(item); setTab("observations"); setRightOpen(true); setLeftOpen(false); setSheet("expanded"); }}>Resume</button><button disabled={item.status === "uploading" || Boolean(item.photoSelection && nativePhotoActive.current)} onClick={async () => { if (!window.confirm(`Delete the device draft “${item.input.title || "Untitled observation"}”?`)) return; try { await removeDraft(item.id); if (draftRef.current?.id === item.id) { draftRef.current = null; setDraft(null); } await reloadQueue(); setNotice("Device observation draft deleted."); } catch { setNotice("Unable to delete this device draft. It has been preserved."); } }}>Delete</button></div></div>)}</section>}</div>
+          <div hidden={drawer !== "layers"}><p className="drawer-intro">Official GIS datasets · added on demand</p><OfficialMapLayers controller={officialLayers} showSelection={false} /><LayerLibrary catalog={catalog} active={activeLayers} onChange={changeOfficialLayer} onReorder={reorderOfficialLayers} /><details><summary>Custom Data Layers</summary><p>Historical data is preserved. Open a feature to inspect or edit it; ambiguous records are not converted automatically.</p>{canWrite&&<button onClick={()=>{setImportDestination("layer");importInput.current?.click();}}>Import custom data</button>}{data.layers.filter(l=>l.layer_kind!=="research_area").map(layer=><div key={layer.id}><button onClick={async()=>{try{const full=await loadFullLayer(layer.id);setSelectedResearch({layer:full,features:full.geojson?.features||[]});setSelection(null);setRightOpen(true);setLeftOpen(false);setSheet("medium");}catch{setNotice("Custom data unavailable; saved geometry is preserved.");}}}>{layer.name}</button><button disabled={!canWrite} onClick={async()=>{if(!window.confirm("Classify this saved Custom Data Layer as a Research Area? Its original features will be preserved."))return;try{await apiRequest(`/api/research-areas/${layer.id}`,{classify:true},"PATCH");await reload();}catch(e){setNotice(e instanceof Error?e.message:"Classification failed");}}}>Classify as Research Area</button></div>)}</details></div>
+          <div hidden={drawer !== "properties"}><p className="drawer-intro">Your saved properties and land assets.</p>{canWrite && <><button onClick={async () => { const title = window.prompt("Property name")?.trim(); const center = map.current?.getCenter(); if (!title || !center) return; try { await apiRequest("/api/properties", { title, latitude: center.lat, longitude: center.lng }); await reload(); setNotice("Property saved with a map location. Its boundary is not verified."); } catch (e) { setNotice(e instanceof Error ? e.message : "Property creation failed"); } }}>Create from map location</button><button onClick={()=>void startDrawing("Polygon")}>Draw property</button><button onClick={() => {setImportDestination("property");importInput.current?.click();}}>Import property</button></>}<label>Search Properties<input value={recordSearch} onChange={e=>setRecordSearch(e.target.value)} /></label>{data.parcels.filter(p=>`${p.title} ${p.address||""}`.toLowerCase().includes(recordSearch.toLowerCase())).map((property) => <div className="object-list-card" key={property.id}><button className="drawer-record" onClick={() => { selectSavedParcel(property); setTab("parcels"); setRightOpen(true); setLeftOpen(false); setSheet("medium"); void timeoutFetch(`/api/properties/${encodeURIComponent(property.id)}`).then((r) => r.json()).then((body) => { const geometry = propertyGeometry(body.property?.geometry); if (geometry && map.current) map.current.fitBounds(geometryBounds(geometry), { padding: 60, maxZoom: 18 }); }).catch(() => setNotice("Property geometry unavailable.")); }}><b>{property.title}</b><small>{property.address || "Saved property"} · {property.hectares != null ? formatArea(Number(property.hectares)*10000) : "Area unavailable"} · {property.status}</small></button><details className="object-overflow"><summary aria-label={`Actions for ${property.title}`}>Actions ⋯</summary><div className="actions"><ExportMenu onExport={format=>void exportProperty(property,format)} />{canWrite && <button onClick={async () => { const title = window.prompt("Property name", property.title)?.trim(); if (!title || title === property.title) return; try { await apiRequest(`/api/properties/${encodeURIComponent(property.id)}`, { title }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Rename failed"); } }}>Rename</button>}{canWrite && <button onClick={async () => { const notes = window.prompt("Property notes", property.notes || ""); if (notes === null) return; try { await apiRequest(`/api/properties/${encodeURIComponent(property.id)}`, { notes }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Notes update failed"); } }}>Notes</button>}{["owner", "admin"].includes(role) && <button onClick={async () => { if (!window.confirm(`Delete the saved property “${property.title}”? Official records will not be changed.`)) return; try { const response = await timeoutFetch(`/api/parcels?id=${encodeURIComponent(property.id)}`, { method: "DELETE" }); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Delete failed"); clearAreas(); await reload(); setNotice("Saved property deleted."); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete</button>}<label><input type="checkbox" checked={!visibleParcelIds || visibleParcelIds.has(property.id)} onChange={(event) => setVisibleParcelIds((current) => { const next = new Set(current || data.parcels.map((item) => item.id)); if (event.target.checked) next.add(property.id); else next.delete(property.id); return next; })} /> Show on map</label></div></details></div>)}{!data.parcels.length && <p>No saved properties yet.</p>}</div>
+          <div hidden={drawer !== "research"}><p className="drawer-intro">Your user-defined study areas; these are not official planning precincts.</p>{canWrite && <><button onClick={()=>void startDrawing("Polygon")}>Draw research area</button><button onClick={() => {setImportDestination("research");importInput.current?.click();}}>Import research area</button></>}<label>Search Research Areas<input value={researchSearch} onChange={e=>setResearchSearch(e.target.value)} /></label>{data.layers.filter((layer) => layer.layer_kind === "research_area" && layer.name.toLowerCase().includes(researchSearch.toLowerCase())).map((layer) => <div className="object-list-card" key={layer.id}><button className="drawer-record" onClick={() => { void openResearchArea(layer); }}><b>{layer.name}</b><small>Research Area · {String(layer.metadata?.research_subtype || "general")}</small></button><details className="object-overflow"><summary aria-label={`Actions for ${layer.name}`}>Actions ⋯</summary><div className="actions"><ExportMenu onExport={format=>void exportResearch(layer,format)} />{canWrite && <button onClick={async () => { const name = window.prompt("Research Area name", layer.name)?.trim(); if (!name || name === layer.name) return; try { await apiRequest(`/api/research-areas/${encodeURIComponent(layer.id)}`, { name }, "PATCH"); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Rename failed"); } }}>Rename</button>}{["owner", "admin"].includes(role) && <button onClick={async () => { if (!window.confirm(`Delete the Research Area “${layer.name}” and its saved geometry?`)) return; try { await apiRequest(`/api/research-areas/${encodeURIComponent(layer.id)}`, {}, "DELETE"); clearAreas(); await reload(); setNotice("Research Area deleted."); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete</button>}<label><input type="checkbox" checked={!visibleUserLayerIds || visibleUserLayerIds.has(layer.id)} onChange={(event) => setVisibleUserLayerIds((current) => { const next = new Set(current || data.layers.map((item) => item.id)); if (event.target.checked) next.add(layer.id); else next.delete(layer.id); return next; })} /> Show on map</label></div></details></div>)}{!data.layers.some((layer) => layer.layer_kind === "research_area") && <p>No Research Areas yet.</p>}</div>
+          <div hidden={drawer !== "observations"}><p className="drawer-intro">Your field observations</p>{canWrite ? <button className="drawer-add" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋ Add observation</button> : null}<label>Search Observations<input value={observationSearch} onChange={e=>setObservationSearch(e.target.value)} /></label>{data.observations.filter(o=>`${o.title} ${o.notes||""}`.toLowerCase().includes(observationSearch.toLowerCase())).map((observation) => <button className="drawer-record" key={observation.id} onClick={() => { setSelectedResearch(null);setSelection({kind:"observation", record:observation});setTab("observations");setRightOpen(true);setLeftOpen(false);setSheet("medium"); setView(map.current,[observation.latitude, observation.longitude],16); }}><b>{observation.title}</b><small>{new Date(observation.observed_at).toLocaleDateString()} · {observation.field_observation_media.length} photos</small><small>{(observation.notes || "").slice(0,100)}</small></button>)}{!data.observations.length ? <p>No observations yet. Add one from the map.</p> : null}{queue.length > 0 && <details aria-label="Observation drafts on this device"><summary>Drafts on this device ({queue.length})</summary>{queue.map((item) => <div className="drawer-record" key={item.id}><b>{item.input.title || "Untitled observation"}</b><small>{item.status} · Updated {new Date(item.updatedAt).toLocaleString()}</small><div className="actions"><button onClick={() => { draftRef.current = item; setDraft(item); setTab("observations"); setRightOpen(true); setLeftOpen(false); setSheet("expanded"); }}>Resume</button><button disabled={item.status === "uploading" || Boolean(item.photoSelection && nativePhotoActive.current)} onClick={async () => { if (!window.confirm(`Delete the device draft “${item.input.title || "Untitled observation"}”?`)) return; try { await removeDraft(item.id); if (draftRef.current?.id === item.id) { draftRef.current = null; setDraft(null); } await reloadQueue(); setNotice("Device observation draft deleted."); } catch { setNotice("Unable to delete this device draft. It has been preserved."); } }}>Delete</button></div></div>)}</details>}</div>
           <div hidden={drawer !== "views"}>{savedViewsPanel}</div>
         </div>
       </aside>
@@ -2592,26 +2648,26 @@ export default function MapWorkspace({
             <button
               key={type}
               aria-label={label}
-              disabled={!canWrite || drawMode}
+              aria-pressed={drawMode && kind === type}
+              disabled={!canWrite}
               onClick={() => startDrawing(type)}
             >
               <span className="tool-icon" aria-hidden="true">{icon}</span><span>{label}</span>
             </button>
           ))}
           <button type="button" onClick={activateElevation}>Elevation</button><button type="button" onClick={activateProfile}>Elevation profile</button><button type="button" onClick={() => setHillshade((value) => !value)} aria-pressed={hillshade}>Hillshade</button>{dem && <label>Relief<select aria-label="Tool terrain exaggeration" value={terrainExaggeration} onChange={(event) => setTerrainExaggeration(Number(event.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label>}
-          <button type="button" aria-label="Measure distance" disabled={!canWrite || drawMode} onClick={() => startDrawing("LineString")}><span className="tool-icon" aria-hidden="true">⌁</span><span>Measure</span></button>
+          <button type="button" aria-label="Measure distance" disabled={!canWrite || drawMode} onClick={() => startDrawing("LineString")}><span className="tool-icon" aria-hidden="true">⌁</span><span>Measure distance</span></button>
           <button className="mobile-multiselect-tool" aria-label="Previous map view" disabled={historyPosition.index === 0} onClick={() => navigateHistory(-1)}>← Previous</button>
           <button className="mobile-multiselect-tool" aria-label="Next map view" disabled={historyPosition.index >= historyPosition.length - 1} onClick={() => navigateHistory(1)}>→ Next</button>
           <button className="mobile-multiselect-tool" aria-label="Go to home view" onClick={goHome}>⌂ Home</button>
           <button className="mobile-multiselect-tool" aria-label="Save home view" onClick={() => { if (!map.current) return; try { localStorage.setItem(homeKey, JSON.stringify(cameraView(map.current))); setNotice("Current map view saved as Home on this device."); } catch { setNotice("Unable to save Home on this device."); } }}>⌂＋ Set home</button>
           <button className="mobile-multiselect-tool" type="button" aria-label="Toggle multi-select" aria-pressed={multiSelect} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); setPaletteOpen(false); }}><span className="tool-icon" aria-hidden="true">▧</span><span>Multi-select</span></button>
           <button type="button" aria-label="Radius" aria-expanded={radiusOpen} onClick={() => setRadiusOpen((v) => !v)}><span className="tool-icon" aria-hidden="true">◉</span><span>Radius</span></button>
-          {radiusOpen ? <div className="radius-settings"><label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label><button disabled={!canWrite} onClick={() => void createRadius()}>Create at map centre</button></div> : null}
+          {radiusOpen ? <div className="radius-settings"><label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label><button disabled={!canWrite} onClick={async()=>{if(!(await pauseObservation()))return;if(localLayer||session.active||session.found){setRightOpen(false);setPaletteOpen(false);return;}elevationMode.current=false;setElevationActive(false);profileMode.current=false;setProfileDrawing(false);radiusPlacementRef.current=true;setRadiusPlacement(true);setPaletteOpen(false);setLeftOpen(false);setRightOpen(false);setSheet("collapsed");}}>Place centre on map</button><button disabled={!canWrite} onClick={() => void createRadius()}>Use map centre</button></div> : null}
           <button disabled={!canWrite} aria-label="Import spatial file" onClick={() => importInput.current?.click()}><span className="tool-icon" aria-hidden="true">⇧</span><span>Import</span></button>
           <button aria-label="Inspect centre coordinates" onClick={() => { const c = map.current?.getCenter(); if (c) setNotice(`Map centre: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`); }}><span className="tool-icon" aria-hidden="true">⌖</span><span>Coordinates</span></button>
-          <small>
-            {drawMode ? `Active: ${kind}` : "Select a tool to begin"}
-          </small>
+          <details><summary>Drawing drafts ({localLayer || session.found || session.active ? 1 : 0})</summary>{localLayer?<button onClick={()=>{clearAreas();setSelection(null);setRightOpen(false);setPaletteOpen(false);setSheet("collapsed");}}>Resume {localLayer.name}</button>:session.found?<button onClick={()=>{drawing.current=true;drawKind.current=session.found!.kind;session.resume();setPaletteOpen(false);setRightOpen(false);setSheet("collapsed");}}>Resume unfinished drawing</button>:<p>{drawMode?"Your drawing is active on the map.":"No unfinished drawing on this device."}</p>}</details>
+          <small>{drawMode ? `Active: ${kind}` : "Select a tool to begin"}</small>
         </div>
       </FloatingMapWidget>
       ) : null}
@@ -2687,7 +2743,7 @@ export default function MapWorkspace({
             <span />
           </button>
         </div>
-        <div className="inspector-heading">
+        <div className="inspector-heading"><button className="detail-back" aria-label="Back to object list" onClick={async()=>{if(!(await pauseObservation()))return;setRightOpen(false);setSheet("collapsed");setDrawer(selectedResearch?"research":selectedParcel?"properties":selected?"observations":"research");setLeftOpen(true);}}>←</button>
           <div>
             <h2>
               {drawMode
@@ -2700,8 +2756,8 @@ export default function MapWorkspace({
                     ? selected.title
                     : selectedParcel || officialParcel
                       ? "Property"
-                      : tab === "layers"
-                        ? "Layers"
+                      : selectedResearch ? selectedResearch.layer.name : selectedDrawing ? String(selectedDrawing.properties?.name || "Drawing") : tab === "layers"
+                        ? "Details"
                         : "Workspace"}
             </h2>
           </div>
@@ -2717,25 +2773,8 @@ export default function MapWorkspace({
             ×
           </button>
         </div>
-        <nav className="tabs">
-          {(["observations", "parcels", "layers"] as const).map((t) => (
-            <button
-              key={t}
-              className={tab === t ? "active" : ""}
-              onClick={async () => {
-                if (t !== "observations" && !(await pauseObservation())) return;
-                setSelectionDetails(false);
-                setTab(t);
-                setSelection(null);
-                setSheet("medium");
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </nav>
         <div className="inspector-content">
-          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3><ResearchRelations key={selectedResearch.layer.id} id={selectedResearch.layer.id} properties={data.parcels} editable={canWrite} /><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><button onClick={() => exportFeatures(selectedResearch.features, "geojson", selectedResearch.layer.name)}>Export GeoJSON</button><button onClick={() => exportFeatures(selectedResearch.features, "kml", selectedResearch.layer.name)}>Export KML</button><button onClick={clearAreas}>Clear selection</button></div></section>}
+          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3>{canWrite && selectedResearch.layer.layer_kind === "research_area" && <details><summary>Edit Research Area</summary><form onSubmit={async event=>{event.preventDefault();const values=new FormData(event.currentTarget);const name=String(values.get("name")||"").trim(),description=String(values.get("description")||""),subtype=String(values.get("subtype")||"general");try{await apiRequest(`/api/research-areas/${selectedResearch.layer.id}`,{name,description,subtype},"PATCH");setSelectedResearch(current=>current?{...current,layer:{...current.layer,name,metadata:{...current.layer.metadata,description,research_subtype:subtype}}}:current);await reload();setNotice("Research Area updated.");}catch(e){setNotice(e instanceof Error?e.message:"Update failed");}}}><label>Name<input name="name" defaultValue={selectedResearch.layer.name} required maxLength={160}/></label><label>Type<select name="subtype" defaultValue={String(selectedResearch.layer.metadata?.research_subtype||"general")}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label><label>Notes<textarea name="description" maxLength={2000} defaultValue={String(selectedResearch.layer.metadata?.description||"")}/></label><button>Save details</button></form></details>}{selectedResearch.layer.layer_kind === "research_area" && <ResearchRelations key={selectedResearch.layer.id} id={selectedResearch.layer.id} properties={data.parcels} editable={canWrite} />}<p>Type: {String(selectedResearch.layer.metadata?.research_subtype || selectedResearch.layer.layer_kind)} · Source: {String(selectedResearch.layer.metadata?.source_file || "Workspace geometry")}</p><p>{String(selectedResearch.layer.metadata?.description || "")}</p><LayerFeatureBrowser layer={selectedResearch.layer} opacity={layerOpacity[selectedResearch.layer.id] ?? 1} onOpacityChange={value=>setLayerOpacity(v=>({...v,[selectedResearch.layer.id]:value}))} onSelect={feature=>{const record=selectedResearch.layer;setSelectedResearch(null);setSelection({kind:"drawing",record,featureId:String(feature.id)});setTab("layers");setRightOpen(true);setSheet("medium");}} /><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><ExportMenu onExport={format=>exportFeatures(selectedResearch.features,format,selectedResearch.layer.name)} /><button onClick={clearAreas}>Clear selection</button></div></section>}
           {spatialImport && <section className="local-layer" aria-label="Spatial import preview"><h3>Import spatial data</h3><p>Preview only · not saved yet</p><p>{spatialImport.geojson.features.length} features · {[...new Set(spatialImport.geojson.features.map((feature) => feature.geometry.type))].join(", ")}</p><p>Estimated bounds: {geometryBounds(spatialImport.geojson).getSouthWest().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getSouthWest().lng.toFixed(4)} to {geometryBounds(spatialImport.geojson).getNorthEast().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getNorthEast().lng.toFixed(4)}</p><p>Approximate area: {formatArea(spatialImport.geojson.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}. Imported geometry is user supplied, not official cadastre.</p><details><summary>Feature names</summary>{spatialImport.geojson.features.slice(0, 50).map((feature, index) => <p key={String(feature.id)}>{String(feature.properties?.name || `Feature ${index + 1}`)}</p>)}</details><label>Destination<select aria-label="Import destination" value={spatialImport.destination} onChange={(event) => setSpatialImport({ ...spatialImport, destination: event.target.value as typeof spatialImport.destination })}><option value="property">Property</option><option value="research">Research Area</option><option value="layer">Custom Layer</option></select></label>{spatialImport.destination === "research" && <label>Research Area type<select value={spatialImport.subtype || "general"} onChange={(event) => setSpatialImport({ ...spatialImport, subtype: event.target.value as NonNullable<SpatialImportDraft["subtype"]> })}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label>}<label>Name<input aria-label="Import name" value={spatialImport.name} maxLength={160} onChange={(event) => setSpatialImport({ ...spatialImport, name: event.target.value })} /></label><label>Description<textarea value={spatialImport.description} maxLength={2000} onChange={(event) => setSpatialImport({ ...spatialImport, description: event.target.value })} /></label><div className="actions"><button disabled={importSaving || !spatialImport.name.trim()} onClick={() => void saveSpatialImport()}>{importSaving ? "Saving…" : "Save import"}</button><button disabled={importSaving} onClick={() => { if (window.confirm("Discard this unsaved import preview?")) setSpatialImport(null); }}>Discard preview</button></div></section>}
           {isMobile && !draft && officialParcel && !selectionDetails && <section className="mobile-parcel-summary" aria-label="Selected parcel summary">
             <strong>{[officialParcel.lot, officialParcel.plan].filter(Boolean).join(" / ") || officialParcel.sourceId}</strong>
@@ -2937,45 +2976,6 @@ export default function MapWorkspace({
               </button>
             </section>
           ) : null}
-          {!draft && !selectionDetails && !selected && tab === "observations" ? (
-            <>
-              <div className="section-label">
-                FIELD OBSERVATIONS <span>{data.observations.length}</span>
-              </div>
-              {!data.observations.length ? (
-                <div className="empty-state">
-                  <span>⌁</span>
-                  <h3>Start in the field.</h3>
-                  <p>
-                    Locate yourself, add a note and take a photo. Your
-                    observations will appear here.
-                  </p>
-                </div>
-              ) : (
-                data.observations.map((o) => (
-                  <button
-                    className="record-row"
-                    key={o.id}
-                    onClick={() => {
-                      setSelected(o);
-                      setSheet("expanded");
-                      setView(map.current, [o.latitude, o.longitude], 16);
-                    }}
-                  >
-                    <span className="record-icon">⌁</span>
-                    <span>
-                      <strong>{o.title}</strong>
-                      <small>
-                        {new Date(o.observed_at).toLocaleDateString()} ·{" "}
-                        {o.field_observation_media.length} photos
-                      </small>
-                    </span>
-                    <em>↗</em>
-                  </button>
-                ))
-              )}
-            </>
-          ) : null}
           {!draft && !selectionDetails && tab === "parcels" ? (
             <>
               {identifyBusy ? <p role="status">Identifying parcel…</p> : null}
@@ -3036,6 +3036,7 @@ export default function MapWorkspace({
                       selectedParcel?.title ||
                       "Official parcel"}
                   </h3>
+                  {selectedParcel && <div className="object-detail-actions"><ExportMenu onExport={format=>void exportProperty(selectedParcel,format)} /><button onClick={async()=>{const title=window.prompt("Property name",selectedParcel.title)?.trim();if(!title)return;try{await apiRequest(`/api/properties/${selectedParcel.id}`,{title},"PATCH");await reload();setSelection(current=>current?.kind==="parcel"?{...current,record:{...current.record,title}}:current);}catch(e){setNotice(e instanceof Error?e.message:"Edit failed");}}}>Edit name</button><button onClick={async()=>{const notes=window.prompt("Property notes",selectedParcel.notes||"");if(notes===null)return;try{await apiRequest(`/api/properties/${selectedParcel.id}`,{notes},"PATCH");await reload();setSelection(current=>current?.kind==="parcel"?{...current,record:{...current.record,notes}}:current);}catch(e){setNotice(e instanceof Error?e.message:"Notes update failed");}}}>Edit notes</button></div>}
                   <dl>
                     <dt>State</dt>
                     <dd>
@@ -3206,245 +3207,10 @@ export default function MapWorkspace({
                   )}
                 </section>
               ) : null}
-              <div className="section-label">
-                PARCEL REGISTER <span>{data.parcels.length}</span>
-              </div>
-              <label>
-                Search saved properties
-                <input
-                  value={propertyFilter}
-                  onChange={(e) => setPropertyFilter(e.target.value)}
-                  placeholder="Address, title or parcel ID"
-                />
-              </label>
-              {data.parcels.length ? (
-                data.parcels
-                  .filter((p) =>
-                    `${p.title} ${p.address || ""} ${p.state || ""} ${p.source_parcel_id || ""}`
-                      .toLowerCase()
-                      .includes(propertyFilter.toLowerCase()),
-                  )
-                  .map((p) => (
-                    <button
-                      className="record-row"
-                      key={p.id}
-                      onClick={() => {
-                        selectSavedParcel(p);
-                        if (p.latitude !== null && p.longitude !== null)
-                          setView(map.current, [p.latitude, p.longitude], 15);
-                        setNotice(
-                          `${p.title} · ${p.status}${p.notes ? " · " + p.notes : ""}`,
-                        );
-                      }}
-                    >
-                      <span className="record-icon">◇</span>
-                      <span>
-                        <strong>{p.title}</strong>
-                        <small>{p.status}</small>
-                      </span>
-                    </button>
-                  ))
-              ) : (
-                <p className="empty-state">
-                  Your imported or saved parcels will appear here.
-                </p>
-              )}
             </>
           ) : null}
           {!draft && !selectionDetails && tab === "layers" ? (
             <>
-              <div className="section-label">
-                MY LAYERS <span>{data.layers.length}</span>
-              </div>
-              {data.layers.map((l) => (
-                <details
-                  className="saved-layer"
-                  key={l.id}
-                  onToggle={(e) => {
-                    if (
-                      e.currentTarget.open &&
-                      !l.geojson &&
-                      l.layer_kind !== "radius"
-                    )
-                      void loadFullLayer(l.id).catch((error) =>
-                        setNotice(
-                          error instanceof Error
-                            ? error.message
-                            : "Layer unavailable",
-                        ),
-                      );
-                  }}
-                >
-                  <summary>
-                    {l.name}
-                    <small>Saved to Workspace</small>
-                  </summary>
-                  {!l.geojson && l.layer_kind !== "radius" ? (
-                    <button
-                      onClick={() =>
-                        void loadFullLayer(l.id).catch((error) =>
-                          setNotice(
-                            error instanceof Error
-                              ? error.message
-                              : "Layer unavailable",
-                          ),
-                        )
-                      }
-                    >
-                      Load shapes
-                    </button>
-                  ) : null}
-                  {l.geojson?.features.slice(0, 50).map((f, index) => (
-                    <button
-                      className="record-row"
-                      key={String(f.id || index)}
-                      onClick={() => {
-                        const renderKey = f.id != null ? String(f.id) : [...mapLibreCollections({ ...emptyData, layers: [l] }).workspace.index.entries()].find(([, item]) => item.feature === f)?.[0];
-                        if (!renderKey) { setNotice("Unable to identify this legacy feature."); return; }
-                        const drawingDetail = {
-                          kind: "drawing",
-                          record: l,
-                          featureId: renderKey,
-                        } as const;
-                        const shape = propertyGeometry(f.geometry);
-                        if (shape) applyArea({ id: `feature:${l.id}:${String(f.id ?? renderKey)}`, label: String(f.properties?.name || l.name), source: `Layer: ${l.name}`, kind: "feature", geometry: shape, detail: drawingDetail });
-                        else setSelection(drawingDetail);
-                        const bounds = geometryBounds(f);
-                        if (!bounds.isEmpty())
-                          map.current?.fitBounds(bounds, {
-                            maxZoom: 17,
-                            padding: 30,
-                          });
-                      }}
-                    >
-                      {String(
-                        f.properties?.name ||
-                          f.properties?.label ||
-                          `Shape ${index + 1}`,
-                      )}
-                    </button>
-                  ))}
-                  {(l.geojson?.features.length || 0) > 50 ? (
-                    <small>First 50 shapes shown.</small>
-                  ) : null}
-                </details>
-              ))}
-              {canWrite ? (
-                <>
-                  <div className="actions">
-                    <button onClick={() => importInput.current?.click()}>
-                      Import KML, KMZ or GeoJSON
-                    </button>
-                    <button onClick={() => setToolsOpen((v) => !v)}>
-                      Draw
-                    </button>
-                  </div>
-                  {toolsOpen ? (
-                    <div className="drawing-tools">
-                      {(
-                        [
-                          ["Point", "Add point"],
-                          ["LineString", "Draw line"],
-                          ["Polygon", "Draw polygon"],
-                          ["Rectangle", "Draw rectangle"],
-                        ] as [DrawingKind, string][]
-                      ).map(([k, label]) => (
-                        <button key={k} onClick={() => startDrawing(k)}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {drawMode ? (
-                    <>
-                      <div className="drawing-details">
-                        <label>
-                          Drawing name
-                          <input
-                            value={session.active?.name || ""}
-                            maxLength={160}
-                            onChange={(e) =>
-                              session.change({ name: e.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          Target layer
-                          <select
-                            disabled={Boolean(session.active?.originalFeature)}
-                            value={session.active?.targetLayerId || ""}
-                            onChange={(e) =>
-                              session.change({
-                                targetLayerId: e.target.value || undefined,
-                              })
-                            }
-                          >
-                            <option value="">New layer</option>
-                            {data.layers
-                              .filter((l) => l.geojson)
-                              .map((l) => (
-                                <option key={l.id} value={l.id}>
-                                  {l.name}
-                                </option>
-                              ))}
-                          </select>
-                        </label>
-                      </div>
-                      <div className="drawing-actions">
-                        <strong>
-                          {drawnMeasurement?.areaM2
-                            ? formatArea(drawnMeasurement.areaM2)
-                            : drawnMeasurement?.distanceM
-                              ? formatDistance(drawnMeasurement.distanceM)
-                              : `${drawPoints.length} points`}
-                        </strong>
-                        <button
-                          onClick={() =>
-                            void finishDrawing().catch(() =>
-                              setNotice(
-                                "Unable to complete local drawing. Device draft is retained.",
-                              ),
-                            )
-                          }
-                        >
-                          {kind === "Polygon"
-                            ? "Finish polygon"
-                            : "Finish shape"}
-                        </button>
-                        <button
-                          disabled={!session.active?.undo}
-                          onClick={session.undo}
-                        >
-                          Undo point
-                        </button>
-                        <button
-                          onClick={() => {
-                            drawing.current = false;
-                            void session
-                              .discard()
-                              .catch(() =>
-                                setNotice("Unable to discard local drawing."),
-                              );
-                          }}
-                        >
-                          Cancel drawing
-                        </button>
-                      </div>
-                    </>
-                  ) : null}
-                  {localLayer ? (
-                    <ShapeDraft
-                      key={localLayer.id}
-                      draft={localLayer}
-                      layers={data.layers}
-                      onChange={(value) => void updateLocalLayer(value)}
-                      onSave={saveShape}
-                      onSaveResearch={saveResearchDraft}
-                      onDiscard={() => void updateLocalLayer(null)}
-                    />
-                  ) : null}
-                </>
-              ) : null}
               {selectedDrawing && selection?.kind === "drawing" ? (
                 <div className="property-details">
                   <strong>
@@ -3459,7 +3225,7 @@ export default function MapWorkspace({
                   <div className="actions">
                     <button onClick={() => map.current?.fitBounds(geometryBounds(selectedDrawing.geometry), { padding: 60, maxZoom: 18 })}>Fit to Shape</button>
                     <button onClick={clearAreas}>Clear Selection</button>
-                    {(["geojson", "kml", "kmz", "csv"] as const).map((format) => <button key={format} onClick={() => exportFeatures([selectedDrawing], format, "landos-shape")}>Export {format.toUpperCase()}</button>)}
+                    <ExportMenu onExport={format=>exportFeatures([selectedDrawing],format,String(selectedDrawing.properties?.name||"landos-shape"))} />
                   </div>
                   <p>
                     {geometryMeasurement(selectedDrawing.geometry).areaM2
@@ -3554,49 +3320,6 @@ export default function MapWorkspace({
             >
               {loadingMore ? "Loading…" : "Load more Workspace data"}
             </button>
-          ) : null}
-          {(!selectionDetails || draft) && queue.length ? (
-            <section className="queue">
-              <div className="section-label">
-                OBSERVATION DRAFTS ON THIS DEVICE <span>{queue.length}</span>
-              </div>
-              {queue.map((d) => (
-                <div key={d.id} className="queue-row">
-                  <div>
-                    <strong>{d.input.title || "Untitled observation"}</strong>
-                    <small>
-                      {d.status} · {d.photos.length} photos · Updated {new Date(d.updatedAt).toLocaleString()}
-                    </small>
-                    {d.error ? <p>{d.error}</p> : null}
-                  </div>
-                  {d.status === "draft" || d.photoSelection ? (
-                    <button
-                      onClick={() => {
-                        draftRef.current = d;
-                        setDraft(d);
-                        setTab("observations");
-                        setRightOpen(true);
-                        setSheet("expanded");
-                      }}
-                    >
-                      Resume
-                    </button>
-                  ) : (
-                    <button
-                      disabled={!online || uploading.current}
-                      onClick={() => void uploadDraft(d)}
-                    >
-                      Retry
-                    </button>
-                  )}
-                  <button disabled={d.status === "uploading" || Boolean(d.photoSelection && nativePhotoActive.current)} onClick={async () => {
-                    if (!window.confirm(`Delete the device draft “${d.input.title || "Untitled observation"}”?`)) return;
-                    try { await removeDraft(d.id); if (draftRef.current?.id === d.id) { draftRef.current = null; setDraft(null); } await reloadQueue(); setNotice("Device observation draft deleted."); }
-                    catch { setNotice("Unable to delete this device draft. It has been preserved."); }
-                  }}>Delete draft</button>
-                </div>
-              ))}
-            </section>
           ) : null}
         </div>
         <footer className="inspector-footer">

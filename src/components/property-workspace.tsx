@@ -6,8 +6,6 @@ import { PropertyPlanningInspector } from "./property-planning";
 import { PropertyRelations } from "./property-relations";
 export function PropertyWorkspace({
   parcel,
-  catalog,
-  active,
   onObservation,
   onAddField,
 }: {
@@ -18,14 +16,10 @@ export function PropertyWorkspace({
   onAddField?: () => void;
 }) {
   const [section, setSection] = useState("Overview");
-  const references = active
-    .filter((a) => a.visible)
-    .map((a) => catalog.find((l) => l.id === a.catalog_id))
-    .filter((l): l is CatalogLayer => Boolean(l && l.state === parcel.state));
   return (
     <div className="property-workspace">
       <nav className="property-sections" aria-label="Property sections">
-        {["Overview", "Planning", "Layers", "Field", "My Analysis"].map(
+        {["Overview", "Planning", "Observations", "Related Areas"].map(
           (name) => (
             <button
               key={name}
@@ -76,26 +70,11 @@ export function PropertyWorkspace({
       {section === "Planning" ? (
         <PropertyPlanningInspector propertyId={parcel.id} />
       ) : null}
-      {section === "Layers" ? (
-        <div>
-          <strong>
-            Active reference layers for {parcel.state || "this state"}
-          </strong>
-          <ul>
-            {references.map((l) => (
-              <li key={l.id}>{l.name}</li>
-            ))}
-          </ul>
-          {!references.length ? (
-            <p>No active reference layers for this state.</p>
-          ) : null}
-        </div>
-      ) : null}
-      {section === "Field" || section === "My Analysis" ? (
+      {section === "Observations" || section === "Related Areas" ? (
         <PropertyRelations
           key={section}
           propertyId={parcel.id}
-          section={section}
+          section={section === "Observations" ? "Field" : "My Analysis"}
           onObservation={onObservation}
           onAddField={onAddField}
         />
