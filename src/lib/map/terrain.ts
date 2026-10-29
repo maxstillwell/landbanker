@@ -3,6 +3,7 @@ import { terrainTileJsonUrl } from "./maplibre-config";
 
 export const TERRAIN_SOURCE = "landos-terrain-dem";
 const HILLSHADE = "landos-terrain-hillshade";
+const appliedSources = new WeakMap<MapLibreMap, string>();
 
 /** Disabled until an operator configures a reviewed Terrarium TileJSON and attribution. */
 export function terrainConfig(url: string | undefined, attribution: string | undefined, size?: string) {
@@ -11,8 +12,16 @@ export function terrainConfig(url: string | undefined, attribution: string | und
   return safeUrl && attribution?.trim() ? { url: safeUrl, attribution: attribution.trim(), tileSize: size === "256" ? 256 : 512 } : null;
 }
 
-export function applyTerrain(map: MapLibreMap, config: { url: string; attribution: string; tileSize?: number }, enabled: boolean, hillshade: boolean, exaggeration: number) {
-  if (!map.getSource(TERRAIN_SOURCE)) map.addSource(TERRAIN_SOURCE, { type: "raster-dem", url: config.url, encoding: "terrarium", tileSize: config.tileSize ?? 512, attribution: config.attribution });
+export function applyTerrain(map: MapLibreMap, config: { url?: string; tiles?: string[]; attribution: string; tileSize?: number; maxzoom?: number; bounds?: [number, number, number, number] }, enabled: boolean, hillshade: boolean, exaggeration: number) {
+  const source = { type: "raster-dem" as const, ...(config.url ? { url: config.url } : { tiles: config.tiles }), encoding: "terrarium" as const, tileSize: config.tileSize ?? 512, attribution: config.attribution, ...(config.maxzoom !== undefined ? {maxzoom: config.maxzoom} : {}), ...(config.bounds ? {bounds: config.bounds} : {}) };
+  const identity = JSON.stringify(source);
+  if (map.getSource(TERRAIN_SOURCE) && appliedSources.get(map) !== identity) {
+    map.setTerrain(null);
+    if (map.getLayer(HILLSHADE)) map.removeLayer(HILLSHADE);
+    map.removeSource(TERRAIN_SOURCE);
+  }
+  if (!map.getSource(TERRAIN_SOURCE)) map.addSource(TERRAIN_SOURCE, source);
+  appliedSources.set(map, identity);
   if (hillshade && !map.getLayer(HILLSHADE)) map.addLayer({ id: HILLSHADE, type: "hillshade", source: TERRAIN_SOURCE }, map.getStyle().layers.find((layer) => layer.type === "symbol")?.id);
   if (!hillshade && map.getLayer(HILLSHADE)) map.removeLayer(HILLSHADE);
   map.setTerrain(enabled ? { source: TERRAIN_SOURCE, exaggeration } : null);

@@ -21,7 +21,8 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 import { mapLibreCollections } from "@/lib/map/maplibre-geojson";
-import { applyTerrain, terrainConfig, terrainElevation, visibleTerrainCoverage, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
+import { terrainProvider, availableTerrainProviders } from "@/lib/map/terrain-provider";
+import { applyTerrain, terrainElevation, visibleTerrainCoverage, TERRAIN_SOURCE, elevationProfile, profileSummary, parcelElevation, type Position, type HeightSample } from "@/lib/map/terrain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { OfficialMapLayers, useOfficialMapLayers } from "./official-map-layers";
@@ -305,7 +306,19 @@ export default function MapWorkspace({
   const [terrainExaggeration, setTerrainExaggeration] = useState(1);
   const [pointElevation, setPointElevation] = useState<number | null>(null);
   const [terrainCoverage, setTerrainCoverage] = useState<"unknown" | "partial" | "loaded">("unknown");
-  const dem = useMemo(() => terrainConfig(process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL, process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION, process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE), []);
+  const providers = useMemo(() => availableTerrainProviders(terrainProvider({
+    id: "configured", label: "Configured DEM", url: process.env.NEXT_PUBLIC_TERRAIN_TILEJSON_URL || undefined,
+    tiles: process.env.NEXT_PUBLIC_TERRAIN_XYZ_URL ? [process.env.NEXT_PUBLIC_TERRAIN_XYZ_URL] : undefined,
+    tileSize: process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE === "256" ? 256 : (!process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE || process.env.NEXT_PUBLIC_TERRAIN_TILE_SIZE === "512") ? 512 : undefined,
+    maxzoom: process.env.NEXT_PUBLIC_TERRAIN_XYZ_URL ? Number(process.env.NEXT_PUBLIC_TERRAIN_MAXZOOM || "12") : undefined,
+    datumVerified: process.env.NEXT_PUBLIC_TERRAIN_DATUM_VERIFIED === "1",
+    attribution: process.env.NEXT_PUBLIC_TERRAIN_ATTRIBUTION,
+    resolution: process.env.NEXT_PUBLIC_TERRAIN_RESOLUTION,
+    datum: process.env.NEXT_PUBLIC_TERRAIN_DATUM,
+    accuracy: process.env.NEXT_PUBLIC_TERRAIN_ACCURACY,
+  }), process.env.NEXT_PUBLIC_TERRAIN_TEST_TILEZEN === "1", process.env.NODE_ENV === "development"), []);
+  const [providerId, setProviderId] = useState(process.env.NEXT_PUBLIC_TERRAIN_PROVIDER || "configured");
+  const dem = providers.find((provider) => provider.id === providerId) || providers[0] || null;
   useEffect(() => {
     const m = map.current;
     if (!m || !styleRevision || !dem) return;
@@ -332,7 +345,7 @@ export default function MapWorkspace({
     m.on("idle", update);
     return () => { m.off("movestart", onMove); m.off("render", onRender); m.off("idle", update); };
   }, [styleRevision, mapMode, terrainExaggeration, dem]);
-  const terrainMetadata = `Resolution: ${process.env.NEXT_PUBLIC_TERRAIN_RESOLUTION || "unknown"}; vertical datum: ${process.env.NEXT_PUBLIC_TERRAIN_DATUM || "unknown"}; accuracy: ${process.env.NEXT_PUBLIC_TERRAIN_ACCURACY || "unknown"}.`;
+  const terrainMetadata = `Resolution: ${dem?.resolution || "unknown"}; vertical datum: ${dem?.datum || "unknown"}; accuracy: ${dem?.accuracy || "unknown"}.`;
   const [tab, setTab] = useState<"observations" | "layers" | "parcels">(
     "observations",
   );
@@ -2258,8 +2271,8 @@ export default function MapWorkspace({
           </button>
         </div>
       ) : null}
-      {profileDrawing && <div className="map-drawing-bar" role="status">Profile: {profilePoints.length} points <button disabled={profilePoints.length < 2} onClick={() => { const m = map.current; if (m) setProfile(elevationProfile(profilePoints, (p) => terrainElevation(m, p, terrainExaggeration))); profileMode.current = false; setProfileDrawing(false); }}>Finish profile</button><button onClick={() => { profileMode.current = false; setProfileDrawing(false); setProfilePoints([]); setProfile([]); }}>Cancel</button></div>}
-      {profile.length > 0 && <div className="map-drawing-bar" role="region" aria-label="Elevation profile"><strong>Elevation profile · approximate, not survey grade</strong><span> {profileSummary(profile) ? `Rise slope ${profileSummary(profile)!.slopeDegrees.toFixed(1)}° / ${profileSummary(profile)!.slopePercent.toFixed(1)}%; range ${profileSummary(profile)!.min.toFixed(1)}–${profileSummary(profile)!.max.toFixed(1)} m` : "Incomplete: DEM data unavailable at one or more samples."} Source: {dem?.attribution}. {terrainMetadata} Avoid comparing heights across different or unknown datums.</span><details><summary>Profile samples (distance m, elevation m)</summary>{profile.map((p, i) => <div key={i}>{p.distance.toFixed(0)} m: {p.elevation === null ? "unavailable" : `${p.elevation.toFixed(1)} m`}</div>)}</details><button onClick={() => { setProfile([]); setProfilePoints([]); }}>Close profile</button></div>}
+      {profileDrawing && <div className="map-drawing-bar" role="status">Profile: {profilePoints.length} points <button disabled={profilePoints.length < 2} onClick={() => { const m = map.current; if (m) setProfile(elevationProfile(profilePoints, (p) => dem?.datumVerified ? terrainElevation(m, p, terrainExaggeration) : null)); profileMode.current = false; setProfileDrawing(false); }}>Finish profile</button><button onClick={() => { profileMode.current = false; setProfileDrawing(false); setProfilePoints([]); setProfile([]); }}>Cancel</button></div>}
+      {profile.length > 0 && <div className="map-drawing-bar" role="region" aria-label="Elevation profile"><strong>Elevation profile · approximate, not survey grade</strong><span> {profileSummary(profile) ? `Rise slope ${profileSummary(profile)!.slopeDegrees.toFixed(1)}° / ${profileSummary(profile)!.slopePercent.toFixed(1)}%; range ${profileSummary(profile)!.min.toFixed(1)}–${profileSummary(profile)!.max.toFixed(1)} m` : (dem?.datumVerified ? "Incomplete: DEM data unavailable at one or more samples." : "Profile measurements unavailable: vertical datum consistency is unverified.")} Source: {dem?.attribution}. {terrainMetadata} Avoid comparing heights across different or unknown datums.</span><details><summary>Profile samples (distance m, elevation m)</summary>{profile.map((p, i) => <div key={i}>{p.distance.toFixed(0)} m: {p.elevation === null ? "unavailable" : `${p.elevation.toFixed(1)} m`}</div>)}</details><button onClick={() => { setProfile([]); setProfilePoints([]); }}>Close profile</button></div>}
       {session.error ? (
         <div className="drawing-storage-error" role="alert">
           {session.error}
@@ -2572,9 +2585,9 @@ export default function MapWorkspace({
           ))}
         </nav>
         <div className="inspector-content">
-          {dem && mapMode === "3d" && <details><summary>Terrain source and accuracy</summary><p>{dem.attribution}. {terrainMetadata} Elevations are approximate and not survey grade; do not compare heights across different or unknown datums.</p></details>}
+          {dem && mapMode === "3d" && <details><summary>Terrain source and accuracy</summary>{providers.length > 1 && <label>Terrain provider<select aria-label="Terrain provider" value={dem.id} onChange={(e) => { setProviderId(e.target.value); setPointElevation(null); setProfile([]); setProfilePoints([]); setParcelHeights(null); setTerrainCoverage("unknown"); }} >{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}</select></label>}{dem.testingOnly && <p>Testing only. Provider permissions and vertical datum are not approved for production.</p>}<p>{dem.attribution}. {terrainMetadata} Elevations are approximate and not survey grade; do not compare heights across different or unknown datums. {!dem.datumVerified && "Profile and parcel calculations are withheld until datum consistency is verified."}</p></details>}
           {!draft && selectionDetails && selectedAreas.length ? <section className="selection-inspector" aria-label="Selected parcels and features" tabIndex={-1}><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated · {Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m²</p><small>Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setSelectionDetails(false); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source}{item.detail.kind === "official-parcel" || item.detail.kind === "parcel" ? ` · ${[item.detail.record.lot, item.detail.record.plan].filter(Boolean).join(" / ") || (item.detail.kind === "official-parcel" ? item.detail.record.sourceId : item.detail.record.source_parcel_id) || "ID unavailable"}` : ""} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul><div className="actions"><button onClick={fitSelectedAreas}>Fit to All</button><button onClick={clearAreas}>Clear All</button></div></section> : null}
-          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Source: {dem?.attribution}. {terrainMetadata}</p>}</section>}
+          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" && dem?.datumVerified ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : !dem?.datumVerified ? "Parcel measurements unavailable: vertical datum consistency is unverified." : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Source: {dem?.attribution}. {terrainMetadata}</p>}</section>}
           {!draft && !selectionDetails && selectedAreas.length > 1 ? <button onClick={() => { setSelection(null); setSelectionDetails(true); }}>Back to Selection</button> : null}
           {draft ? (
             <section className="observation-form">

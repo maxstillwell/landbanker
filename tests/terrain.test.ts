@@ -49,3 +49,16 @@ test("parcel estimates respect holes, zero, and unavailable samples", () => {
  assert.equal(visibleTerrainCoverage(make([()=>0,null])), "partial");
  assert.equal(visibleTerrainCoverage(make([()=>0,()=>1])), "loaded");
  });
+
+test('provider switching replaces only owned DEM resources and does not reload an unchanged source', () => {
+ const sources = new Map<string, unknown>([['parcels', {}]]);
+ const layers = new Set<string>(['parcel-boundaries']);
+ const events: string[] = [];
+ const m = {getSource:(id:string)=>sources.get(id),addSource:(id:string,s:unknown)=>{sources.set(id,s);events.push('add-source')},removeSource:(id:string)=>{sources.delete(id);events.push('remove-source')},getLayer:(id:string)=>layers.has(id),addLayer:(l:{id:string})=>{layers.add(l.id)},removeLayer:(id:string)=>layers.delete(id),getStyle:()=>({layers:[]}),setTerrain:()=>{}} as unknown as MapLibreMap;
+ const a={url:'https://example.test/a.json',attribution:'A'};
+ applyTerrain(m,a,true,true,1);applyTerrain(m,a,true,true,2);
+ assert.equal(events.filter(e=>e==='add-source').length,1);
+ applyTerrain(m,{tiles:['https://example.test/{z}/{x}/{y}.png'],attribution:'B',tileSize:256},true,true,1);
+ assert.equal(events.filter(e=>e==='remove-source').length,1);
+ assert.ok(sources.has('parcels'));assert.ok(layers.has('parcel-boundaries'));
+});
