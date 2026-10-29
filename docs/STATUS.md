@@ -1,5 +1,9 @@
 # LandOS status
 
+## Public marketing website V1 — direct main release, 30 October 2026 AEDT
+
+The owner explicitly superseded the earlier PR-only handoff and authorised direct main publication with automatic Vercel Production deployment. Completed website commit `1ee1bde8ac65220cfb4a0a8ddb74d339660238fc` was preserved and fast-forward integrated onto main after fetching remote `cbb7638`; no conflicts or uncommitted work were present. All seven public pages and original login/signup/app-map/share routes are retained. Protected GIS/Auth/share/global CSS/Supabase/brand/dependency paths have no changes against that remote base. Fresh lint, typecheck, 53 existing tests and production build pass. Production-build browser regression also passes: 28 page/width combinations and seven public interaction checks, with no page exceptions or failed requests. No live authenticated GIS or database acceptance is inferred. Production SHA, deployment status and live-page checks must be confirmed after push; this note is the pre-publication checkpoint. Earlier review-branch instructions and publication-blocker entries below are historical.
+
 ## Public marketing website V1 — isolated review branch, 30 October 2026 AEDT
 
 `website/public-site`, based on main `cbb7638`, implements `/`, `/features`, `/layers`, `/solutions`, `/pricing`, `/about` and `/contact` with scoped marketing components/CSS, existing Terrain Layers branding, illustrative spatial artwork, metadata, sitemap and robots policy. Current capabilities are grounded in repository evidence; professional curated layers and commercial plans remain future. No app/GIS/Auth/proxy/share/Supabase/global CSS/shared brand/dependency change. No merge or production deployment is authorised in this workstream.
