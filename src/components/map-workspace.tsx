@@ -927,10 +927,10 @@ export default function MapWorkspace({
         });
       }
       if (isMapLibreBasemap(stored?.basemap) || ["satellite", "hybrid", "nsw-aerial"].includes(stored?.basemap)) {
-        const restoredBasemap: MapLibreBasemap = ["esri-satellite", "satellite", "hybrid"].includes(stored.basemap) && esriApiKey ? "esri-satellite" : "streets";
+        const restoredBasemap: MapLibreBasemap = ["esri-satellite", "satellite", "hybrid"].includes(stored.basemap) && (esriApiKey || adminTerrainPreview) ? "esri-satellite" : "streets";
         setBasemap(restoredBasemap);
         basemapRef.current = restoredBasemap;
-        m.setStyle(basemapStyle(restoredBasemap, esriApiKey));
+        m.setStyle(basemapStyle(restoredBasemap, esriApiKey, adminTerrainPreview));
       }
     } catch {
       /* Device storage restrictions must not prevent map use. */
@@ -1043,7 +1043,7 @@ export default function MapWorkspace({
       m.remove();
       map.current = null;
     };
-  }, [esriApiKey, identifyParcelAt, saveDraft, setDrawPoints, userId, workspaceId]);
+  }, [adminTerrainPreview, esriApiKey, identifyParcelAt, saveDraft, setDrawPoints, userId, workspaceId]);
   useEffect(() => {
     void reloadQueue();
     const active = () => {
@@ -2344,13 +2344,13 @@ export default function MapWorkspace({
         <WorkspaceSelector name={workspaceName} />
         <BasemapSelector
           value={basemap}
-          esriEnabled={Boolean(esriApiKey)}
+          esriEnabled={Boolean(esriApiKey || adminTerrainPreview)}
           onChange={(next) => {
             if (!isMapLibreBasemap(next)) return;
             sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null);
             setBasemap(next);
             basemapRef.current = next;
-            map.current?.setStyle(basemapStyle(next, esriApiKey));
+            map.current?.setStyle(basemapStyle(next, esriApiKey, adminTerrainPreview));
             const current = map.current;
             if (current) {
               try {

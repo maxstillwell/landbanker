@@ -73,7 +73,9 @@ export function basemapAttribution(value: MapLibreBasemap) {
 export function basemapStyle(
   value: MapLibreBasemap,
   esriApiKey?: string,
+  adminImageryPreview = false,
 ): string | import("maplibre-gl").StyleSpecification {
-  if (value !== "esri-satellite" || !esriApiKey) return MAPLIBRE_BASEMAPS.streets.styleUrl;
-  return { version: 8, sources: { "esri-imagery": { type: "raster", tiles: [`https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(esriApiKey)}`], tileSize: 256, maxzoom: 19, attribution: ESRI_IMAGERY_ATTRIBUTION } }, layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }] };
+  if (value !== "esri-satellite" || (!esriApiKey && !adminImageryPreview)) return MAPLIBRE_BASEMAPS.streets.styleUrl;
+  const tiles = esriApiKey ? `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(esriApiKey)}` : "/api/imagery-preview/{z}/{x}/{y}";
+  return { version: 8, sources: { "esri-imagery": { type: "raster", tiles: [tiles], tileSize: 256, maxzoom: 19, attribution: ESRI_IMAGERY_ATTRIBUTION } }, layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }] };
 }
