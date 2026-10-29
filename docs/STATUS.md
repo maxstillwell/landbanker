@@ -1,5 +1,11 @@
 # LandOS status
 
+## Map-first workflow refinement — 29 October 2026
+
+Continues deployed `32e3ea4` on main, using MaxQI spatial tools as a read-only interaction reference. Drawing completion/recovery now stays in compact map cards with explicit save destinations, rectangle drag, point undo/clear/cancel and discard undo. Contextual inspectors no longer duplicate global tabs or lists. Property/Research actions use menus; observation drafts are collapsed; Map Display independently controls user objects. The catalogue has Added to Map / Catalogue views; legacy classification is explicit and preserves original features/type. Scoped detail reads now include existing import metadata. Basemap selection uses one picker with a restrained dark palette, and terrain uses inline status. No provider, schema, authentication, RLS or paid-infrastructure changes.
+
+Lint, typecheck, 53 unit tests and optimized build passed. Real local Supabase browser workflows verified drawing tools, labels/edit/delete/undo, multipart imports/export, classification preservation, draft recovery, photo persistence and cross-session observation edits/deletion with nonmember isolation. Real VIC parcel, Esri and protected Alpine DEM sampling passed; profile line mode reports unsupported datum without invented values. Desktop/laptop/mobile checks covered control overlap and navigation; inactive optional GIS requests were absent. Physical Safari and owner-authenticated production workflows remain unverified. Production deployment must be checked against the pushed release SHA.
+
 ## Product upgrade release — 29 October 2026
 
 Continues local commit `5ad809b` (backed up on GitHub as tag `backup-upgrade-5ad809b`). Adds atomic, content-deduplicated spatial imports, explicit workspace-scoped Research Area / Property associations, Research Area observation links, and saved observation edit/delete controls. Original creators and metadata survive observation edits. Additive `release_data_safety` migration applied to independent LandOS project; existing rows and local IndexedDB stores preserved. Existing local drafts recover through Resume / Save to Workspace; no bulk legacy conversion or automatic historical cleanup is performed.

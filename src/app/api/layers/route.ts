@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
     const { data, error } = await c.client
       .from("spatial_layers")
-      .select("id,workspace_id,name,layer_kind,geojson,layer_data")
+      .select("id,workspace_id,name,layer_kind,geojson,layer_data,metadata")
       .eq("workspace_id", c.workspaceId)
       .eq("id", id)
       .single();

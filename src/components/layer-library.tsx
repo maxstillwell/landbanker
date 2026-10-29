@@ -34,10 +34,9 @@ export function LayerLibrary({
   );
   return (
     <section className="layer-library">
-      <div className="section-label">
-        MY ACTIVE LAYERS <span>{active.length}</span>
-      </div>
-      {active.map((item, index) => {
+      <div role="tablist" aria-label="Layer library views"><button role="tab" aria-selected={!open} onClick={()=>setOpen(false)}>Added to Map ({active.length})</button><button role="tab" aria-selected={open} onClick={()=>setOpen(true)}>Catalogue</button></div>
+      <div className="section-label">{open ? "CATALOGUE" : "ADDED TO MAP"}</div>
+      {!open && active.map((item, index) => {
         const layer = catalog.find((l) => l.id === item.catalog_id);
         if (!layer) return null;
         return (
@@ -138,9 +137,6 @@ export function LayerLibrary({
           </div>
         );
       })}
-      <button onClick={() => setOpen((v) => !v)}>
-        {open ? "Close library" : "Add Layer"}
-      </button>
       {open ? (
         <div className="catalog-search"><p>Official layers · Featured sources are marked below. Future premium datasets are not yet available.</p>
           <label>
