@@ -13,6 +13,7 @@ export default async function Page() {
       workspaceId={c.workspaceId}
       workspaceName={name}
       role={c.role}
+      esriApiKey={process.env.ESRI_IMAGERY_ENABLED === "true" ? process.env.ARCGIS_API_KEY : undefined}
     />
   );
 }

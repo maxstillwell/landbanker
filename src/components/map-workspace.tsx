@@ -123,6 +123,7 @@ type Props = {
   workspaceId: string;
   workspaceName: string;
   role: string;
+  esriApiKey?: string;
 };
 type CameraView = { center: [number, number]; zoom: number; bearing: number; pitch: number };
 type SelectedAreaDetail = SelectedArea & { detail: NonNullable<MapSelection> };
@@ -138,6 +139,7 @@ export default function MapWorkspace({
   workspaceId,
   workspaceName,
   role,
+  esriApiKey,
 }: Props) {
   const mapNode = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -923,10 +925,10 @@ export default function MapWorkspace({
         });
       }
       if (isMapLibreBasemap(stored?.basemap) || stored?.basemap === "nsw-aerial") {
-        const restoredBasemap: MapLibreBasemap = stored.basemap === "satellite" || stored.basemap === "hybrid" ? stored.basemap : "streets";
+        const restoredBasemap: MapLibreBasemap = stored.basemap === "esri-satellite" ? (esriApiKey ? "esri-satellite" : "satellite") : stored.basemap === "satellite" || stored.basemap === "hybrid" ? stored.basemap : "streets";
         setBasemap(restoredBasemap);
         basemapRef.current = restoredBasemap;
-        m.setStyle(basemapStyle(restoredBasemap));
+        m.setStyle(basemapStyle(restoredBasemap, esriApiKey));
       }
     } catch {
       /* Device storage restrictions must not prevent map use. */
@@ -960,9 +962,14 @@ export default function MapWorkspace({
     m.on("error", (event) => {
       const source = (event as { sourceId?: string }).sourceId;
       if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
-      if (
-        ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite")
-      ) {
+      if (basemapRef.current === "esri-satellite" && source === "esri-imagery") {
+        basemapRef.current = "satellite";
+        setBasemap("satellite");
+        m.setStyle(basemapStyle("satellite"));
+        setNotice("Esri imagery is unavailable. Showing Sentinel-2; your workspace selection and drafts are preserved.");
+        return;
+      }
+      if ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite") {
         basemapRef.current = "streets";
         setBasemap("streets");
         m.setStyle(MAPLIBRE_BASEMAPS.streets.styleUrl);
@@ -1043,7 +1050,7 @@ export default function MapWorkspace({
       m.remove();
       map.current = null;
     };
-  }, [identifyParcelAt, saveDraft, setDrawPoints, userId, workspaceId]);
+  }, [esriApiKey, identifyParcelAt, saveDraft, setDrawPoints, userId, workspaceId]);
   useEffect(() => {
     void reloadQueue();
     const active = () => {
@@ -2344,12 +2351,13 @@ export default function MapWorkspace({
         <WorkspaceSelector name={workspaceName} />
         <BasemapSelector
           value={basemap}
+          esriEnabled={Boolean(esriApiKey)}
           onChange={(next) => {
             if (!isMapLibreBasemap(next)) return;
             sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null);
             setBasemap(next);
             basemapRef.current = next;
-            map.current?.setStyle(basemapStyle(next));
+            map.current?.setStyle(basemapStyle(next, esriApiKey));
             const current = map.current;
             if (current) {
               try {

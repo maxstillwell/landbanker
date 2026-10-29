@@ -4,6 +4,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 const swatches: Record<MapLibreBasemap, string> = {
+  "esri-satellite": "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   hybrid: "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   satellite:
     "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
@@ -17,14 +18,17 @@ const swatches: Record<MapLibreBasemap, string> = {
   terrain:
     "linear-gradient(135deg,#cee2b5 40%,#ead6ae 40%,#ead6ae 45%,#cee2b5 45%,#cee2b5 70%,#8fcae0 70%)",
 };
-const basemapOrder: MapLibreBasemap[] = ["streets", "satellite", "hybrid"];
+
 export function BasemapSelector({
   value,
   onChange,
+  esriEnabled,
 }: {
   value: MapLibreBasemap;
   onChange: (next: MapLibreBasemap) => void;
+  esriEnabled: boolean;
 }) {
+  const basemapOrder: MapLibreBasemap[] = ["streets", ...(esriEnabled ? ["esri-satellite" as const] : []), "satellite"];
   return (
     <details className="basemap-picker">
       <summary aria-label="Basemap previews">
@@ -62,9 +66,9 @@ export function BasemapSelector({
           ))}
         </div>
         <small>
-          Satellite and Hybrid use a Sentinel-2 bare-earth composite from imagery
+          Sentinel-2 uses a bare-earth composite from imagery
           through September 2020. It represents low vegetation, not current
-          conditions or parcel-scale aerial photography. Hybrid adds map labels.
+          conditions or parcel-scale aerial photography.
         </small>
       </div>
     </details>
