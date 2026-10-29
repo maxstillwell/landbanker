@@ -122,3 +122,7 @@ Five separately hosted proof tiles generated from Geoscience Australia's CC BY 4
 ## Remote terrain investigation
 
 The renderer now checks all rendered terrain tile samplers for missing DEM coverage rather than only the centre, with explicit warnings and conservative unknown handling. The controller accepts configured 256- or 512-pixel Terrarium sources and labels configured resolution/datum/accuracy or unknown. No remote provider is enabled. Direct AWS Terrain Tiles returned a CORS-allowing GET but has unresolved hosting conditions; GA WCS conversion and costs need strict production controls and source-operator permission. Benchmarks, evidence, limitations and illustrative costs are in TERRAIN_REMOTE_EVALUATION.md. Production remains blocked.
+
+## Rendered terrain sampling
+
+Centre sampling waits for MapLibre's rendered DEM sampler with an eight-second bound, provider error state and cancellation on camera, style, provider or exaggeration changes. Targeted unit tests cover delayed readiness, genuine zero, timeout, provider error and cancellation. A successful HTTP tile response alone does not prove a sampler is ready. Live repeated checks and release gates are still in progress. Draft provider questions are in TERRAIN_PROVIDER_ENQUIRY.md; no enquiry has been sent.
