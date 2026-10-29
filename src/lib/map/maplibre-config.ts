@@ -1,25 +1,20 @@
 export type MapLibreBasemap =
-  "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid" | "nsw-aerial";
+  "streets" | "light" | "dark" | "terrain" | "fiord" | "satellite" | "hybrid";
 
 export const MAPLIBRE_BASEMAPS: Record<
   MapLibreBasemap,
   { label: string; styleUrl: string; description: string }
 > = {
-  "nsw-aerial": {
-    label: "NSW Aerial",
-    styleUrl: "https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer",
-    description: "NSW Spatial Services imagery mosaic; date and resolution vary by location, with DEA regional fallback",
-  },
   hybrid: {
-    label: "Regional Hybrid",
+    label: "Hybrid",
     styleUrl: "https://ows.dea.ga.gov.au/",
-    description: "DEA 2025 satellite composite with OpenStreetMap place and road labels",
+    description: "Sentinel-2 bare-earth composite with OpenStreetMap place and road labels",
   },
   satellite: {
-    label: "Regional Satellite",
+    label: "Satellite",
     styleUrl: "https://ows.dea.ga.gov.au/",
     description:
-      "DEA Landsat 8/9 2025 annual composite, approximately 30 m; Australian coverage",
+      "Sentinel-2 bare-earth composite through September 2020; Australian coverage",
   },
   streets: {
     label: "Streets",
@@ -71,37 +66,36 @@ export function terrainTileJsonUrl(value: string | undefined) {
 
 export function basemapAttribution(value: MapLibreBasemap) {
   return (
-    (value === "satellite" || value === "hybrid" || value === "nsw-aerial"
-      ? "© Commonwealth of Australia (Geoscience Australia) · DEA GeoMAD 2025 · CC BY 4.0"
+    (value === "satellite" || value === "hybrid"
+      ? "© Commonwealth of Australia (Geoscience Australia) · Copernicus Sentinel data · CC BY 4.0"
       : OPENFREEMAP_ATTRIBUTION) +
     (value === "hybrid" ? ` · ${OPENFREEMAP_ATTRIBUTION}` : "") +
-    (value === "nsw-aerial" ? " · © State of NSW (Spatial Services), CC BY 3.0 · © AAM 2011, 2012 · © Jacobs Group Ausimage 2002, 2006, 2009, 2014 · Landsat 2014" : "") +
     (["light", "dark", "fiord"].includes(value)
       ? " · Design © CARTO / Stamen / Paul Norman (CC BY 3.0)"
       : "")
   );
 }
 
-/** Reviewed DEA annual true-colour composite; its annual date is deliberately explicit. */
+/** DEA Sentinel-2 bare-earth true-colour composite, based on observations through September 2020. */
 export function basemapStyle(
   value: MapLibreBasemap,
 ): string | import("maplibre-gl").StyleSpecification {
-  if (value !== "satellite" && value !== "hybrid" && value !== "nsw-aerial") return MAPLIBRE_BASEMAPS[value].styleUrl;
+  if (value !== "satellite" && value !== "hybrid") return MAPLIBRE_BASEMAPS[value].styleUrl;
   return {
     version: 8,
     ...(value === "hybrid" ? { glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf" } : {}),
     sources: {
       ...(value === "hybrid" ? { openmaptiles: { type: "vector" as const, url: "https://tiles.openfreemap.org/planet", attribution: OPENFREEMAP_ATTRIBUTION } } : {}),
-      ...(value === "nsw-aerial" ? { "nsw-aerial": { type: "raster" as const, tiles: ["https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}"], tileSize: 256, minzoom: 5, maxzoom: 20, bounds: [138.4, -38.7, 159.3, -26.4] as [number,number,number,number], attribution: "© State of NSW (Spatial Services), CC BY 3.0 · © AAM 2011, 2012 · © Jacobs Group Ausimage 2002, 2006, 2009, 2014 · Landsat 2014" } } : {}),
       "dea-satellite": {
         type: "raster",
         tiles: [
-          "https://ows.dea.ga.gov.au/?service=WMS&version=1.1.1&request=GetMap&layers=ga_ls8cls9c_gm_cyear_3&styles=simple_rgb&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256&format=image/png&time=2025-01-01",
+          "https://ows.dea.ga.gov.au/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=s2_barest_earth&STYLE=simple_rgb&FORMAT=image%2Fpng&TILEMATRIXSET=WholeWorld_WebMercator&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
         ],
         tileSize: 256,
-        bounds: [111.53, -44.34, 155.08, -8.51],
+        bounds: [112.32, -43.94, 154.71, -8.82],
+        maxzoom: 14,
         attribution:
-          "© Commonwealth of Australia (Geoscience Australia), DEA GeoMAD 2025 · CC BY 4.0",
+          "© Commonwealth of Australia (Geoscience Australia) · Copernicus Sentinel data · CC BY 4.0",
       },
     },
     layers: [
@@ -111,7 +105,6 @@ export function basemapStyle(
         paint: { "background-color": "#26383a" },
       },
       { id: "dea-satellite-raster", type: "raster", source: "dea-satellite" },
-      ...(value === "nsw-aerial" ? [{ id: "nsw-aerial-raster", type: "raster" as const, source: "nsw-aerial" }] : []),
       ...(value === "hybrid" ? [
         { id: "hybrid-road-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "transportation_name", minzoom: 12, layout: { "symbol-placement": "line" as const, "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 11 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },
         { id: "hybrid-place-labels", type: "symbol" as const, source: "openmaptiles", "source-layer": "place", layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"], ""] as import("maplibre-gl").ExpressionSpecification, "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": "#ffffff", "text-halo-color": "#26383a", "text-halo-width": 1.5 } },

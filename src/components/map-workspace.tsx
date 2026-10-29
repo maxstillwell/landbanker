@@ -147,8 +147,8 @@ export default function MapWorkspace({
   const [historyPosition, setHistoryPosition] = useState({ index: 0, length: 1 });
   const homeKey = `landos:map-home:v1:${userId}:${workspaceId}`;
   const [styleRevision, setStyleRevision] = useState(0);
-  const basemapRef = useRef<MapLibreBasemap>("light");
-  const [basemap, setBasemap] = useState<MapLibreBasemap>("light");
+  const basemapRef = useRef<MapLibreBasemap>("streets");
+  const [basemap, setBasemap] = useState<MapLibreBasemap>("streets");
   const watch = useRef<number | null>(null);
   const followRef = useRef(false);
   const locateRequested = useRef(false);
@@ -885,7 +885,7 @@ export default function MapWorkspace({
     try {
       m = new maplibregl.Map({
         container: mapNode.current,
-        style: MAPLIBRE_BASEMAPS.light.styleUrl,
+        style: MAPLIBRE_BASEMAPS.streets.styleUrl,
         center: [143.8503, -37.5622],
         zoom: 11,
         maxPitch: 70,
@@ -922,8 +922,8 @@ export default function MapWorkspace({
           pitch: 0,
         });
       }
-      if (isMapLibreBasemap(stored?.basemap)) {
-        const restoredBasemap: MapLibreBasemap = stored.basemap;
+      if (isMapLibreBasemap(stored?.basemap) || stored?.basemap === "nsw-aerial") {
+        const restoredBasemap: MapLibreBasemap = stored.basemap === "satellite" || stored.basemap === "hybrid" ? stored.basemap : "streets";
         setBasemap(restoredBasemap);
         basemapRef.current = restoredBasemap;
         m.setStyle(basemapStyle(restoredBasemap));
@@ -960,19 +960,14 @@ export default function MapWorkspace({
     m.on("error", (event) => {
       const source = (event as { sourceId?: string }).sourceId;
       if (source === TERRAIN_SOURCE) setNotice("Elevation tiles are unavailable; terrain and measurements may be incomplete.");
-      if (basemapRef.current === "nsw-aerial" && source === "nsw-aerial") {
-        basemapRef.current = "satellite"; setBasemap("satellite"); m.setStyle(basemapStyle("satellite"));
-        setNotice("NSW aerial imagery is unavailable. Showing regional satellite imagery."); return;
-      }
       if (
-        (basemapRef.current === "fiord" && !source) ||
         ((basemapRef.current === "satellite" || basemapRef.current === "hybrid") && source === "dea-satellite")
       ) {
-        basemapRef.current = "light";
-        setBasemap("light");
-        m.setStyle(MAPLIBRE_BASEMAPS.light.styleUrl);
+        basemapRef.current = "streets";
+        setBasemap("streets");
+        m.setStyle(MAPLIBRE_BASEMAPS.streets.styleUrl);
         setNotice(
-          "The selected basemap is unavailable. Showing Light; your workspace selection and drafts are preserved.",
+          "The selected basemap is unavailable. Showing Streets; your workspace selection and drafts are preserved.",
         );
         return;
       }
