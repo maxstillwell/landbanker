@@ -94,6 +94,7 @@ import {
   formatArea,
   formatDistance,
   geometryMeasurement,
+  distanceMetres,
 } from "@/lib/map/measurement";
 const emptyData: MapData = {
   parcels: [],
@@ -364,6 +365,14 @@ export default function MapWorkspace({
   );
   const [selection, setSelection] = useState<MapSelection>(null);
   const [selectedAreas, setSelectedAreas] = useState<SelectedAreaDetail[]>([]);
+  const [showDrawingArea, setShowDrawingArea] = useState(false);
+  const [showDrawingEdges, setShowDrawingEdges] = useState(false);
+  const [showParcelEdges, setShowParcelEdges] = useState(false);
+  const [measurementScope, setMeasurementScope] = useState("");
+  const measurementKey = `landos:measurements:v1:${userId}:${workspaceId}`;
+  useEffect(() => { try { const p = JSON.parse(localStorage.getItem(measurementKey) || "{}"); setShowDrawingArea(p.area === true); setShowDrawingEdges(p.edges === true); setShowParcelEdges(p.parcelEdges === true); } catch { /* Optional device preference. */ } setMeasurementScope(measurementKey); }, [measurementKey]);
+  useEffect(() => { if (measurementScope !== measurementKey) return; try { localStorage.setItem(measurementKey, JSON.stringify({ area: showDrawingArea, edges: showDrawingEdges, parcelEdges: showParcelEdges })); } catch { /* Optional device preference. */ } }, [measurementKey, measurementScope, showDrawingArea, showDrawingEdges, showParcelEdges]);
+  const [deletedFeature, setDeletedFeature] = useState<{ layerId: string; feature: Feature } | null>(null);
   useEffect(() => { setParcelHeights(null); setParcelHeightMessage(""); }, [selectedAreas]);
   const selectedAreasRef = useRef<SelectedAreaDetail[]>([]);
   const [multiSelect, setMultiSelect] = useState(false);
@@ -408,6 +417,7 @@ export default function MapWorkspace({
         selection.record
       : null;
   const selectedParcel = selection?.kind === "parcel" ? selection.record : null;
+  const officialParcel = selection?.kind === "official-parcel" ? selection.record : null;
   const selectedBoundary = useMemo(() => propertyGeometry(selectedParcel?.geometry), [selectedParcel?.geometry]);
   const selectedLocation = useMemo(() => {
     const value = selectedParcel?.geometry as import("geojson").Geometry | import("geojson").Feature | null | undefined;
@@ -551,8 +561,6 @@ export default function MapWorkspace({
       });
     return () => controller.abort();
   }, [selectedPropertyId, workspaceId, userId]);
-  const officialParcel =
-    selection?.kind === "official-parcel" ? selection.record : null;
   function setSelected(record: Observation | null) {
     setSelection(record ? { kind: "observation", record } : null);
   }
@@ -624,6 +632,31 @@ export default function MapWorkspace({
     () => session.active?.points.map((p) => latLng(p[1], p[0])) || [],
     [session.active?.points],
   );
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !styleRevision) return;
+    const editing = Boolean(session.active?.originalFeature);
+    const geometry = editing ? drawingGeometry(kind, session.active!.points) : selectedDrawing?.geometry || officialParcel?.geometry || null;
+    if (!geometry) return;
+    const showEdges = selectedDrawing || editing ? showDrawingEdges : showParcelEdges;
+    const showArea = Boolean((selectedDrawing || editing) && showDrawingArea);
+    if (!showEdges && !showArea) return;
+    const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.type === "Polygon" ? geometry.coordinates : geometry.type === "MultiPolygon" ? geometry.coordinates.flat() : [];
+    const segments = lines.flatMap((line) => line.slice(1).map((point, i) => ({ a: line[i], b: point })));
+    const stride = Math.max(1, Math.ceil(segments.length / 40));
+    const markers: maplibregl.Marker[] = [];
+    const add = (position: number[], text: string) => {
+      if (!Number.isFinite(position[0]) || !Number.isFinite(position[1])) return;
+      const el = document.createElement("div"); el.className = "map-measurement-label"; el.textContent = text;
+      markers.push(new maplibregl.Marker({ element: el, anchor: "center" }).setLngLat([position[0], position[1]]).addTo(m));
+    };
+    if (showEdges) segments.forEach(({ a, b }, i) => { if (i % stride === 0) add([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], formatDistance(distanceMetres(a, b))); });
+    if (showArea && lines.length) {
+      const bounds = geometryBounds(geometry); const centre = bounds.getCenter(); const measurement = geometryMeasurement(geometry);
+      add([centre.lng, centre.lat], measurement.areaM2 ? formatArea(measurement.areaM2) : formatDistance(measurement.distanceM));
+    }
+    return () => markers.forEach((marker) => marker.remove());
+  }, [selectedDrawing, officialParcel, showDrawingArea, showDrawingEdges, showParcelEdges, styleRevision, session.active, kind]);
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const changeSession = session.change;
   const sessionRef = session.ref;
@@ -701,19 +734,19 @@ export default function MapWorkspace({
       setLoadingMore(false);
     }
   }
-  const reloadLibrary = useCallback(async () => {
+  const reloadLibrary = useCallback(async (fresh = false) => {
     try {
       const response = await fetch("/api/layer-library", { cache: "no-store" });
       if (!response.ok) throw new Error("Layer Library unavailable");
       const result = await response.json();
       setCatalog(result.catalog);
-      setActiveLayers(result.active);
+      setActiveLayers((current) => result.active.map((layer: ActiveLayer) => ({ ...layer, visible: fresh ? false : (current.find((item) => item.catalog_id === layer.catalog_id)?.visible ?? false) })));
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Layer Library unavailable");
     }
   }, []);
   useEffect(() => {
-    void reloadLibrary();
+    void reloadLibrary(true);
   }, [reloadLibrary]);
   useEffect(() => {
     const m = map.current;
@@ -1021,7 +1054,7 @@ export default function MapWorkspace({
         return;
       }
       if (officialModeRef.current === "zoning") return;
-      const hits = m.queryRenderedFeatures(e.point, {
+      const hits = m.queryRenderedFeatures([[e.point.x - 10, e.point.y - 10], [e.point.x + 10, e.point.y + 10]], {
         layers: [
           "landos-observations-point",
           "landos-features-point",
@@ -2350,7 +2383,7 @@ export default function MapWorkspace({
         <WorkspaceSelector name={workspaceName} />
         <div className="mobile-header-actions">
           <button aria-label="Search map" onClick={() => { setDrawer("search"); setLeftOpen(true); setMobileSettings(false); }}>⌕</button>
-          <button aria-label="Open layers" onClick={() => { setDrawer("layers"); setLeftOpen(true); setMobileSettings(false); }}>▱</button>
+          <button aria-label={mapMode === "3d" ? "Switch to 2D" : "Switch to 3D"} aria-pressed={mapMode === "3d"} onClick={toggleMapMode}>{mapMode === "3d" ? "2D" : "3D"}</button>
           <button aria-label="Map settings" aria-expanded={mobileSettings} onClick={() => setMobileSettings((value) => !value)}>⚙</button>
         </div>
         <div className={`map-settings-controls ${mobileSettings ? "open" : ""}`}>
@@ -2538,6 +2571,7 @@ export default function MapWorkspace({
           <span>Read-only workspace</span>
         )}
       </div>
+      {deletedFeature && <div className="drawing-undo" role="status">Shape deleted <button onClick={async () => { try { const complete = await loadFullLayer(deletedFeature.layerId); if (!complete.geojson || !safeStoredFeatureIds(complete.geojson.features) || complete.geojson.features.some((feature) => String(feature.id) === String(deletedFeature.feature.id))) throw new Error("Cannot safely restore this shape."); await apiRequest("/api/layers", { id: complete.id, name: complete.name, geojson: { type: "FeatureCollection", features: [...complete.geojson.features, deletedFeature.feature] } }); setDeletedFeature(null); await reload(); setNotice("Shape restored."); } catch (e) { setNotice(e instanceof Error ? e.message : "Restore failed"); } }}>Undo</button><button aria-label="Dismiss undo" onClick={() => setDeletedFeature(null)}>×</button></div>}
       {notice ? (
         <div className="map-notice" role="status">
           <span>{notice}</span>
@@ -2880,6 +2914,7 @@ export default function MapWorkspace({
               {officialParcel || selectedParcel ? (
                 <section className="property-details">
                   <h3>Parcel details</h3>
+                  {officialParcel && <><label><input type="checkbox" checked={showParcelEdges} onChange={(event) => setShowParcelEdges(event.target.checked)} /> Show boundary lengths</label><small>Approximate GIS measurement — not a cadastral survey. {officialParcel.geometry.type === "Polygon" && officialParcel.geometry.coordinates.flat().length > 40 ? "Some segment labels are omitted for clarity." : ""}</small></>}
                   {selectedParcel && !selectedBoundary ? (
                     <><p role="status">Location only — boundary not linked. A nearby parcel is not automatically linked to this property.</p>
                     {!selectedParcel.state ? <label>Lookup state <select value={parcelState} onChange={(e) => setParcelState(e.target.value as SupportedState)}><option value="VIC">Victoria</option><option value="NSW">New South Wales</option></select></label> : null}
@@ -3325,6 +3360,9 @@ export default function MapWorkspace({
                   </strong>
                   <p>{String(selectedDrawing.properties?.note || "")}</p>
                   <p>{selectedDrawing.geometry.type} · Layer: {selection.record.name} · Workspace feature</p>
+                  <label><input type="checkbox" checked={showDrawingArea} onChange={(event) => setShowDrawingArea(event.target.checked)} /> Show area / total length</label>
+                  <label><input type="checkbox" checked={showDrawingEdges} onChange={(event) => setShowDrawingEdges(event.target.checked)} /> Show edge lengths</label>
+                  <small>Horizontal GIS measurements are approximate.</small>
                   {selectedDrawing.properties && Object.entries(selectedDrawing.properties).filter(([key]) => key !== "name" && key !== "note").length ? <details><summary>Attributes</summary><dl>{Object.entries(selectedDrawing.properties).filter(([key]) => key !== "name" && key !== "note").slice(0, 20).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === "object" ? JSON.stringify(value) : String(value ?? "—")}</dd></div>)}</dl></details> : null}
                   <div className="actions">
                     <button onClick={() => map.current?.fitBounds(geometryBounds(selectedDrawing.geometry), { padding: 60, maxZoom: 18 })}>Fit to Shape</button>
@@ -3366,6 +3404,17 @@ export default function MapWorkspace({
                       >
                         Edit shape
                       </button>
+                      <button onClick={async () => {
+                        try {
+                          const complete = await loadFullLayer(selection.record.id);
+                          if (!complete.geojson || !safeStoredFeatureIds(complete.geojson.features)) throw new Error("This layer cannot be safely copied.");
+                          const original = complete.geojson.features.find((f) => String(f.id) === selection.featureId);
+                          if (!original) throw new Error("Shape unavailable.");
+                          const copy = { ...original, id: crypto.randomUUID() };
+                          await apiRequest("/api/layers", { id: complete.id, name: complete.name, geojson: { type: "FeatureCollection", features: [...complete.geojson.features, copy] } });
+                          await reload(); setNotice("Shape copied.");
+                        } catch (e) { setNotice(e instanceof Error ? e.message : "Copy failed"); }
+                      }}>Copy shape</button>
                       <button
                         onClick={async () => {
                           if (!window.confirm("Delete this shape from the workspace?")) return;
@@ -3374,16 +3423,17 @@ export default function MapWorkspace({
                               selection.record.id,
                             );
                             if (!complete.geojson || !safeStoredFeatureIds(complete.geojson.features)) throw new Error("This layer contains legacy or duplicate feature IDs and cannot be safely edited.");
+                            const removed = complete.geojson.features.find((f) => String(f.id) === String(selectedDrawing.id));
+                            if (!removed) throw new Error("Shape unavailable.");
                             await apiRequest("/api/layers", {
                               id: selection.record.id,
                               name: selection.record.name,
                               geojson: {
                                 type: "FeatureCollection",
-                                features: complete.geojson?.features.filter(
-                                  (f) => f.id !== selectedDrawing.id,
-                                ),
+                                features: complete.geojson.features.filter((f) => String(f.id) !== String(selectedDrawing.id)),
                               },
                             });
+                            setDeletedFeature({ layerId: selection.record.id, feature: removed });
                             removeArea(`feature:${selection.record.id}:${String(selectedDrawing.id)}`);
                             await reload();
                           } catch (e) {

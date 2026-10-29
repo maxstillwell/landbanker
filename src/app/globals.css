@@ -1790,3 +1790,13 @@ fieldset {
   .parcel-selection-summary { display:none; }.parcel-hit-chooser { left:10px; top:calc(max(8px,env(safe-area-inset-top)) + 58px); }
   .map-app .floating-map-widget { max-width:calc(100vw - 20px); }
 }
+.map-measurement-label { pointer-events:none; color:#fff; background:#102326eF; border:1px solid #ffffffa0; border-radius:5px; padding:2px 5px; font:600 11px/1.2 system-ui,sans-serif; white-space:nowrap; text-shadow:0 1px 2px #000; }
+.drawing-undo { position:absolute; z-index:800; left:70px; bottom:24px; display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background:#102326; color:#fff; }
+@media (max-width:767px) {
+  .map-app .sheet-handle > .mobile-sheet-label { width:auto; height:auto; background:transparent; border-radius:0; }
+  .map-app .accuracy { padding:3px 6px; font-size:10px; }
+  .drawing-undo { left:10px; bottom:calc(var(--mobile-nav-height) + var(--sheet-height) + 12px); }
+}
+@media (max-width:767px) {
+  .map-app .map-drawing-bar { bottom:calc(var(--mobile-nav-height) + var(--sheet-height) + 14px); z-index:750; }
+}

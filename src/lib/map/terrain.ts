@@ -22,7 +22,7 @@ export function applyTerrain(map: MapLibreMap, config: { url?: string; tiles?: s
   }
   if (!map.getSource(TERRAIN_SOURCE)) map.addSource(TERRAIN_SOURCE, source);
   appliedSources.set(map, identity);
-  if (hillshade && !map.getLayer(HILLSHADE)) map.addLayer({ id: HILLSHADE, type: "hillshade", source: TERRAIN_SOURCE }, map.getStyle().layers.find((layer) => layer.type === "symbol")?.id);
+  if (hillshade && !map.getLayer(HILLSHADE)) map.addLayer({ id: HILLSHADE, type: "hillshade", source: TERRAIN_SOURCE }, map.getStyle().layers.find((layer) => layer.id.startsWith("official-") || layer.id.startsWith("landos-reference-") || layer.id === "landos-parcels-fill")?.id);
   if (!hillshade && map.getLayer(HILLSHADE)) map.removeLayer(HILLSHADE);
   map.setTerrain(enabled ? { source: TERRAIN_SOURCE, exaggeration } : null);
 }

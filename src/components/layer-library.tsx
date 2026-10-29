@@ -151,7 +151,13 @@ export function LayerLibrary({
               placeholder="flood, zoning, heritage…"
             />
           </label>
-          {matches.map((layer) => (
+          {(["Parcels", "Planning", "Environmental", "Infrastructure", "Other"] as const).map((group) => {
+            const items = matches.filter((layer) => {
+              const category = `${layer.category} ${layer.name}`.toLowerCase();
+              const actual = /parcel|cadast|property boundar/.test(category) ? "Parcels" : /flood|bushfire|environment|heritage|biodiversity|vegetation|water/.test(category) ? "Environmental" : /infrastructure|transport|road|utility|utilities/.test(category) ? "Infrastructure" : /planning|zon|overlay/.test(category) ? "Planning" : "Other";
+              return actual === group;
+            });
+            return items.length ? <section key={group} aria-label={group}><strong>{group}</strong>{items.map((layer) => (
             <div className="catalog-result" key={layer.id}>
               <strong>{layer.name}</strong>
               <small>
@@ -172,7 +178,8 @@ export function LayerLibrary({
                 {layer.enabled ? "Add" : "Unavailable"}
               </button>
             </div>
-          ))}
+          ))}</section> : null;
+          })}
           {!matches.length ? (
             <p>
               No matching available layers. Coverage currently Victoria and NSW.

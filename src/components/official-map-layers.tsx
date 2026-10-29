@@ -36,7 +36,7 @@ export function useOfficialMapLayers({
   onParcel: (parcel: OfficialParcel, shift: boolean) => void;
 }) {
   const [visible, setVisible] = useState<Record<string, boolean>>(
-    Object.fromEntries(ids.map((id) => [id, true])),
+    Object.fromEntries(ids.map((id) => [id, false])),
   );
   const cache = useRef<Partial<Record<OfficialLayerId, FeatureCollection>>>({});
   const [mode, setMode] = useState<"parcel" | "zoning">("parcel");
@@ -158,7 +158,7 @@ export function useOfficialMapLayers({
       timer = setTimeout(load, 300);
     }
     function select(event: MapMouseEvent) {
-      const workspace = m!.queryRenderedFeatures(event.point, {
+      const workspace = m!.queryRenderedFeatures([[event.point.x - 10, event.point.y - 10], [event.point.x + 10, event.point.y + 10]], {
         layers: [
           "landos-parcels-fill",
           "landos-parcels-point",
@@ -339,7 +339,7 @@ export function OfficialMapLayers({
         Visual groups for orientation only. Official zone codes and planning
         instruments determine legal meaning.
       </small>
-      {ids.map((id) => (
+      {([ ["Parcels", ids.filter((id) => id.endsWith("parcels"))], ["Planning", ids.filter((id) => id.endsWith("zoning"))] ] as const).map(([group, groupIds]) => <section key={group} aria-label={group}><strong>{group}</strong>{groupIds.map((id) => (
         <label key={id} className="maplibre-official-row">
           <input
             type="checkbox"
@@ -351,7 +351,7 @@ export function OfficialMapLayers({
             <small>{status[id] || "Waiting for map"}</small>
           </span>
         </label>
-      ))}
+      ))}</section>)}
       </> : null}
       {showSelection && selected ? (
         <div role="region" aria-label="Official feature Inspector">
