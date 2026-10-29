@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { GeoJsonObject } from "geojson";
+import { spatialExport } from "../src/lib/map/spatial-file";
+import { strFromU8, unzipSync } from "fflate";
 import { isLocationGeometry } from "../src/lib/map/location-geometry";
 import { safeStoredFeatureIds } from "../src/lib/map/feature-identity";
 import { isOfficialParcelSource, officialSelectionId, summarizeAreas, updateSelectedAreas } from "../src/lib/map/selection-summary";
@@ -35,6 +37,16 @@ import {
   workspaceFeaturesGeoJson,
 } from "../src/lib/map/maplibre-geojson";
 const w = "11111111-1111-4111-8111-111111111111";
+test("spatial exports preserve multipart geometry and protect spreadsheet cells", () => {
+  const features = [{ type: "Feature" as const, properties: { name: "<Site & Co>", note: "=1+1" }, geometry: { type: "MultiPolygon" as const, coordinates: [[[[145, -37], [145.01, -37], [145.01, -37.01], [145, -37]]], [[[146, -37], [146.01, -37], [146.01, -37.01], [146, -37]]]] } }];
+  const csv = spatialExport(features, "csv") as string;
+  assert.match(csv, /'\=1\+1/);
+  const kml = spatialExport(features, "kml") as string;
+  assert.match(kml, /&lt;Site &amp; Co&gt;/);
+  assert.equal((kml.match(/<Polygon>/g) || []).length, 2);
+  const zip = new Uint8Array(spatialExport(features, "kmz") as ArrayBuffer);
+  assert.equal(strFromU8(unzipSync(zip)["doc.kml"]), kml);
+});
 test("selection summary preserves multipart and hole areas and warns about incomplete and overlapping totals", () => {
   const outer = [[143, -37], [143.02, -37], [143.02, -37.02], [143, -37.02], [143, -37]];
   const hole = [[143.005, -37.005], [143.015, -37.005], [143.015, -37.015], [143.005, -37.015], [143.005, -37.005]];

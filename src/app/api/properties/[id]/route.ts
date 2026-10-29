@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { workspaceContext } from "@/lib/workspace";
-import { apiError, json } from "@/lib/api";
+import { apiError, json, sameOrigin } from "@/lib/api";
 import { propertyGeometry } from "@/lib/planning/geometry";
 import { propertyCentroid } from "@/lib/planning/centroid";
 export async function GET(
@@ -31,4 +31,16 @@ export async function GET(
   } catch (error) {
     return apiError(error);
   }
+}
+
+export async function PATCH(request: import("next/server").NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    sameOrigin(request); const c = await workspaceContext();
+    if (!["owner", "admin", "editor"].includes(c.role)) throw new Error("Workspace is read-only.");
+    const id = z.uuid().parse((await params).id);
+    const input = z.object({ title: z.string().trim().min(1).max(160).optional(), notes: z.string().max(20000).nullable().optional() }).refine((value) => value.title !== undefined || value.notes !== undefined).parse(await request.json());
+    const { data, error } = await c.client.from("land_parcels").update({ title: input.title }).eq("workspace_id", c.workspaceId).eq("id", id).select("id");
+    if (error) throw error; if (!data?.length) throw new Error("Property unavailable.");
+    return json({ id });
+  } catch (error) { return apiError(error); }
 }

@@ -53,7 +53,7 @@ try {
  await observationsToggle.uncheck(); await expect(observationsToggle).not.toBeChecked();
  await observationsToggle.check(); await page.getByRole("button",{name:"Layers",exact:true}).click();
  await page.getByLabel("Basemap previews").click();
- await expect(page.getByLabel("Basemap",{exact:true}).locator("option")).toHaveCount(2);
+ await expect(page.getByLabel("Basemap",{exact:true}).locator("option")).toHaveCount(5);
  await page.getByLabel("Basemap previews").click();
  await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(400);
  const touchHandle=page.getByRole("button",{name:"Move Spatial Tools"}); const touchStart=await touchHandle.boundingBox();

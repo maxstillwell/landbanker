@@ -4,6 +4,7 @@ import {
   type MapLibreBasemap,
 } from "@/lib/map/maplibre-config";
 const swatches: Record<MapLibreBasemap, string> = {
+  hybrid: "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   "esri-satellite": "linear-gradient(135deg,#344e32 15%,#9e8e60 40%,#315f54 65%,#7c7462 85%)",
   streets:
     "linear-gradient(135deg,#dce8c5 25%,#f4ddaa 25%,#f4ddaa 40%,#a8cbdf 40%,#a8cbdf 47%,#eee6d5 47%)",
@@ -25,7 +26,7 @@ export function BasemapSelector({
   onChange: (next: MapLibreBasemap) => void;
   esriEnabled: boolean;
 }) {
-  const basemapOrder: MapLibreBasemap[] = ["streets", "esri-satellite"];
+  const basemapOrder: MapLibreBasemap[] = ["streets", "light", "dark", "esri-satellite", "hybrid"];
   return (
     <details className="basemap-picker">
       <summary aria-label="Basemap previews">
@@ -41,7 +42,7 @@ export function BasemapSelector({
             onChange={(e) => onChange(e.target.value as MapLibreBasemap)}
           >
             {basemapOrder.map((id) => (
-              <option key={id} value={id} disabled={id === "esri-satellite" && !esriEnabled}>
+              <option key={id} value={id} disabled={(id === "esri-satellite" || id === "hybrid") && !esriEnabled}>
                 {MAPLIBRE_BASEMAPS[id].label}
               </option>
             ))}
@@ -52,8 +53,8 @@ export function BasemapSelector({
             <button
               key={id}
               aria-pressed={value === id}
-              disabled={id === "esri-satellite" && !esriEnabled}
-              title={id === "esri-satellite" && !esriEnabled ? "Satellite imagery is not configured" : undefined}
+              disabled={(id === "esri-satellite" || id === "hybrid") && !esriEnabled}
+              title={(id === "esri-satellite" || id === "hybrid") && !esriEnabled ? "Satellite imagery is not configured" : undefined}
               onClick={(event) => {
                 onChange(id as MapLibreBasemap);
                 event.currentTarget.closest("details")?.removeAttribute("open");

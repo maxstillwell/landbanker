@@ -7,7 +7,7 @@ export type LocalLayerDraft = {
   targetLayerId?: string;
 };
 async function database() {
-  return openDB("land-banker-layer-draft-v1", 4, {
+  return openDB("land-banker-layer-draft-v1", 5, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("layers"))
         db.createObjectStore("layers");
@@ -17,6 +17,8 @@ async function database() {
         db.createObjectStore("shareUrls");
       if (!db.objectStoreNames.contains("searches"))
         db.createObjectStore("searches");
+      if (!db.objectStoreNames.contains("imports"))
+        db.createObjectStore("imports");
     },
   });
 }
@@ -159,6 +161,18 @@ export async function writeLayerDraft(
   } finally {
     db.close();
   }
+}
+
+export type SpatialImportDraft = { id: string; name: string; description: string; sourceFile: string; destination: "property" | "research" | "layer"; subtype?: "general" | "investigation" | "precinct" | "growth" | "other"; geojson: FeatureCollection };
+export async function readSpatialImportDraft(user: string, workspace: string): Promise<SpatialImportDraft | null> {
+  const db = await database();
+  try { const value = await db.get("imports", key(user, workspace)); if (!value || value.userId !== user || value.workspaceId !== workspace) return null; const draft = value.draft as SpatialImportDraft; if (!draft || typeof draft.id !== "string" || typeof draft.name !== "string" || typeof draft.sourceFile !== "string" || !["property", "research", "layer"].includes(draft.destination) || draft.geojson?.type !== "FeatureCollection" || !Array.isArray(draft.geojson.features) || draft.geojson.features.length > 5000) throw new Error("Import draft requires manual recovery."); return draft; }
+  finally { db.close(); }
+}
+export async function writeSpatialImportDraft(user: string, workspace: string, draft: SpatialImportDraft | null) {
+  const db = await database();
+  try { if (draft) await db.put("imports", { userId: user, workspaceId: workspace, draft }, key(user, workspace)); else await db.delete("imports", key(user, workspace)); }
+  finally { db.close(); }
 }
 
 export type DrawingSession = {

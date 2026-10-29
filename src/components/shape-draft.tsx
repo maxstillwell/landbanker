@@ -13,12 +13,14 @@ export function ShapeDraft({
   onChange,
   onSave,
   onDiscard,
+  onSaveResearch,
 }: {
   draft: LocalLayerDraft;
   layers: SpatialLayer[];
   onChange: (draft: LocalLayerDraft) => void;
   onSave: () => Promise<void>;
   onDiscard: () => void;
+  onSaveResearch?: () => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
   const first = draft.geojson.features[0];
@@ -105,6 +107,7 @@ export function ShapeDraft({
         >
           {saving ? "Saving…" : "Save to Workspace"}
         </button>
+        {onSaveResearch && !draft.targetLayerId && <button disabled={saving || !draft.name.trim()} onClick={async () => { setSaving(true); try { await onSaveResearch(); } finally { setSaving(false); } }}>Save as Research Area</button>}
         <button disabled={saving} onClick={onDiscard}>
           Discard draft
         </button>

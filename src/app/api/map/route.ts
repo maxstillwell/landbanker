@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         .from("spatial_layers")
         .select(
           (overview
-            ? "id,workspace_id,name,layer_kind,layer_data"
+            ? "id,workspace_id,name,layer_kind,layer_data,metadata"
             : "id,workspace_id,name,layer_kind,geojson,layer_data") as string,
         )
         .eq("workspace_id", workspaceId)

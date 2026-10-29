@@ -1,6 +1,6 @@
 import intersect from "@turf/intersect";
 import { featureCollection } from "@turf/helpers";
-import type { Polygon, MultiPolygon } from "geojson";
+import type { Polygon, MultiPolygon, Geometry } from "geojson";
 import { geometryMeasurement } from "./measurement";
 
 export type SelectedArea = {
@@ -9,7 +9,7 @@ export type SelectedArea = {
   source: string;
   kind: "parcel" | "feature";
   geometry: Polygon | MultiPolygon | null;
-  previewGeometry?: Polygon | MultiPolygon;
+  previewGeometry?: Geometry;
   location?: [number, number];
 };
 

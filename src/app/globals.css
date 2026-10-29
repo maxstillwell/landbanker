@@ -1800,3 +1800,19 @@ fieldset {
 @media (max-width:767px) {
   .map-app .map-drawing-bar { bottom:calc(var(--mobile-nav-height) + var(--sheet-height) + 14px); z-index:750; }
 }
+.global-search { position:absolute; z-index:720; top:12px; left:calc(var(--dock-width) + 12px); width:min(340px,calc(100vw - 80px)); color:#eef7f4; }
+.global-search-launch { display:flex; gap:8px; align-items:center; width:100%; min-height:44px; padding:8px 12px; background:#0d1d1f; border:1px solid #355052; color:#eef7f4; text-align:left; }
+.global-search-panel { position:absolute; top:50px; left:0; width:min(360px,calc(100vw - 20px)); max-height:65dvh; overflow:auto; padding:12px; border:1px solid #355052; border-radius:10px; background:#0d1d1f; box-shadow:0 8px 24px #0007; }
+.global-search-panel label,.global-search-panel section { display:grid; gap:5px; }.global-search-panel input { width:100%; min-height:44px; color:#eef7f4; background:#071315; border:1px solid #355052; border-radius:7px; padding:8px; }.global-search-panel button { display:grid; gap:3px; text-align:left; color:#eef7f4; background:#193235; border-color:#355052; }.global-search-panel small { color:#b5cbc5; }.global-search-panel section { margin-top:12px; }
+@media (max-width:767px) { .global-search { top:max(10px,env(safe-area-inset-top)); left:auto; right:106px; width:44px; }.global-search-launch { width:44px; justify-content:center; padding:0; }.global-search-launch span { display:none; }.global-search-panel { top:50px; left:auto; right:-96px; } }
+.mobile-more-menu { display:none; }
+@media (max-width:767px) { .mobile-more-menu { position:absolute; z-index:810; display:grid; gap:6px; right:8px; bottom:calc(var(--mobile-nav-height) + 8px); width:min(250px,calc(100vw - 16px)); padding:10px; background:#0d1d1f; border:1px solid #355052; border-radius:12px; }.mobile-more-menu button,.mobile-more-menu a { display:block; min-height:44px; color:#eef7f4; background:#193235; border-color:#355052; text-align:left; padding:10px; }.mobile-more-menu .workspace-selector { display:block; }.mobile-more-menu .workspace-menu { position:absolute; right:8px; bottom:54px; } }
+.desktop-workspace-settings { position:relative; }
+.desktop-workspace-settings summary { list-style:none; display:grid; place-items:center; min-width:44px; min-height:44px; cursor:pointer; }
+.desktop-workspace-settings summary::-webkit-details-marker { display:none; }
+.desktop-settings-panel { position:absolute; z-index:760; right:0; top:48px; width:240px; display:grid; gap:10px; padding:14px; background:#102326; border:1px solid #355052; border-radius:10px; }
+.desktop-settings-panel a { min-height:44px; padding:10px; color:#eef7f4; }
+@media (min-width:768px) { .map-header .terrain-secondary { display:none !important; } }
+.elevation-chart { margin:4px; min-width:180px; max-width:320px; color:#eef7f4; }
+.elevation-chart svg { display:block; width:100%; height:auto; }
+.elevation-chart figcaption { font-size:11px; }
