@@ -1,0 +1,560 @@
+{
+  "version": "ABS LGA 2025 / VIC municipalities",
+  "source": "https://geo.abs.gov.au/arcgis/rest/services/ASGS2025/LGA/MapServer/1",
+  "reviewed_on": "2026-10-31",
+  "rows": [
+    {
+      "code": "20110",
+      "official_name": "Alpine",
+      "vgv_name": "Alpine Shire",
+      "csa_name": "Alpine",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20260",
+      "official_name": "Ararat",
+      "vgv_name": "Ararat Rural City",
+      "csa_name": "Ararat",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20570",
+      "official_name": "Ballarat",
+      "vgv_name": "Ballarat City",
+      "csa_name": "Ballarat",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20660",
+      "official_name": "Banyule",
+      "vgv_name": "Banyule City",
+      "csa_name": "Banyule",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20740",
+      "official_name": "Bass Coast",
+      "vgv_name": "Bass Coast Shire",
+      "csa_name": "Bass Coast",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20830",
+      "official_name": "Baw Baw",
+      "vgv_name": "Baw Baw Shire",
+      "csa_name": "Baw Baw",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "20910",
+      "official_name": "Bayside (Vic.)",
+      "vgv_name": "Bayside City",
+      "csa_name": "Bayside",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21010",
+      "official_name": "Benalla",
+      "vgv_name": "Benalla Rural City",
+      "csa_name": "Benalla",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21110",
+      "official_name": "Boroondara",
+      "vgv_name": "Boroondara City",
+      "csa_name": "Boroondara",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21180",
+      "official_name": "Brimbank",
+      "vgv_name": "Brimbank City",
+      "csa_name": "Brimbank",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21270",
+      "official_name": "Buloke",
+      "vgv_name": "Buloke Shire",
+      "csa_name": "Buloke",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21370",
+      "official_name": "Campaspe",
+      "vgv_name": "Campaspe Shire",
+      "csa_name": "Campaspe",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21450",
+      "official_name": "Cardinia",
+      "vgv_name": "Cardina Shire",
+      "csa_name": "Cardinia",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation. Source spells Cardinia as Cardina."
+    },
+    {
+      "code": "21610",
+      "official_name": "Casey",
+      "vgv_name": "Casey City",
+      "csa_name": "Casey",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21670",
+      "official_name": "Central Goldfields",
+      "vgv_name": "Central Goldfields Shire",
+      "csa_name": "Central Goldfields",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21750",
+      "official_name": "Colac Otway",
+      "vgv_name": "Colac Otway Shire",
+      "csa_name": "Colac-Otway",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21830",
+      "official_name": "Corangamite",
+      "vgv_name": "Corangamite Shire",
+      "csa_name": "Corangamite",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "21890",
+      "official_name": "Darebin",
+      "vgv_name": "Darebin City",
+      "csa_name": "Darebin",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22110",
+      "official_name": "East Gippsland",
+      "vgv_name": "East Gippsland Shire",
+      "csa_name": "East Gippsland",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22170",
+      "official_name": "Frankston",
+      "vgv_name": "Frankston City",
+      "csa_name": "Frankston",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22250",
+      "official_name": "Gannawarra",
+      "vgv_name": "Gannawarra Shire",
+      "csa_name": "Gannawarra",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22310",
+      "official_name": "Glen Eira",
+      "vgv_name": "Glen Eira City",
+      "csa_name": "Glen Eira",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22410",
+      "official_name": "Glenelg",
+      "vgv_name": "Glenelg Shire",
+      "csa_name": "Glenelg",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22490",
+      "official_name": "Golden Plains",
+      "vgv_name": "Golden Plains Shire",
+      "csa_name": "Golden Plains",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22620",
+      "official_name": "Greater Bendigo",
+      "vgv_name": "Greater Bendigo City",
+      "csa_name": "Greater Bendigo",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22670",
+      "official_name": "Greater Dandenong",
+      "vgv_name": "Greater Dandenong City",
+      "csa_name": "Greater Dandenong",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22750",
+      "official_name": "Greater Geelong",
+      "vgv_name": "Greater Geelong City",
+      "csa_name": "Greater Geelong",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22830",
+      "official_name": "Greater Shepparton",
+      "vgv_name": "Greater Shepparton City",
+      "csa_name": "Greater Shepparton",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22910",
+      "official_name": "Hepburn",
+      "vgv_name": "Hepburn Shire",
+      "csa_name": "Hepburn",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "22980",
+      "official_name": "Hindmarsh",
+      "vgv_name": "Hindmarsh Shire",
+      "csa_name": "Hindmarsh",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23110",
+      "official_name": "Hobsons Bay",
+      "vgv_name": "Hobsons Bay City",
+      "csa_name": "Hobsons Bay",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23190",
+      "official_name": "Horsham",
+      "vgv_name": "Horsham Rural City",
+      "csa_name": "Horsham",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23270",
+      "official_name": "Hume",
+      "vgv_name": "Hume City",
+      "csa_name": "Hume",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23350",
+      "official_name": "Indigo",
+      "vgv_name": "Indigo Shire",
+      "csa_name": "Indigo",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23430",
+      "official_name": "Kingston (Vic.)",
+      "vgv_name": "Kingston City",
+      "csa_name": "Kingston",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23670",
+      "official_name": "Knox",
+      "vgv_name": "Knox City",
+      "csa_name": "Knox",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23810",
+      "official_name": "Latrobe (Vic.)",
+      "vgv_name": "Latrobe City",
+      "csa_name": "Latrobe",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "23940",
+      "official_name": "Loddon",
+      "vgv_name": "Loddon Shire",
+      "csa_name": "Loddon",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24130",
+      "official_name": "Macedon Ranges",
+      "vgv_name": "Macedon Ranges Shire",
+      "csa_name": "Macedon Ranges",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24210",
+      "official_name": "Manningham",
+      "vgv_name": "Manningham City",
+      "csa_name": "Manningham",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24250",
+      "official_name": "Mansfield",
+      "vgv_name": "Mansfield Shire",
+      "csa_name": "Mansfield",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24330",
+      "official_name": "Maribyrnong",
+      "vgv_name": "Maribyrnong City",
+      "csa_name": "Maribyrnong",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24410",
+      "official_name": "Maroondah",
+      "vgv_name": "Maroondah City",
+      "csa_name": "Maroondah",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24600",
+      "official_name": "Melbourne",
+      "vgv_name": "Melbourne City",
+      "csa_name": "Melbourne",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24650",
+      "official_name": "Melton",
+      "vgv_name": "Melton City",
+      "csa_name": "Melton",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24700",
+      "official_name": "Merri-bek",
+      "vgv_name": "Merri-Bek City",
+      "csa_name": "Merri-bek",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24780",
+      "official_name": "Mildura",
+      "vgv_name": "Mildura Rural City",
+      "csa_name": "Mildura",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24850",
+      "official_name": "Mitchell",
+      "vgv_name": "Mitchell Shire",
+      "csa_name": "Mitchell",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24900",
+      "official_name": "Moira",
+      "vgv_name": "Moira Shire",
+      "csa_name": "Moira",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "24970",
+      "official_name": "Monash",
+      "vgv_name": "Monash City",
+      "csa_name": "Monash",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25060",
+      "official_name": "Moonee Valley",
+      "vgv_name": "Moonee Valley City",
+      "csa_name": "Moonee Valley",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25150",
+      "official_name": "Moorabool",
+      "vgv_name": "Moorabool Shire",
+      "csa_name": "Moorabool",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25340",
+      "official_name": "Mornington Peninsula",
+      "vgv_name": "Mornington Peninsula Shire",
+      "csa_name": "Mornington Peninsula",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25430",
+      "official_name": "Mount Alexander",
+      "vgv_name": "Mount Alexander Shire",
+      "csa_name": "Mount Alexander",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25490",
+      "official_name": "Moyne",
+      "vgv_name": "Moyne Shire",
+      "csa_name": "Moyne",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25620",
+      "official_name": "Murrindindi",
+      "vgv_name": "Murrindindi Shire",
+      "csa_name": "Murrindindi",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25710",
+      "official_name": "Nillumbik",
+      "vgv_name": "Nillumbik Shire",
+      "csa_name": "Nillumbik",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25810",
+      "official_name": "Northern Grampians",
+      "vgv_name": "Northern Grampians Shire",
+      "csa_name": "Northern Grampians",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25900",
+      "official_name": "Port Phillip",
+      "vgv_name": "Port Phillip City",
+      "csa_name": "Port Phillip",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "25990",
+      "official_name": "Pyrenees",
+      "vgv_name": "Pyrenees Shire",
+      "csa_name": "Pyrenees",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26080",
+      "official_name": "Queenscliffe",
+      "vgv_name": "Borough of Queenscliffe",
+      "csa_name": "Queenscliffe",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26170",
+      "official_name": "South Gippsland",
+      "vgv_name": "South Gippsland Shire",
+      "csa_name": "South Gippsland",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26260",
+      "official_name": "Southern Grampians",
+      "vgv_name": "Southern Grampians Shire",
+      "csa_name": "Southern Grampians",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26350",
+      "official_name": "Stonnington",
+      "vgv_name": "Stonnington City",
+      "csa_name": "Stonnington",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26430",
+      "official_name": "Strathbogie",
+      "vgv_name": "Strathbogie Shire",
+      "csa_name": "Strathbogie",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26490",
+      "official_name": "Surf Coast",
+      "vgv_name": "Surf Coast Shire",
+      "csa_name": "Surf Coast",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26610",
+      "official_name": "Swan Hill",
+      "vgv_name": "Swan Hill Rural City",
+      "csa_name": "Swan Hill",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26670",
+      "official_name": "Towong",
+      "vgv_name": "Towong Shire",
+      "csa_name": "Towong",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26700",
+      "official_name": "Wangaratta",
+      "vgv_name": "Wangaratta Rural City",
+      "csa_name": "Wangaratta",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26730",
+      "official_name": "Warrnambool",
+      "vgv_name": "Warrnambool City",
+      "csa_name": "Warrnambool",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26810",
+      "official_name": "Wellington",
+      "vgv_name": "Wellington Shire",
+      "csa_name": "Wellington",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26890",
+      "official_name": "West Wimmera",
+      "vgv_name": "West Wimmera Shire",
+      "csa_name": "West Wimmera",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "26980",
+      "official_name": "Whitehorse",
+      "vgv_name": "Whitehorse City",
+      "csa_name": "Whitehorse",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27070",
+      "official_name": "Whittlesea",
+      "vgv_name": "Whittlesea City",
+      "csa_name": "Whittlesea",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27170",
+      "official_name": "Wodonga",
+      "vgv_name": "Wodonga City",
+      "csa_name": "Wodonga",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27260",
+      "official_name": "Wyndham",
+      "vgv_name": "Wyndham City",
+      "csa_name": "Wyndham",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27350",
+      "official_name": "Yarra",
+      "vgv_name": "Yarra City",
+      "csa_name": "Yarra",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27450",
+      "official_name": "Yarra Ranges",
+      "vgv_name": "Yarra Ranges Shire",
+      "csa_name": "Yarra Ranges",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    },
+    {
+      "code": "27630",
+      "official_name": "Yarriambiack",
+      "vgv_name": "Yarriambiack Shire",
+      "csa_name": "Yarriambiack",
+      "note": "VIC municipality identity; ABS LGA 2025. No areal interpolation."
+    }
+  ]
+}

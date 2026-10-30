@@ -5,7 +5,7 @@ export type CatalogLayer = {
   category: string;
   provider: string;
   service_url: string;
-  renderer: "arcgis_export" | "tile";
+  renderer: "arcgis_export" | "tile" | "geojson";
   layer_ids: string | null;
   description: string;
   attribution: string;
@@ -17,6 +17,7 @@ export type CatalogLayer = {
   enabled: boolean;
   release_status?: "verified" | "beta" | "disabled" | "deprecated";
   release_checklist?: Record<string, unknown>;
+  dataset_metadata?: import("../layers/types").DatasetMetadata;
 };
 export type ActiveLayer = {
   catalog_id: string;
