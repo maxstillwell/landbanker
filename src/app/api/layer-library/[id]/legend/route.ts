@@ -19,7 +19,9 @@ export async function GET(
       url.protocol !== "https:" ||
       ![
         "plan-gis.mapshare.vic.gov.au",
+        "spatial.planning.vic.gov.au",
         "portal.spatial.nsw.gov.au",
+        "portal.data.nsw.gov.au",
         "mapprod2.environment.nsw.gov.au",
         "mapprod3.environment.nsw.gov.au",
         "mapprod.environment.nsw.gov.au",

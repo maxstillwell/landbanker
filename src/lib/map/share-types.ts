@@ -15,7 +15,7 @@ export type SharedProjection = {
     id: string;
     name: string;
     service_url: string;
-    renderer: "arcgis_export" | "tile";
+    renderer: "arcgis_export" | "tile" | "geojson";
     layer_ids: string;
     attribution: string;
     min_zoom: number;

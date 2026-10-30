@@ -1,5 +1,14 @@
 # LandOS status
 
+## Professional GIS layers expansion — 31 October 2026 AEDT
+
+Based on current main `a379819`, preserving the marketing and authenticated UI releases. Adds 19 official catalogue products, enriches existing BMO/heritage IDs, and extends the existing catalogue with statistical indicators/years/legends and feature details. Includes five statistical products, VIC 2026 school points, VIC overlay/UGB/BPA/VPA and NSW flood/BFPL references. See [release evidence and remaining backlog](PROFESSIONAL_LAYERS_RELEASE.md) and [complete source register](PROFESSIONAL_LAYERS_REGISTRY.md). VIC median rent is **not implemented**, blocked by official download failures. This is a first expansion, not completion of the full roadmap.
+
+Lint/typecheck/63 tests/production build passed. Final live government run passed 44/44 after a documented transient HTTP403 run. Migration was rollback-tested and applied to independent Landbanker only (`20261030214609`), with new catalogue entries staged disabled. No Auth/RLS/workspace record changes. Docker database regression and isolated E2E could not run in this environment; production map access reached login, so authenticated/responsive acceptance is unverified. Existing two security-advisor warnings remain unchanged.
+
+Next release steps: publish the two tested commits directly to main; verify matching Vercel Production READY; activate only reviewed catalogue IDs; check anonymous/public routes and database permissions. Record actual deployment and activation evidence here after completion. Next product work is the blocked VIC rent import, then the explicitly incomplete NSW/projection/transport backlog.
+
+
 ## Authenticated map UI polish — 30 October 2026
 
 Based on latest main `d951151`, preserving the parallel marketing release. Search moves to the first rail item and the mobile navigation, with an autofocus floating panel, grouped existing results and X/Escape/toggle dismissal. Display moves into the top-right toolbar. A map-only stylesheet fixes the inspector's previous 72px empty top region, uses a stable responsive width, removes header resizing, refines information hierarchy and compact notifications. Navigation/tools use one consistent inline SVG family with no new dependency. Export code, providers, geometry, schema, RLS, authentication and marketing components/styles are unchanged.

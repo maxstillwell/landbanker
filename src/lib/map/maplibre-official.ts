@@ -4,7 +4,7 @@ export type OfficialRaster = {
   id: string;
   name: string;
   service_url: string;
-  renderer: "arcgis_export" | "tile";
+  renderer: "arcgis_export" | "tile" | "geojson";
   layer_ids: string | null;
   attribution: string;
   min_zoom: number;
@@ -28,7 +28,7 @@ export function officialTileUrl(layer: OfficialRaster) {
 }
 export function installOfficialRasters(map: Map, layers: OfficialRaster[]) {
   const ids: string[] = [];
-  for (const [index, layer] of layers.entries()) {
+  for (const [index, layer] of layers.filter(l=>l.renderer!=="geojson").entries()) {
     const id = `landos-reference-${index}-${layer.id}`;
     map.addSource(id, {
       type: "raster",

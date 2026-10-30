@@ -109,6 +109,7 @@ export default function SharedMap({ share }: { share: SharedProjection }) {
         aria-label="Read-only shared land map"
       />
       <p className="shared-map-attribution">{OPENFREEMAP_ATTRIBUTION}</p>
+      {share.official_layers?.some(l=>l.renderer==="geojson") ? <p>Statistical and precinct feature layers are available in the signed-in map and are not displayed in this public view.</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
     </>
   );

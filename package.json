@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "verify:map-sources": "node scripts/verify-map-sources.mjs",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --import tsx --test tests/terrain.test.ts tests/terrain-provider.test.ts && node --import tsx tests/core.test.ts && node --import tsx tests/planning.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts",
+    "test": "node --import tsx --test tests/terrain.test.ts tests/terrain-provider.test.ts && node --import tsx tests/core.test.ts && node --import tsx tests/planning.test.ts && node --conditions=react-server --import tsx tests/media-cache.test.ts && node --import tsx --test tests/professional-layers.test.ts",
     "db:test": "bash scripts/test-database.sh",
     "import:maxqi": "node --import tsx scripts/import-maxqi.ts",
     "infra:check": "node --import tsx scripts/check-infrastructure.ts",
@@ -22,7 +22,8 @@
     "prebuild": "node scripts/prepare-maplibre-worker.mjs",
     "verify:basemaps": "node scripts/verify-basemap-styles.mjs",
     "test:boundary-live": "node tests/boundary-association.e2e.mjs",
-    "test:multiselect": "node tests/parcel-multiselect.e2e.mjs"
+    "test:multiselect": "node tests/parcel-multiselect.e2e.mjs",
+    "verify:professional-layers": "node --import tsx scripts/verify-professional-layers.ts"
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0",
