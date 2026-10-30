@@ -233,7 +233,8 @@ export function useCatalogueMapLayers({
       controller.abort();
       clearTimeout(timer);
       popup.remove();
-      setSelected(null);
+      // Opening the Inspector resizes the map and emits moveend. Keep the
+      // selected original feature while refreshing the visible geometry.
       timer = setTimeout(load, 300);
     }
     function workspaceHit(e: MapMouseEvent) {

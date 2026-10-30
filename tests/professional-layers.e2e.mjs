@@ -157,7 +157,11 @@ try {
   await expect(
     page.getByRole("region", { name: "Official area statistics" }),
   ).toContainText("30 June 2025");
+  await page.setViewportSize({ width: 1366, height: 900 });
   await page.screenshot({ path: "artifacts/professional-layers-desktop.png" });
+  await expect(
+    page.getByRole("region", { name: "Official area statistics" }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Close official area", exact: true })
     .click();
