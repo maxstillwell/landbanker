@@ -1,4 +1,9 @@
 import { chromium } from "./map-browser.mjs";
+import {
+  openWorkspaceLibrary,
+  addObservation,
+  resumeObservation,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
@@ -84,24 +89,33 @@ try {
     "GPS marker remains visible above the mobile sheet and action button",
   );
   await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: "Add observation" }).click();
+  await addObservation(page);
   const title = `Field inspection ${Date.now()}`;
   await page.getByLabel("Title", { exact: true }).fill(title);
   await page
     .getByLabel("Field notes")
     .fill("Gate access confirmed. Desktop should see this exact record.");
   // Switching sections must preserve the draft and release map clicks.
-  const originalLocation = await page.locator(".observation-form .coordinates").textContent();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
-  await expect(page.getByLabel("Search saved properties")).toBeVisible();
+  const originalLocation = await page
+    .locator(".observation-form .coordinates")
+    .textContent();
+  await openWorkspaceLibrary(page, "Properties");
+  await expect(
+    page.getByRole("button", { name: "Create from map location", exact: true }),
+  ).toBeVisible();
   await expect(page.getByLabel("Title", { exact: true })).toHaveCount(0);
   await page.mouse.click(150, 220);
-  await page.locator(".queue-row").filter({ hasText: title }).getByRole("button", { name: "Resume" }).click();
-  await expect(page.getByLabel("Field notes")).toHaveValue("Gate access confirmed. Desktop should see this exact record.");
-  assert.equal(await page.locator(".observation-form .coordinates").textContent(), originalLocation);
+  await resumeObservation(page, title);
+  await expect(page.getByLabel("Field notes")).toHaveValue(
+    "Gate access confirmed. Desktop should see this exact record.",
+  );
+  assert.equal(
+    await page.locator(".observation-form .coordinates").textContent(),
+    originalLocation,
+  );
   await page.getByRole("button", { name: "Save draft and close" }).click();
   await expect(page.getByLabel("Title", { exact: true })).toHaveCount(0);
-  await page.locator(".queue-row").filter({ hasText: title }).getByRole("button", { name: "Resume" }).click();
+  await resumeObservation(page, title);
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue(title);
   // Valid one-pixel PNG, uploaded to actual local private Storage.
   await page.locator("input[type=file][multiple]").setInputFiles({
@@ -134,7 +148,7 @@ try {
   await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await page.screenshot({ path: "artifacts/iphone-field.png", fullPage: true });
   await page.reload();
-  await page.getByRole("button", { name: "Add observation" }).waitFor();
+  await page.locator(".maplibregl-canvas").waitFor();
   assert.match(page.url(), /\/app\/map$/, "session survives reload");
   const desktopContext = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
@@ -159,7 +173,7 @@ try {
   await desktop.locator(".maplibregl-canvas").waitFor({ state: "visible" });
   await desktop.screenshot({ path: "artifacts/ipad-landscape.png" });
   // Temporary API outage: record/photo must survive a reload and explicit retry.
-  await page.getByRole("button", { name: "Add observation" }).click();
+  await addObservation(page);
   await page
     .getByLabel("Title", { exact: true })
     .fill("Weak signal durable retry");
@@ -178,9 +192,9 @@ try {
     .getByText("Saved on this device. Retry when reception improves.")
     .waitFor();
   await page.reload();
-  await page.getByText("Weak signal durable retry", { exact: true }).waitFor();
+  await resumeObservation(page, "Weak signal durable retry");
   await page.unroute("**/api/observations");
-  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await page.getByRole("button", { name: "Save to Workspace" }).click();
   await page
     .getByText("Saved to Workspace. Available on your other devices.")
     .waitFor({ timeout: 45000 });

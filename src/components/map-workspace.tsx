@@ -2605,9 +2605,9 @@ export default function MapWorkspace({
       ) : null}
       <nav className="mobile-map-nav" aria-label="Mobile map navigation">
         <button onClick={async()=>{if(await pauseObservation())setSearchOpen(v=>!v);}} aria-label="Search" title="Search" data-map-search-trigger="" aria-pressed={searchOpen}><MapIcon name="search"/><span>Search</span></button>
-        <button onClick={() => { setSearchOpen(false);setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}><MapIcon name="layers"/><span>Layers</span></button>
-        <button onClick={() => { setSearchOpen(false);setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}><MapIcon name="properties"/><span>Properties</span></button>
-        <button aria-expanded={mobileMore} onClick={() => { setLeftOpen(false); setMobileMore((value) => !value); }}><MapIcon name="more"/><span>More</span></button>
+        <button onClick={async () => { if (!(await pauseObservation())) return; setSearchOpen(false);setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}><MapIcon name="layers"/><span>Layers</span></button>
+        <button onClick={async () => { if (!(await pauseObservation())) return; setSearchOpen(false);setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}><MapIcon name="properties"/><span>Properties</span></button>
+        <button aria-expanded={mobileMore} onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setMobileMore((value) => !value); }}><MapIcon name="more"/><span>More</span></button>
       </nav>
       {mobileMore && <div className="mobile-more-menu"><button onClick={() => { setMobileMore(false); setPaletteOpen(true); }}>Tools</button><button onClick={() => { setMobileMore(false); setDrawer("research"); setLeftOpen(true); }}>Research Areas</button><button onClick={() => { setMobileMore(false); setDrawer("observations"); setLeftOpen(true); }}>Observations</button><button onClick={() => { setMobileMore(false); setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><WorkspaceSelector name={workspaceName} /><Link href="/app/settings">Account and settings</Link></div>}
       <nav className="workspace-dock" aria-label="Map tools">
