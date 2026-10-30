@@ -274,7 +274,14 @@ export function useCatalogueMapLayers({
           layer &&
           collections
             .get(layer.id)
-            ?.features.find((f) => String(f.id) === String(hit.id));
+            // Vector-tile encoding can coerce GeoJSON string IDs to numbers.
+            // The official code property survives tiling and identifies the
+            // original, unclipped feature within this reviewed product.
+            ?.features.find(
+              (f) =>
+                String(f.properties?.areaCode) ===
+                String(hit.properties.areaCode),
+            );
         if (layer && feature) {
           setSelected({ layer, feature });
           onPick();

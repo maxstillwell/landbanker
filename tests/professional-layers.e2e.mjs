@@ -138,6 +138,8 @@ try {
   await page
     .getByRole("button", { name: "Close library", exact: true })
     .click();
+  await mkdir("artifacts", { recursive: true });
+  await page.screenshot({ path: "artifacts/professional-layers-map.png" });
   await expect
     .poll(async () => {
       await page.mouse.click(700, 400);
@@ -155,7 +157,6 @@ try {
   await expect(
     page.getByRole("region", { name: "Official area statistics" }),
   ).toContainText("30 June 2025");
-  await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/professional-layers-desktop.png" });
   await page
     .getByRole("button", { name: "Close official area", exact: true })
