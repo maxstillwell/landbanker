@@ -1,7 +1,9 @@
 """Controlled, offline import of reviewed government workbooks (Python/openpyxl).
 
 Usage: python scripts/import-official-statistics.py /absolute/source-directory
-Expected files: abs.xlsx, sales.xlsx, crime.xlsx. Downloads are never committed.
+Expected files: abs.xlsx, sales.xlsx, crime.xlsx, seifa.xlsx, approvals.zip,
+schools.csv. Original source URLs and hashes are recorded in import-manifest.json.
+Downloads are never committed.
 No database writes; inspect the JSON diff, run tests, then release normally.
 """
 import hashlib

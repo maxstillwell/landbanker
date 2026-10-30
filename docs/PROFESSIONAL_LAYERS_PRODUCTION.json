@@ -1,88 +1,132 @@
 {
-  "source_commit": "ed2d5b2b9a4001c702e24018e6334aa190d768d2",
+  "source_commit": "ff58329e3f3a85c46041898d69064a1f8c369d6d",
+  "checked_at": "2026-10-30T22:08:24.311439+00:00",
   "routes": [
     {
       "route": "/",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/features",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/layers",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/solutions",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/pricing",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/about",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/contact",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/login",
       "http": "HTTP/2 200 ",
       "redirect": null,
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/app/map",
       "http": "HTTP/2 307 ",
       "redirect": "/login?next=%2Fapp%2Fmap",
+      "cache_control": "public, max-age=0, must-revalidate",
       "sign_in_required": false,
-      "server_error": false
+      "server_error": false,
+      "curl_error": null
     },
     {
       "route": "/api/layer-library",
-      "http": "400",
+      "http": "HTTP/2 400 ",
+      "redirect": null,
+      "cache_control": "no-store",
       "sign_in_required": true,
       "server_error": false,
-      "verified_via": "Vercel authenticated fetch; Supabase authentication was not bypassed",
-      "response": {
-        "error": "Sign in required"
-      }
+      "curl_error": null
     },
     {
       "route": "/api/layer-library/abs-population-growth/features?bbox=145.15,-37.88,145.21,-37.84&zoom=14",
-      "http": "400",
+      "http": "HTTP/2 400 ",
+      "redirect": null,
+      "cache_control": "no-store",
       "sign_in_required": true,
       "server_error": false,
-      "verified_via": "Vercel authenticated fetch; Supabase authentication was not bypassed",
-      "response": {
-        "error": "Sign in required"
-      }
+      "curl_error": null
     }
-  ]
+  ],
+  "route_smoke_source_commit": "a506cd9a7f6750121c5a97ea753a98e5313e411b",
+  "source_difference": "Subsequent runtime change only preserves inspected area across map resize; final deployment source is recorded in delivery.",
+  "targeted_browser": {
+    "run_id": 41136279870,
+    "job_id": 124339417119,
+    "source_commit": "ff58329e3f3a85c46041898d69064a1f8c369d6d",
+    "status": "passed",
+    "at": "2026-10-30T22:13:15.743Z",
+    "scope": "Disposable local Auth/RLS/preferences; fixture geometry; actual published Vermont South statistics; desktop/mobile add/toggle/remove/year/indicator/legend/inspect/resize/no disabled requests",
+    "artifact_id": 13017177355
+  },
+  "legacy_e2e": {
+    "status": "failed",
+    "location": "tests/field.e2e.mjs:87 Add observation",
+    "same_failure_on_audit_base": true,
+    "baseline_run_id": 41018168917
+  },
+  "activation": {
+    "checked_at": "2026-10-30T22:14:28.93857Z",
+    "total_catalogue_rows": 31,
+    "enabled": 29,
+    "reviewed_enabled": 21,
+    "enabled_geojson": 7,
+    "nsw_fsr": false,
+    "nsw_height": false,
+    "scope": "Catalogue availability only; no user preferences or workspace records changed"
+  }
 }
