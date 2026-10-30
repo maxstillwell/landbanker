@@ -2,6 +2,8 @@
 import * as maplibregl from "maplibre-gl";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./map-ui-polish.css";
+import { MapIcon } from "./map-icon";
 import {
   geometryBounds,
   latLng,
@@ -269,7 +271,7 @@ export default function MapWorkspace({
     "collapsed",
   );
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileSettings, setMobileSettings] = useState(false);
+  const [searchOpen,setSearchOpen]=useState(false);
   const [mobileMore, setMobileMore] = useState(false);
   const [sheetDrag, setSheetDrag] = useState(0);
   const dragStart = useRef<number | null>(null);
@@ -295,14 +297,13 @@ export default function MapWorkspace({
   const finishDrawingRef = useRef<()=>Promise<void>>(async()=>{});
   const rectangleDrag = useRef(false);
   const [discardedDraft,setDiscardedDraft] = useState<LocalLayerDraft|null>(null);
-  const [inspectorSize, setInspectorSize] = useState<"compact" | "expanded">("expanded");
+  const inspectorSize = "expanded";
   const [layoutScope, setLayoutScope] = useState("");
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(layoutKey) || "null");
       if (!window.matchMedia("(max-width: 767px)").matches && typeof saved?.leftOpen === "boolean") setLeftOpen(saved.leftOpen);
       if (!window.matchMedia("(max-width: 767px)").matches && typeof saved?.rightOpen === "boolean") setRightOpen(saved.rightOpen);
-      if (saved?.inspectorSize === "compact" || saved?.inspectorSize === "expanded") setInspectorSize(saved.inspectorSize);
       if (["search", "layers", "properties", "research", "observations", "views"].includes(saved?.drawer)) setDrawer(saved.drawer);
     } catch {
       /* Device preference is optional. */
@@ -2535,15 +2536,11 @@ export default function MapWorkspace({
           </button>
         </div>
       ) : null}
-      <div className="map-display-control"><button aria-label="Map Display" aria-expanded={displayOpen} onClick={()=>setDisplayOpen(v=>!v)}>◉<span>Display</span></button>{displayOpen&&<section aria-label="Map Display visibility"><strong>Map Display</strong>{([["parcels","My Properties"],["observations","Observations"],["features","User Drawings"]] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={workspaceVisibility[key]} onChange={e=>setWorkspaceVisibility(v=>({...v,[key]:e.target.checked}))}/>{label}</label>)}<label><input type="checkbox" checked={researchVisible} onChange={e=>setResearchVisible(e.target.checked)}/>Research Areas</label><label><input type="checkbox" checked={highlightsVisible} onChange={e=>setHighlightsVisible(e.target.checked)}/>Selected Object Highlights</label><label><input type="checkbox" checked={labelsVisible} onChange={e=>setLabelsVisible(e.target.checked)}/>Measurement Labels</label></section>}</div>
-      <GlobalMapSearch properties={data.parcels} researchAreas={data.layers.filter((layer) => layer.layer_kind === "research_area")} onAddress={(address) => setView(map.current, [address.latitude, address.longitude], 17)} onPlace={(place) => setView(map.current, [place.latitude, place.longitude], 12)} onParcel={selectOfficialParcel} onProperty={(property) => { selectSavedParcel(property); setTab("parcels"); setRightOpen(true); setSheet("medium"); void timeoutFetch(`/api/properties/${encodeURIComponent(property.id)}`).then((r) => r.json()).then((body) => { const geometry = propertyGeometry(body.property?.geometry); if (geometry && map.current) map.current.fitBounds(geometryBounds(geometry), { padding: 60, maxZoom: 18 }); }).catch(() => setNotice("Property geometry is unavailable.")); }} onResearchArea={(layer) => { void openResearchArea(layer); }} />
+
+      <GlobalMapSearch open={searchOpen} onOpenChange={setSearchOpen} properties={data.parcels} researchAreas={data.layers.filter((layer) => layer.layer_kind === "research_area")} onAddress={(address) => setView(map.current, [address.latitude, address.longitude], 17)} onPlace={(place) => setView(map.current, [place.latitude, place.longitude], 12)} onParcel={selectOfficialParcel} onProperty={(property) => { selectSavedParcel(property); setTab("parcels"); setRightOpen(true); setSheet("medium"); void timeoutFetch(`/api/properties/${encodeURIComponent(property.id)}`).then((r) => r.json()).then((body) => { const geometry = propertyGeometry(body.property?.geometry); if (geometry && map.current) map.current.fitBounds(geometryBounds(geometry), { padding: 60, maxZoom: 18 }); }).catch(() => setNotice("Property geometry is unavailable.")); }} onResearchArea={(layer) => { void openResearchArea(layer); }} />
       <header className="map-header">
         <BrandLockup href="/app/map" compact />
-        <div className="mobile-header-actions">
-          <button aria-label={mapMode === "3d" ? "Switch to 2D" : "Switch to 3D"} aria-pressed={mapMode === "3d"} onClick={toggleMapMode}>{mapMode === "3d" ? "2D" : "3D"}</button>
-          <button aria-label="Map settings" aria-expanded={mobileSettings} onClick={() => setMobileSettings((value) => !value)}>⚙</button>
-        </div>
-        <div className={`map-settings-controls ${mobileSettings ? "open" : ""}`}>
+        <div className="map-settings-controls">
         <BasemapSelector
           value={basemap}
           esriEnabled={Boolean(esriApiKey || adminTerrainPreview)}
@@ -2581,16 +2578,12 @@ export default function MapWorkspace({
         >
           {mapMode === "3d" ? "2D edit" : "3D view"}
         </button>
-        {dem && <>
-          <button className="map-mode-toggle terrain-secondary" aria-pressed={hillshade} onClick={() => setHillshade(!hillshade)}>Hillshade</button>
-          {mapMode === "3d" && <><label className="terrain-secondary">Relief <select aria-label="Terrain exaggeration" value={terrainExaggeration} onChange={(e) => { sampleAbort.current?.abort(); setPointStatus("unavailable"); setPointElevation(null); setTerrainExaggeration(Number(e.target.value)); }}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label><button className="map-mode-toggle terrain-secondary" onClick={() => { const m = map.current; const c = m?.getCenter(); sampleAbort.current?.abort(); setPointElevation(null); if (!m || !c) { setPointStatus("unavailable"); return; } const controller = new AbortController(); sampleAbort.current = controller; setPointStatus("loading"); void waitForTerrainSample(m, [c.lng,c.lat], terrainExaggeration, controller.signal).then((result) => { if (controller.signal.aborted) return; if (result.status === "available") { setPointElevation(result.value); setPointStatus("available"); } else if (result.status !== "cancelled") setPointStatus(result.status); }); }}>Elevation at centre</button><span className="terrain-secondary" role="status" title={terrainMetadata}>{pointStatus === "loading" ? "Loading elevation…" : pointStatus === "timed-out" ? "Elevation timed out" : pointStatus === "provider-error" ? "Elevation provider error" : pointElevation === null ? "Elevation unavailable" : `${pointElevation.toFixed(1)} m (approx.)`}</span></>}
-        </>}
-        {mapMode === "3d" && <span className="terrain-inline-status" role="status" title="Terrain coverage varies by source. Missing DEM samples remain unavailable.">{terrainCoverage === "loaded" ? "Terrain ready" : terrainCoverage === "partial" ? "Partial terrain" : terrainFailed || terrainWaited ? "Terrain unavailable" : "Loading terrain…"}{(terrainFailed||terrainWaited)&&terrainCoverage!=="loaded"&&<button onClick={toggleMapMode}>Return to 2D</button>}</span>}
-        {dem && mapMode === "3d" && <button className="map-mode-toggle terrain-secondary" aria-pressed={profileDrawing} onClick={activateProfile}>Elevation profile</button>}
         </div>
-        <details className="desktop-workspace-settings"><summary aria-label="Workspace settings">⚙</summary><div className="desktop-settings-panel"><strong>Workspace</strong><WorkspaceSelector name={workspaceName} /><button onClick={() => { setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><Link href="/app/settings">Account and settings</Link></div></details>
+        <div className="map-display-control"><button aria-label="Map Display" aria-expanded={displayOpen} onClick={()=>setDisplayOpen(v=>!v)} title="Display"><MapIcon name="display"/><span>Display</span></button>{displayOpen&&<section aria-label="Map Display visibility"><strong>Map Display</strong>{([["parcels","My Properties"],["observations","Observations"],["features","User Drawings"]] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={workspaceVisibility[key]} onChange={e=>setWorkspaceVisibility(v=>({...v,[key]:e.target.checked}))}/>{label}</label>)}<label><input type="checkbox" checked={researchVisible} onChange={e=>setResearchVisible(e.target.checked)}/>Research Areas</label><label><input type="checkbox" checked={highlightsVisible} onChange={e=>setHighlightsVisible(e.target.checked)}/>Selected Object Highlights</label><label><input type="checkbox" checked={labelsVisible} onChange={e=>setLabelsVisible(e.target.checked)}/>Measurement Labels</label></section>}</div>
+        <details className="desktop-workspace-settings"><summary aria-label="Workspace settings" title="Settings"><MapIcon name="settings"/></summary><div className="desktop-settings-panel"><strong>Workspace</strong><WorkspaceSelector name={workspaceName} /><button onClick={() => { setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><Link href="/app/settings">Account and settings</Link></div></details>
       </header>
 
+      {mapMode === "3d" && terrainCoverage !== "loaded" && <div className="terrain-context-status" role="status">{terrainCoverage === "partial" ? "Partial terrain coverage" : terrainFailed || terrainWaited ? "Terrain unavailable" : "Loading terrain…"}{(terrainFailed||terrainWaited)&&<button onClick={toggleMapMode}>Return to 2D</button>}</div>}
       {!online || queue.some((q) => q.status !== "draft") ? (
         <div className="map-topline" role="status">
           {!online
@@ -2604,23 +2597,24 @@ export default function MapWorkspace({
         </div>
       ) : null}
       <nav className="mobile-map-nav" aria-label="Mobile map navigation">
-        <button onClick={() => { setLeftOpen(false); setPaletteOpen(false); setRightOpen(false); setSheet("collapsed"); }}>⌖<span>Map</span></button>
-        <button onClick={() => { setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}>▱<span>Layers</span></button>
-        <button onClick={() => { setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}>▤<span>Properties</span></button>
-        <button aria-expanded={mobileMore} onClick={() => { setLeftOpen(false); setMobileMore((value) => !value); }}>•••<span>More</span></button>
+        <button onClick={async()=>{if(await pauseObservation())setSearchOpen(v=>!v);}} aria-label="Search" title="Search" data-map-search-trigger="" aria-pressed={searchOpen}><MapIcon name="search"/><span>Search</span></button>
+        <button onClick={() => { setSearchOpen(false);setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}><MapIcon name="layers"/><span>Layers</span></button>
+        <button onClick={() => { setSearchOpen(false);setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}><MapIcon name="properties"/><span>Properties</span></button>
+        <button aria-expanded={mobileMore} onClick={() => { setLeftOpen(false); setMobileMore((value) => !value); }}><MapIcon name="more"/><span>More</span></button>
       </nav>
       {mobileMore && <div className="mobile-more-menu"><button onClick={() => { setMobileMore(false); setPaletteOpen(true); }}>Tools</button><button onClick={() => { setMobileMore(false); setDrawer("research"); setLeftOpen(true); }}>Research Areas</button><button onClick={() => { setMobileMore(false); setDrawer("observations"); setLeftOpen(true); }}>Observations</button><button onClick={() => { setMobileMore(false); setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><WorkspaceSelector name={workspaceName} /><Link href="/app/settings">Account and settings</Link></div>}
       <nav className="workspace-dock" aria-label="Map tools">
         {([
-          ["spatial", "Tools", "✎"], ["layers", "Layers", "▱"], ["properties", "Properties", "⌂"], ["research", "Research Areas", "⬡"], ["observations", "Observations", "◎"],
-        ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} aria-pressed={id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={async () => {
+          ["search", "Search", "search"], ["spatial", "Tools", "tools"], ["layers", "Layers", "layers"], ["properties", "Properties", "properties"], ["research", "Research Areas", "research"], ["observations", "Observations", "observations"],
+        ] as const).map(([id, label, icon]) => <button key={id} type="button" aria-label={label} title={label} data-map-search-trigger={id === "search" ? "" : undefined} aria-pressed={id === "search" ? searchOpen : id === "spatial" ? paletteOpen : leftOpen && drawer === id} onClick={async () => {
           if (!(await pauseObservation())) return;
-          setRightOpen(false);setSheet("collapsed");
+          if(id === "search"){setSearchOpen(v=>!v);setPaletteOpen(false);setLeftOpen(false);return;}
+          setSearchOpen(false);setRightOpen(false);setSheet("collapsed");
           if (id === "spatial") { setRightOpen(false);setSheet("collapsed"); setPaletteOpen((v) => !v); setLeftOpen(false); return; }
           setPaletteOpen(false);setRightOpen(false);setSheet("collapsed"); setLeftOpen((open) => drawer === id ? !open : true); setDrawer(id);
-        }}><span aria-hidden="true">{icon}</span></button>)}
-        {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}>＋</button> : null}
-        <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setRightOpen(false); setPaletteOpen(false); setInspectorSize("expanded"); try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}>↺</button>
+        }}><MapIcon name={icon}/></button>)}
+        {canWrite && !draft && !drawMode && !(leftOpen && drawer === "observations") ? <button type="button" aria-label="Add observation" title="Add observation" onClick={() => { setLeftOpen(false); beginObservation(); }}><MapIcon name="plus"/></button> : null}
+        <button className="dock-reset" type="button" aria-label="Reset Layout" title="Reset Layout" onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setRightOpen(false); setPaletteOpen(false);  try { localStorage.removeItem(`${layoutKey}:spatial`); } catch {} window.dispatchEvent(new Event("landos:reset-layout")); }}><MapIcon name="reset"/></button>
       </nav>
       <aside className={`workspace-library ${leftOpen ? "open" : ""}`} aria-label="Workspace library" aria-hidden={!leftOpen} inert={!leftOpen}>
         <div className="workspace-library-head"><strong>{drawer === "search" ? "SEARCH" : drawer === "layers" ? "LAYERS" : drawer === "properties" ? "PROPERTIES" : drawer === "research" ? "RESEARCH AREAS" : drawer === "observations" ? "OBSERVATIONS" : "SAVED VIEWS"}</strong><button type="button" onClick={() => setLeftOpen(false)} aria-label="Close library">×</button></div>
@@ -2644,11 +2638,11 @@ export default function MapWorkspace({
         <div className="spatial-widget-tools">
           {(
             [
-              ["LineString", "Line / distance", "╱"],
-              ["Polygon", "Polygon / area", "⬡"],
-              ["Rectangle", "Rectangle", "▭"],
-              ["Point", "Point", "•"],
-            ] as [DrawingKind, string, string][]
+              ["LineString", "Line / distance", "line"],
+              ["Polygon", "Polygon / area", "polygon"],
+              ["Rectangle", "Rectangle", "rectangle"],
+              ["Point", "Point", "point"],
+            ] as [DrawingKind, string, "line"|"polygon"|"rectangle"|"point"][]
           ).map(([type, label, icon]) => (
             <button
               key={type}
@@ -2657,17 +2651,17 @@ export default function MapWorkspace({
               disabled={!canWrite}
               onClick={() => startDrawing(type)}
             >
-              <span className="tool-icon" aria-hidden="true">{icon}</span><span>{label}</span>
+              <span className="tool-icon"><MapIcon name={icon}/></span><span>{label}</span>
             </button>
           ))}
           <button type="button" onClick={activateElevation}>Elevation</button><button type="button" onClick={activateProfile}>Elevation profile</button><button type="button" onClick={() => setHillshade((value) => !value)} aria-pressed={hillshade}>Hillshade</button>{dem && <label>Relief<select aria-label="Tool terrain exaggeration" value={terrainExaggeration} onChange={(event) => setTerrainExaggeration(Number(event.target.value))}><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select></label>}
-          <button type="button" aria-label="Measure distance" disabled={!canWrite || drawMode} onClick={() => startDrawing("LineString")}><span className="tool-icon" aria-hidden="true">⌁</span><span>Measure distance</span></button>
+          <button type="button" aria-label="Measure distance" disabled={!canWrite || drawMode} onClick={() => startDrawing("LineString")}><span className="tool-icon"><MapIcon name="measure"/></span><span>Measure distance</span></button>
           <button className="mobile-multiselect-tool" aria-label="Previous map view" disabled={historyPosition.index === 0} onClick={() => navigateHistory(-1)}>← Previous</button>
           <button className="mobile-multiselect-tool" aria-label="Next map view" disabled={historyPosition.index >= historyPosition.length - 1} onClick={() => navigateHistory(1)}>→ Next</button>
           <button className="mobile-multiselect-tool" aria-label="Go to home view" onClick={goHome}>⌂ Home</button>
           <button className="mobile-multiselect-tool" aria-label="Save home view" onClick={() => { if (!map.current) return; try { localStorage.setItem(homeKey, JSON.stringify(cameraView(map.current))); setNotice("Current map view saved as Home on this device."); } catch { setNotice("Unable to save Home on this device."); } }}>⌂＋ Set home</button>
           <button className="mobile-multiselect-tool" type="button" aria-label="Toggle multi-select" aria-pressed={multiSelect} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); setPaletteOpen(false); }}><span className="tool-icon" aria-hidden="true">▧</span><span>Multi-select</span></button>
-          <button type="button" aria-label="Radius" aria-expanded={radiusOpen} onClick={() => setRadiusOpen((v) => !v)}><span className="tool-icon" aria-hidden="true">◉</span><span>Radius</span></button>
+          <button type="button" aria-label="Radius" aria-expanded={radiusOpen} onClick={() => setRadiusOpen((v) => !v)}><span className="tool-icon"><MapIcon name="radius"/></span><span>Radius</span></button>
           {radiusOpen ? <div className="radius-settings"><label>Radius (km) <input aria-label="Radius kilometres" type="number" min="0.01" max="500" step="0.1" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} /></label><button disabled={!canWrite} onClick={async()=>{if(!(await pauseObservation()))return;if(localLayer||session.active||session.found){setRightOpen(false);setPaletteOpen(false);return;}elevationMode.current=false;setElevationActive(false);profileMode.current=false;setProfileDrawing(false);radiusPlacementRef.current=true;setRadiusPlacement(true);setPaletteOpen(false);setLeftOpen(false);setRightOpen(false);setSheet("collapsed");}}>Place centre on map</button><button disabled={!canWrite} onClick={() => void createRadius()}>Use map centre</button></div> : null}
           <button disabled={!canWrite} aria-label="Import spatial file" onClick={() => importInput.current?.click()}><span className="tool-icon" aria-hidden="true">⇧</span><span>Import</span></button>
           <button aria-label="Inspect centre coordinates" onClick={() => { const c = map.current?.getCenter(); if (c) setNotice(`Map centre: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`); }}><span className="tool-icon" aria-hidden="true">⌖</span><span>Coordinates</span></button>
@@ -2748,7 +2742,7 @@ export default function MapWorkspace({
             <span />
           </button>
         </div>
-        <div className="inspector-heading"><button className="detail-back" aria-label="Back to object list" onClick={async()=>{if(!(await pauseObservation()))return;setRightOpen(false);setSheet("collapsed");setDrawer(selectedResearch?"research":selectedParcel?"properties":selected?"observations":"research");setLeftOpen(true);}}>←</button>
+        <div className="inspector-heading"><button className="detail-back" aria-label="Back to object list" onClick={async()=>{if(!(await pauseObservation()))return;setRightOpen(false);setSheet("collapsed");setDrawer(selectedResearch?"research":selectedParcel?"properties":selected?"observations":"research");setLeftOpen(true);}}><MapIcon name="back"/></button>
           <div>
             <h2>
               {drawMode
@@ -2760,13 +2754,13 @@ export default function MapWorkspace({
                   : selected
                     ? selected.title
                     : selectedParcel || officialParcel
-                      ? "Property"
+                      ? selectedParcel?.title || officialParcel?.address || "Parcel details"
                       : selectedResearch ? selectedResearch.layer.name : selectedDrawing ? String(selectedDrawing.properties?.name || "Drawing") : tab === "layers"
                         ? "Details"
                         : "Workspace"}
             </h2>
           </div>
-          <button type="button" className="inspector-size" onClick={() => setInspectorSize((v) => v === "compact" ? "expanded" : "compact")} aria-label={inspectorSize === "compact" ? "Expand inspector" : "Compact inspector"}>{inspectorSize === "compact" ? "⤢" : "⤡"}</button>
+
           <button
             onClick={() => { const revision = panelRevision.current; void pauseObservation().then((saved) => { if (saved && panelRevision.current === revision) { setRightOpen(false); if (isMobile) setSheet("collapsed"); } }); }}
             disabled={
@@ -2775,7 +2769,7 @@ export default function MapWorkspace({
             }
             aria-label="Close inspector"
           >
-            ×
+            <MapIcon name="close"/>
           </button>
         </div>
         <div className="inspector-content">
@@ -2792,7 +2786,6 @@ export default function MapWorkspace({
           </section>}
           {dem && mapMode === "3d" && <details><summary>Terrain source and accuracy</summary>{providers.length > 1 && <label>Terrain provider<select aria-label="Terrain provider" value={dem.id} onChange={(e) => { profileMode.current = false; setProfileDrawing(false); sampleAbort.current?.abort(); setPointStatus("unavailable"); setProviderId(e.target.value); setPointElevation(null); setProfile([]); setProfilePoints([]); setParcelHeights(null); setParcelHeightMessage(""); setTerrainCoverage("unknown"); }} >{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}</select></label>}{dem.testingOnly && <p>Testing only. Provider permissions and vertical datum are not approved for production.</p>}<p>{dem.attribution}. {terrainMetadata} Elevations are approximate and not survey grade; do not compare heights across different or unknown datums. {!dem.datumVerified && "Profile and parcel calculations are withheld until datum consistency is verified."}</p></details>}
           {!draft && selectionDetails && selectedAreas.length ? <section className="selection-inspector" aria-label="Selected parcels and features" tabIndex={-1}><h3>Selection · {selectedAreas.length}</h3><p>{formatArea(areaSummary.areaM2)} calculated · {Math.round(areaSummary.areaM2).toLocaleString("en-AU")} m²</p><small>Geodesic geometry area, not surveyed title area.{areaSummary.incomplete ? " Incomplete: some boundaries or areas are unavailable." : ""}{areaSummary.overlaps ? " Boundaries overlap; the total may double-count land." : ""}</small><ul>{selectedAreas.map((item, index) => <li key={item.id}><button onClick={() => { setSelection(item.detail); setSelectionDetails(false); setTab(item.detail.kind === "drawing" ? "layers" : "parcels"); }}>{index + 1}. {item.label}</button><small>{item.kind === "feature" ? "Layer feature" : "Parcel"} · {item.source}{item.detail.kind === "official-parcel" || item.detail.kind === "parcel" ? ` · ${[item.detail.record.lot, item.detail.record.plan].filter(Boolean).join(" / ") || (item.detail.kind === "official-parcel" ? item.detail.record.sourceId : item.detail.record.source_parcel_id) || "ID unavailable"}` : ""} · {item.geometry ? formatArea(geometryMeasurement(item.geometry).areaM2) : "Area unavailable"}</small><button aria-label={`Remove ${item.label} from selection`} onClick={() => removeArea(item.id)}>×</button></li>)}</ul><div className="actions"><button onClick={fitSelectedAreas}>Fit to All</button>{canWrite&&<button onClick={()=>void saveSelectionProperty()}>Save as one Property</button>}<button onClick={clearAreas}>Clear All</button></div></section> : null}
-          {!draft && selectedAreas.length === 1 && <section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" && dem?.datumVerified ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : !dem?.datumVerified ? "Parcel measurements unavailable: vertical datum consistency is unverified." : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Source: {dem?.attribution}. {terrainMetadata}</p>}</section>}
           {!draft && !selectionDetails && selectedAreas.length > 1 ? <button onClick={() => { setSelection(null); setSelectionDetails(true); }}>Back to Selection</button> : null}
           {draft ? (
             <section className="observation-form">
@@ -2947,7 +2940,7 @@ export default function MapWorkspace({
               {canWrite && <div className="actions"><button onClick={() => {
                 const next: FieldDraft = { id: selected.id, userId, workspaceId, input: { id: selected.id, workspace_id: workspaceId, title: selected.title, notes: selected.notes || "", latitude: selected.latitude, longitude: selected.longitude, observed_at: selected.observed_at, linked_parcel_id: selected.linked_parcel_id, linked_research_area_id: selected.linked_research_area_id, metadata: selected.metadata }, photos: [], status: "draft", updatedAt: Date.now() };
                 draftRef.current = next; setDraft(next); void saveDraft(next);
-              }}>Edit observation</button>{canManage && <button onClick={async () => { if (!window.confirm("Delete this saved observation and its photo records?")) return; try { await apiRequest("/api/observations", { id: selected.id }, "DELETE"); setSelected(null); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete observation</button>}</div>}
+              }}>Edit observation</button>{canManage && <button className="destructive" onClick={async () => { if (!window.confirm("Delete this saved observation and its photo records?")) return; try { await apiRequest("/api/observations", { id: selected.id }, "DELETE"); setSelected(null); await reload(); } catch (e) { setNotice(e instanceof Error ? e.message : "Delete failed"); } }}>Delete observation</button>}</div>}
               <div className="photo-grid">
                 {selected.field_observation_media.map((m) => (
                   <figure key={m.id}>
@@ -3306,6 +3299,7 @@ export default function MapWorkspace({
                             );
                           }
                         }}
+                        className="destructive"
                       >
                         Delete shape
                       </button>
@@ -3326,6 +3320,7 @@ export default function MapWorkspace({
               {loadingMore ? "Loading…" : "Load more Workspace data"}
             </button>
           ) : null}
+          {!draft && selectedAreas.length === 1 && <details className="secondary-terrain"><summary>Terrain estimates</summary><section aria-label="Parcel elevation"><h3>Parcel elevation</h3><button onClick={() => { const item = selectedAreas[0], m = map.current; const result = m && item.geometry && mapMode === "3d" && dem?.datumVerified ? parcelElevation(item.geometry, (p) => terrainElevation(m, p, terrainExaggeration)) : null; setParcelHeights(result); setParcelHeightMessage(result ? "" : !dem?.datumVerified ? "Parcel measurements unavailable: vertical datum consistency is unverified." : "Unavailable: enable 3D, fit the full parcel in view and wait for DEM tiles."); }}>Estimate parcel elevation</button>{parcelHeightMessage && <p>{parcelHeightMessage}</p>}{parcelHeights && <p>Sampled minimum {parcelHeights.min.toFixed(1)} m · maximum {parcelHeights.max.toFixed(1)} m · difference {parcelHeights.difference.toFixed(1)} m · average {parcelHeights.average.toFixed(1)} m ({parcelHeights.samples} samples). Approximate; not survey grade. Source: {dem?.attribution}. {terrainMetadata}</p>}</section></details>}
         </div>
         <footer className="inspector-footer">
           <span>PRIVATE WORKSPACE</span>

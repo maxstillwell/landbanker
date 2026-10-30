@@ -1,5 +1,11 @@
 # LandOS status
 
+## Authenticated map UI polish — 30 October 2026
+
+Based on latest main `d951151`, preserving the parallel marketing release. Search moves to the first rail item and the mobile navigation, with an autofocus floating panel, grouped existing results and X/Escape/toggle dismissal. Display moves into the top-right toolbar. A map-only stylesheet fixes the inspector's previous 72px empty top region, uses a stable responsive width, removes header resizing, refines information hierarchy and compact notifications. Navigation/tools use one consistent inline SVG family with no new dependency. Export code, providers, geometry, schema, RLS, authentication and marketing components/styles are unchanged.
+
+Lint, typecheck, 53 unit tests and production build passed. Real local Supabase/browser checks cover saved-object search, camera preservation, toolbar Display, inspector background/width, existing KML download, drawing/edit/delete/undo, Property/Research Area management, draft recovery and catalogue preferences. Screenshots captured at 1440px, 1024px and 390px in `artifacts/map-polish/`. Physical Safari and authenticated production map verification remain unavailable. Verify the production deployment against the final pushed SHA.
+
 ## Public marketing website V1 — direct main release, 30 October 2026 AEDT
 
 The owner explicitly superseded the earlier PR-only handoff and authorised direct main publication with automatic Vercel Production deployment. Completed website commit `1ee1bde8ac65220cfb4a0a8ddb74d339660238fc` was preserved and fast-forward integrated onto main after fetching remote `cbb7638`; no conflicts or uncommitted work were present. All seven public pages and original login/signup/app-map/share routes are retained. Protected GIS/Auth/share/global CSS/Supabase/brand/dependency paths have no changes against that remote base. Fresh lint, typecheck, 53 existing tests and production build pass. Production-build browser regression also passes: 28 page/width combinations and seven public interaction checks, with no page exceptions or failed requests. No live authenticated GIS or database acceptance is inferred. Production SHA, deployment status and live-page checks must be confirmed after push; this note is the pre-publication checkpoint. Earlier review-branch instructions and publication-blocker entries below are historical.
