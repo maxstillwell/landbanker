@@ -1,6 +1,7 @@
 // Run every existing suite, retain failures, and report all blocked workflows.
 import { spawnSync } from "node:child_process";
 const suites = [
+  ["tests/professional-layers.e2e.mjs"],
   ["tests/field.e2e.mjs"],
   ["tests/spatial.e2e.mjs"],
   ["tests/import.e2e.mjs"],

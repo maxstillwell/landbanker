@@ -185,8 +185,18 @@ try {
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(card).toBeVisible();
-  const box = await card.boundingBox();
-  assert(box.x >= 0 && box.width <= 390, "layer controls fit a phone viewport");
+  await expect
+    .poll(
+      async () => {
+        const box = await card.boundingBox();
+        return box !== null && box.x >= 0 && box.x + box.width <= 390;
+      },
+      {
+        message:
+          "layer controls fit inside the phone viewport after the responsive transition",
+      },
+    )
+    .toBe(true);
   await page.screenshot({ path: "artifacts/professional-layers-mobile.png" });
   await card.getByRole("button", { name: "Remove", exact: true }).click();
   await expect(card).toHaveCount(0);
