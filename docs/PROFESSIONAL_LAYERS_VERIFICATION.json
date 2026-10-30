@@ -1,0 +1,1468 @@
+{
+  "checkedAt": "2026-10-30T21:45:28.081Z",
+  "results": [
+    {
+      "id": "vic-pao",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 5,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4240871,
+          "ZONE_CODE": "PAO3",
+          "ZONE_DESCRIPTION": "PUBLIC ACQUISITION OVERLAY - PS MAP REF PAO3",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "PAO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-pao",
+          "areaCode": "4240871",
+          "areaName": "PAO3",
+          "value": null
+        },
+        {
+          "PFI": 4240134,
+          "ZONE_CODE": "PAO2",
+          "ZONE_DESCRIPTION": "PUBLIC ACQUISITION OVERLAY - PS MAP REF PAO2",
+          "LGA": "KNOX",
+          "SCHEME_CODE": "PAO",
+          "GAZ_BEGIN_DATE": 1316044800000,
+          "layerId": "vic-pao",
+          "areaCode": "4240134",
+          "areaName": "PAO2",
+          "value": null
+        }
+      ],
+      "milliseconds": 6185
+    },
+    {
+      "id": "vic-dpo",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 5,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4162245,
+          "ZONE_CODE": "DPO10",
+          "ZONE_DESCRIPTION": "DEVELOPMENT PLAN OVERLAY - SCHEDULE 10",
+          "LGA": "KNOX",
+          "SCHEME_CODE": "DPO",
+          "GAZ_BEGIN_DATE": 1450310400000,
+          "layerId": "vic-dpo",
+          "areaCode": "4162245",
+          "areaName": "DPO10",
+          "value": null
+        },
+        {
+          "PFI": 4162765,
+          "ZONE_CODE": "DPO5",
+          "ZONE_DESCRIPTION": "DEVELOPMENT PLAN OVERLAY - SCHEDULE 5",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "DPO",
+          "GAZ_BEGIN_DATE": 1445472000000,
+          "layerId": "vic-dpo",
+          "areaCode": "4162765",
+          "areaName": "DPO5",
+          "value": null
+        }
+      ],
+      "milliseconds": 6188
+    },
+    {
+      "id": "vic-ddo",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 21,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4161326,
+          "ZONE_CODE": "DDO4",
+          "ZONE_DESCRIPTION": "DESIGN AND DEVELOPMENT OVERLAY - SCHEDULE 4",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "DDO",
+          "GAZ_BEGIN_DATE": 1443052800000,
+          "layerId": "vic-ddo",
+          "areaCode": "4161326",
+          "areaName": "DDO4",
+          "value": null
+        },
+        {
+          "PFI": 4161317,
+          "ZONE_CODE": "DDO4",
+          "ZONE_DESCRIPTION": "DESIGN AND DEVELOPMENT OVERLAY - SCHEDULE 4",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "DDO",
+          "GAZ_BEGIN_DATE": 1443052800000,
+          "layerId": "vic-ddo",
+          "areaCode": "4161317",
+          "areaName": "DDO4",
+          "value": null
+        }
+      ],
+      "milliseconds": 6309
+    },
+    {
+      "id": "vic-fo",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 4612
+    },
+    {
+      "id": "vic-lsio",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 4,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4210979,
+          "ZONE_CODE": "LSIO",
+          "ZONE_DESCRIPTION": "LAND SUBJECT TO INUNDATION OVERLAY",
+          "LGA": "MONASH",
+          "SCHEME_CODE": "LSIO",
+          "GAZ_BEGIN_DATE": 1034812800000,
+          "layerId": "vic-lsio",
+          "areaCode": "4210979",
+          "areaName": "LSIO",
+          "value": null
+        },
+        {
+          "PFI": 4211450,
+          "ZONE_CODE": "LSIO",
+          "ZONE_DESCRIPTION": "LAND SUBJECT TO INUNDATION OVERLAY",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "LSIO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-lsio",
+          "areaCode": "4211450",
+          "areaName": "LSIO",
+          "value": null
+        }
+      ],
+      "milliseconds": 4872
+    },
+    {
+      "id": "vic-sbo",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 11,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4229364,
+          "ZONE_CODE": "SBO",
+          "ZONE_DESCRIPTION": "SPECIAL BUILDING OVERLAY",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "SBO",
+          "GAZ_BEGIN_DATE": 1043884800000,
+          "layerId": "vic-sbo",
+          "areaCode": "4229364",
+          "areaName": "SBO",
+          "value": null
+        },
+        {
+          "PFI": 4229395,
+          "ZONE_CODE": "SBO",
+          "ZONE_DESCRIPTION": "SPECIAL BUILDING OVERLAY",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "SBO",
+          "GAZ_BEGIN_DATE": 1043884800000,
+          "layerId": "vic-sbo",
+          "areaCode": "4229395",
+          "areaName": "SBO",
+          "value": null
+        }
+      ],
+      "milliseconds": 5022
+    },
+    {
+      "id": "vic-bushfire",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 5407
+    },
+    {
+      "id": "vic-eso",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 1935641,
+          "ZONE_CODE": "ESO2",
+          "ZONE_DESCRIPTION": "ENVIRONMENTAL SIGNIFICANCE OVERLAY - SCHEDULE 2",
+          "LGA": "KNOX",
+          "SCHEME_CODE": "ESO",
+          "GAZ_BEGIN_DATE": 1772755200000,
+          "layerId": "vic-eso",
+          "areaCode": "1935641",
+          "areaName": "ESO2",
+          "value": null
+        },
+        {
+          "PFI": 4147845,
+          "ZONE_CODE": "ESO2",
+          "ZONE_DESCRIPTION": "ENVIRONMENTAL SIGNIFICANCE OVERLAY - SCHEDULE 2",
+          "LGA": "KNOX",
+          "SCHEME_CODE": "ESO",
+          "GAZ_BEGIN_DATE": 1365638400000,
+          "layerId": "vic-eso",
+          "areaCode": "4147845",
+          "areaName": "ESO2",
+          "value": null
+        }
+      ],
+      "milliseconds": 5475
+    },
+    {
+      "id": "vic-vpo",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 82,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4155675,
+          "ZONE_CODE": "VPO1",
+          "ZONE_DESCRIPTION": "VEGETATION PROTECTION OVERLAY - SCHEDULE 1",
+          "LGA": "MONASH",
+          "SCHEME_CODE": "VPO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-vpo",
+          "areaCode": "4155675",
+          "areaName": "VPO1",
+          "value": null
+        },
+        {
+          "PFI": 4157062,
+          "ZONE_CODE": "VPO1",
+          "ZONE_DESCRIPTION": "VEGETATION PROTECTION OVERLAY - SCHEDULE 1",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "VPO",
+          "GAZ_BEGIN_DATE": 1183075200000,
+          "layerId": "vic-vpo",
+          "areaCode": "4157062",
+          "areaName": "VPO1",
+          "value": null
+        }
+      ],
+      "milliseconds": 5511
+    },
+    {
+      "id": "vic-heritage",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 20,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4183983,
+          "ZONE_CODE": "HO292",
+          "ZONE_DESCRIPTION": "HERITAGE OVERLAY (HO292)",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "HO",
+          "GAZ_BEGIN_DATE": 1475712000000,
+          "layerId": "vic-heritage",
+          "areaCode": "4183983",
+          "areaName": "HO292",
+          "value": null
+        },
+        {
+          "PFI": 4183700,
+          "ZONE_CODE": "HO48",
+          "ZONE_DESCRIPTION": "HERITAGE OVERLAY (HO48)",
+          "LGA": "WHITEHORSE",
+          "SCHEME_CODE": "HO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-heritage",
+          "areaCode": "4183700",
+          "areaName": "HO48",
+          "value": null
+        }
+      ],
+      "milliseconds": 5472
+    },
+    {
+      "id": "vic-bpa",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "OBJECTID": 29,
+          "LGA_NAME": "KNOX",
+          "PLAN_NUMBER": "LEGL./20-293",
+          "GAZETTAL_DATE": "07/09/2020",
+          "BPA_AREA_HA": 4349.58375256,
+          "layerId": "vic-bpa",
+          "areaCode": "29",
+          "areaName": "KNOX",
+          "value": null
+        },
+        {
+          "OBJECTID": 33,
+          "LGA_NAME": "MONASH",
+          "PLAN_NUMBER": "LEGL./13-160",
+          "GAZETTAL_DATE": "08/08/2013",
+          "BPA_AREA_HA": 367.239489707,
+          "layerId": "vic-bpa",
+          "areaCode": "33",
+          "areaName": "MONASH",
+          "value": null
+        }
+      ],
+      "milliseconds": 5747
+    },
+    {
+      "id": "vic-ugb",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 7243
+    },
+    {
+      "id": "abs-population-growth",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "207031162",
+          "sa2_name_2021": "Blackburn South",
+          "layerId": "abs-population-growth",
+          "areaCode": "207031162",
+          "areaName": "Blackburn South",
+          "value": 0.09944851279268807,
+          "statistics": {
+            "population": 11072,
+            "annual_change": 11,
+            "annual_growth": 0.09944851279268807,
+            "five_year_growth": -2.380532533944635,
+            "ten_year_growth": -0.2612377263309651
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        },
+        {
+          "sa2_code_2021": "207031166",
+          "sa2_name_2021": "Burwood East",
+          "layerId": "abs-population-growth",
+          "areaCode": "207031166",
+          "areaName": "Burwood East",
+          "value": 1.1117422705509972,
+          "statistics": {
+            "population": 12460,
+            "annual_change": 137,
+            "annual_growth": 1.1117422705509972,
+            "five_year_growth": 12.729575680810633,
+            "ten_year_growth": 16.30729020815831
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        }
+      ],
+      "milliseconds": 3290
+    },
+    {
+      "id": "vic-median-prices",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "LGA_CODE_2025": "23670",
+          "LGA_NAME_2025": "Knox",
+          "layerId": "vic-median-prices",
+          "areaCode": "23670",
+          "areaName": "Knox",
+          "value": 1020000,
+          "statistics": {
+            "house": 1020000,
+            "house_sales": 1771,
+            "unit": 708000,
+            "unit_sales": 977,
+            "land": 783000,
+            "land_sales": 34
+          },
+          "reference": "Calendar year 2025",
+          "comparison": null,
+          "indicator": "house"
+        },
+        {
+          "LGA_CODE_2025": "24970",
+          "LGA_NAME_2025": "Monash",
+          "layerId": "vic-median-prices",
+          "areaCode": "24970",
+          "areaName": "Monash",
+          "value": 1486000,
+          "statistics": {
+            "house": 1486000,
+            "house_sales": 2153,
+            "unit": 832000,
+            "unit_sales": 1463,
+            "land": 1332500,
+            "land_sales": 26
+          },
+          "reference": "Calendar year 2025",
+          "comparison": null,
+          "indicator": "house"
+        }
+      ],
+      "milliseconds": 3291
+    },
+    {
+      "id": "vic-vpa-precincts",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 5535
+    },
+    {
+      "id": "abs-seifa",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "207031162",
+          "sa2_name_2021": "Blackburn South",
+          "layerId": "abs-seifa",
+          "areaCode": "207031162",
+          "areaName": "Blackburn South",
+          "value": 1071,
+          "statistics": {
+            "irsd": 1054,
+            "irsd_decile": 8,
+            "irsad": 1071,
+            "irsad_decile": 8,
+            "ier": 1024,
+            "ier_decile": 7,
+            "ieo": 1092,
+            "ieo_decile": 9
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        },
+        {
+          "sa2_code_2021": "207031166",
+          "sa2_name_2021": "Burwood East",
+          "layerId": "abs-seifa",
+          "areaCode": "207031166",
+          "areaName": "Burwood East",
+          "value": 1047,
+          "statistics": {
+            "irsd": 1031,
+            "irsd_decile": 6,
+            "irsad": 1047,
+            "irsad_decile": 8,
+            "ier": 1009,
+            "ier_decile": 6,
+            "ieo": 1063,
+            "ieo_decile": 8
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        }
+      ],
+      "milliseconds": 5298
+    },
+    {
+      "id": "abs-building-approvals",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "207031162",
+          "sa2_name_2021": "Blackburn South",
+          "layerId": "abs-building-approvals",
+          "areaCode": "207031162",
+          "areaName": "Blackburn South",
+          "value": 37,
+          "statistics": {
+            "houses": 33,
+            "other_residential": 4,
+            "new_dwellings": 37,
+            "denominator_erp_30_june_2025": 11072
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        },
+        {
+          "sa2_code_2021": "207031166",
+          "sa2_name_2021": "Burwood East",
+          "layerId": "abs-building-approvals",
+          "areaCode": "207031166",
+          "areaName": "Burwood East",
+          "value": 61,
+          "statistics": {
+            "houses": 41,
+            "other_residential": 20,
+            "new_dwellings": 61,
+            "denominator_erp_30_june_2025": 12460
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        }
+      ],
+      "milliseconds": 5296
+    },
+    {
+      "id": "vic-recorded-offences",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "LGA_CODE_2025": "23670",
+          "LGA_NAME_2025": "Knox",
+          "layerId": "vic-recorded-offences",
+          "areaCode": "23670",
+          "areaName": "Knox",
+          "value": 6453.942103443,
+          "statistics": {
+            "offences": 10589,
+            "rate": 6453.942103443,
+            "assault": 832,
+            "burglary": 600,
+            "theft": 4502,
+            "motor_theft": 543
+          },
+          "reference": "Year ending 30 June 2026",
+          "comparison": null,
+          "indicator": "rate"
+        },
+        {
+          "LGA_CODE_2025": "24970",
+          "LGA_NAME_2025": "Monash",
+          "layerId": "vic-recorded-offences",
+          "areaCode": "24970",
+          "areaName": "Monash",
+          "value": 7087.206706822,
+          "statistics": {
+            "offences": 15050,
+            "rate": 7087.206706822,
+            "assault": 939,
+            "burglary": 1115,
+            "theft": 7332,
+            "motor_theft": 1104
+          },
+          "reference": "Year ending 30 June 2026",
+          "comparison": null,
+          "indicator": "rate"
+        }
+      ],
+      "milliseconds": 5301
+    },
+    {
+      "id": "vic-schools",
+      "location": "Vermont South",
+      "status": "pass",
+      "features": 17,
+      "partial": false,
+      "sample": [
+        {
+          "School_No": "1592",
+          "School_Name": "Emmaus College",
+          "School_Type": "Pri/Sec",
+          "School_Status": "O",
+          "Education_Sector": "Catholic",
+          "Address_Line_1": "503 Springvale Road",
+          "Address_Line_2": "",
+          "Address_Town": "VERMONT SOUTH",
+          "Address_Postcode": "3133",
+          "LGA_Name": "Whitehorse (C)",
+          "location_id": "1592:Catholic:2:145.174107:-37.84779",
+          "layerId": "vic-schools",
+          "areaCode": "1592:Catholic:2:145.174107:-37.84779",
+          "areaName": "Emmaus College",
+          "value": null
+        },
+        {
+          "School_No": "1600",
+          "School_Name": "St Christopher's School",
+          "School_Type": "Primary",
+          "School_Status": "O",
+          "Education_Sector": "Catholic",
+          "Address_Line_1": "2-16 Doon Avenue",
+          "Address_Line_2": "",
+          "Address_Town": "GLEN WAVERLEY",
+          "Address_Postcode": "3150",
+          "LGA_Name": "Monash (C)",
+          "location_id": "1600:Catholic:2:145.1501975:-37.87109838",
+          "layerId": "vic-schools",
+          "areaCode": "1600:Catholic:2:145.1501975:-37.87109838",
+          "areaName": "St Christopher's School",
+          "value": null
+        }
+      ],
+      "milliseconds": 2
+    },
+    {
+      "id": "vic-ddo",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 4,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4244033,
+          "ZONE_CODE": "DDO4",
+          "ZONE_DESCRIPTION": "DESIGN AND DEVELOPMENT OVERLAY - SCHEDULE 4",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "DDO",
+          "GAZ_BEGIN_DATE": 1505174400000,
+          "layerId": "vic-ddo",
+          "areaCode": "4244033",
+          "areaName": "DDO4",
+          "value": null
+        },
+        {
+          "PFI": 4161413,
+          "ZONE_CODE": "DDO4",
+          "ZONE_DESCRIPTION": "DESIGN AND DEVELOPMENT OVERLAY - SCHEDULE 4",
+          "LGA": "WYNDHAM",
+          "SCHEME_CODE": "DDO",
+          "GAZ_BEGIN_DATE": 1022716800000,
+          "layerId": "vic-ddo",
+          "areaCode": "4161413",
+          "areaName": "DDO4",
+          "value": null
+        }
+      ],
+      "milliseconds": 5539
+    },
+    {
+      "id": "vic-pao",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 31,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4240318,
+          "ZONE_CODE": "PAO5",
+          "ZONE_DESCRIPTION": "PUBLIC ACQUISITION OVERLAY - PS MAP REF PAO5",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "PAO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-pao",
+          "areaCode": "4240318",
+          "areaName": "PAO5",
+          "value": null
+        },
+        {
+          "PFI": 4365132,
+          "ZONE_CODE": "PAO14",
+          "ZONE_DESCRIPTION": "PUBLIC ACQUISITION OVERLAY - PS MAP REF PAO14",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "PAO",
+          "GAZ_BEGIN_DATE": 1788480000000,
+          "layerId": "vic-pao",
+          "areaCode": "4365132",
+          "areaName": "PAO14",
+          "value": null
+        }
+      ],
+      "milliseconds": 5593
+    },
+    {
+      "id": "vic-dpo",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 1,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4162392,
+          "ZONE_CODE": "DPO6",
+          "ZONE_DESCRIPTION": "DEVELOPMENT PLAN OVERLAY - SCHEDULE 6",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "DPO",
+          "GAZ_BEGIN_DATE": 1022716800000,
+          "layerId": "vic-dpo",
+          "areaCode": "4162392",
+          "areaName": "DPO6",
+          "value": null
+        }
+      ],
+      "milliseconds": 5650
+    },
+    {
+      "id": "vic-fo",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 5503
+    },
+    {
+      "id": "vic-sbo",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 5506
+    },
+    {
+      "id": "vic-lsio",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 4,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4210014,
+          "ZONE_CODE": "LSIO2",
+          "ZONE_DESCRIPTION": "LAND SUBJECT TO INUNDATION OVERLAY - SCHEDULE 2",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "LSIO",
+          "GAZ_BEGIN_DATE": 1340841600000,
+          "layerId": "vic-lsio",
+          "areaCode": "4210014",
+          "areaName": "LSIO2",
+          "value": null
+        },
+        {
+          "PFI": 4210013,
+          "ZONE_CODE": "LSIO2",
+          "ZONE_DESCRIPTION": "LAND SUBJECT TO INUNDATION OVERLAY - SCHEDULE 2",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "LSIO",
+          "GAZ_BEGIN_DATE": 1340841600000,
+          "layerId": "vic-lsio",
+          "areaCode": "4210013",
+          "areaName": "LSIO2",
+          "value": null
+        }
+      ],
+      "milliseconds": 5545
+    },
+    {
+      "id": "vic-bushfire",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4246246,
+          "ZONE_CODE": "BMO1",
+          "ZONE_DESCRIPTION": "BUSHFIRE MANAGEMENT OVERLAY - SCHEDULE 1",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "BMO",
+          "GAZ_BEGIN_DATE": 1506988800000,
+          "layerId": "vic-bushfire",
+          "areaCode": "4246246",
+          "areaName": "BMO1",
+          "value": null
+        },
+        {
+          "PFI": 4246245,
+          "ZONE_CODE": "BMO",
+          "ZONE_DESCRIPTION": "BUSHFIRE MANAGEMENT OVERLAY",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "BMO",
+          "GAZ_BEGIN_DATE": 1506988800000,
+          "layerId": "vic-bushfire",
+          "areaCode": "4246245",
+          "areaName": "BMO",
+          "value": null
+        }
+      ],
+      "milliseconds": 5609
+    },
+    {
+      "id": "vic-vpo",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 5607
+    },
+    {
+      "id": "vic-eso",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 39,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 1341065,
+          "ZONE_CODE": "ESO6",
+          "ZONE_DESCRIPTION": "ENVIRONMENTAL SIGNIFICANCE OVERLAY - SCHEDULE 6",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "ESO",
+          "GAZ_BEGIN_DATE": 1574294400000,
+          "layerId": "vic-eso",
+          "areaCode": "1341065",
+          "areaName": "ESO6",
+          "value": null
+        },
+        {
+          "PFI": 4148243,
+          "ZONE_CODE": "ESO1",
+          "ZONE_DESCRIPTION": "ENVIRONMENTAL SIGNIFICANCE OVERLAY - SCHEDULE 1",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "ESO",
+          "GAZ_BEGIN_DATE": null,
+          "layerId": "vic-eso",
+          "areaCode": "4148243",
+          "areaName": "ESO1",
+          "value": null
+        }
+      ],
+      "milliseconds": 5773
+    },
+    {
+      "id": "vic-heritage",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 169,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4174206,
+          "ZONE_CODE": "HO200",
+          "ZONE_DESCRIPTION": "HERITAGE OVERLAY (HO200)",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "HO",
+          "GAZ_BEGIN_DATE": 1463011200000,
+          "layerId": "vic-heritage",
+          "areaCode": "4174206",
+          "areaName": "HO200",
+          "value": null
+        },
+        {
+          "PFI": 4174198,
+          "ZONE_CODE": "HO203",
+          "ZONE_DESCRIPTION": "HERITAGE OVERLAY (HO203)",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "HO",
+          "GAZ_BEGIN_DATE": 1463011200000,
+          "layerId": "vic-heritage",
+          "areaCode": "4174198",
+          "areaName": "HO203",
+          "value": null
+        }
+      ],
+      "milliseconds": 5647
+    },
+    {
+      "id": "vic-bpa",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 2,
+      "partial": false,
+      "sample": [
+        {
+          "OBJECTID": 19,
+          "LGA_NAME": "MELTON",
+          "PLAN_NUMBER": "LEGL./25-371",
+          "GAZETTAL_DATE": "12/02/2026",
+          "BPA_AREA_HA": 44397.9952597,
+          "layerId": "vic-bpa",
+          "areaCode": "19",
+          "areaName": "MELTON",
+          "value": null
+        },
+        {
+          "OBJECTID": 24,
+          "LGA_NAME": "WYNDHAM",
+          "PLAN_NUMBER": "LEGL./25-378",
+          "GAZETTAL_DATE": "12/02/2026",
+          "BPA_AREA_HA": 34230.1448798,
+          "layerId": "vic-bpa",
+          "areaCode": "24",
+          "areaName": "WYNDHAM",
+          "value": null
+        }
+      ],
+      "milliseconds": 5840
+    },
+    {
+      "id": "vic-ugb",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "PFI": 4363256,
+          "ZONE_CODE": "UGB",
+          "ZONE_DESCRIPTION": "URBAN GROWTH BOUNDARY",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "UGB",
+          "GAZ_BEGIN_DATE": 1281052800000,
+          "layerId": "vic-ugb",
+          "areaCode": "4363256",
+          "areaName": "MELTON",
+          "value": null
+        },
+        {
+          "PFI": 4241864,
+          "ZONE_CODE": "UGB",
+          "ZONE_DESCRIPTION": "URBAN GROWTH BOUNDARY",
+          "LGA": "MELTON",
+          "SCHEME_CODE": "UGB",
+          "GAZ_BEGIN_DATE": 1281052800000,
+          "layerId": "vic-ugb",
+          "areaCode": "4241864",
+          "areaName": "MELTON",
+          "value": null
+        }
+      ],
+      "milliseconds": 8388
+    },
+    {
+      "id": "vic-vpa-precincts",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 19,
+      "partial": false,
+      "sample": [
+        {
+          "OBJECTID": 375,
+          "VPA_No": 1079,
+          "PSP_NAME": "Rockbank North",
+          "PRJ_TYPE": "Precinct Structure Plan, Development Contributions Plan",
+          "STATUS_DESC": "Completed",
+          "LEAD_AGE": "VPA",
+          "Area_Ha": 786.3,
+          "GAZ_DATE": 1340841600000,
+          "WEB_URL": "http://vpa.vic.gov.au/project/rockbank-north/",
+          "PRJ_CAT": "Greenfields",
+          "layerId": "vic-vpa-precincts",
+          "areaCode": "375",
+          "areaName": "Rockbank North",
+          "value": null
+        },
+        {
+          "OBJECTID": 379,
+          "VPA_No": 1090,
+          "PSP_NAME": "Truganina",
+          "PRJ_TYPE": "Precinct Structure Plan, Development Contributions Plan",
+          "STATUS_DESC": "Completed",
+          "LEAD_AGE": "VPA",
+          "Area_Ha": 1088.4,
+          "GAZ_DATE": 1415836800000,
+          "WEB_URL": "http://vpa.vic.gov.au/project/truganina/",
+          "PRJ_CAT": "Greenfields",
+          "layerId": "vic-vpa-precincts",
+          "areaCode": "379",
+          "areaName": "Truganina",
+          "value": null
+        }
+      ],
+      "milliseconds": 3361
+    },
+    {
+      "id": "abs-population-growth",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "213041359",
+          "sa2_name_2021": "Rockbank - Mount Cottrell",
+          "layerId": "abs-population-growth",
+          "areaCode": "213041359",
+          "areaName": "Rockbank - Mount Cottrell",
+          "value": 14.724515262046456,
+          "statistics": {
+            "population": 35856,
+            "annual_change": 4602,
+            "annual_growth": 14.724515262046456,
+            "five_year_growth": 168.76545986058017,
+            "ten_year_growth": 1077.9237844940867
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        },
+        {
+          "sa2_code_2021": "213041571",
+          "sa2_name_2021": "Brookfield",
+          "layerId": "abs-population-growth",
+          "areaCode": "213041571",
+          "areaName": "Brookfield",
+          "value": 2.9042840602084175,
+          "statistics": {
+            "population": 10665,
+            "annual_change": 301,
+            "annual_growth": 2.9042840602084175,
+            "five_year_growth": 7.71639228360772,
+            "ten_year_growth": 23.323311748381137
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        }
+      ],
+      "milliseconds": 5515
+    },
+    {
+      "id": "vic-median-prices",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 2,
+      "partial": false,
+      "sample": [
+        {
+          "LGA_CODE_2025": "24650",
+          "LGA_NAME_2025": "Melton",
+          "layerId": "vic-median-prices",
+          "areaCode": "24650",
+          "areaName": "Melton",
+          "value": 642000,
+          "statistics": {
+            "house": 642000,
+            "house_sales": 5227,
+            "unit": 460000,
+            "unit_sales": 340,
+            "land": 357000,
+            "land_sales": 2338
+          },
+          "reference": "Calendar year 2025",
+          "comparison": null,
+          "indicator": "house"
+        },
+        {
+          "LGA_CODE_2025": "27260",
+          "LGA_NAME_2025": "Wyndham",
+          "layerId": "vic-median-prices",
+          "areaCode": "27260",
+          "areaName": "Wyndham",
+          "value": 675000,
+          "statistics": {
+            "house": 675000,
+            "house_sales": 7283,
+            "unit": 493500,
+            "unit_sales": 701,
+            "land": 356700,
+            "land_sales": 2558
+          },
+          "reference": "Calendar year 2025",
+          "comparison": null,
+          "indicator": "house"
+        }
+      ],
+      "milliseconds": 5522
+    },
+    {
+      "id": "vic-recorded-offences",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 2,
+      "partial": false,
+      "sample": [
+        {
+          "LGA_CODE_2025": "24650",
+          "LGA_NAME_2025": "Melton",
+          "layerId": "vic-recorded-offences",
+          "areaCode": "24650",
+          "areaName": "Melton",
+          "value": 6515.078543685,
+          "statistics": {
+            "offences": 17101,
+            "rate": 6515.078543685,
+            "assault": 1495,
+            "burglary": 968,
+            "theft": 7075,
+            "motor_theft": 922
+          },
+          "reference": "Year ending 30 June 2026",
+          "comparison": null,
+          "indicator": "rate"
+        },
+        {
+          "LGA_CODE_2025": "27260",
+          "LGA_NAME_2025": "Wyndham",
+          "layerId": "vic-recorded-offences",
+          "areaCode": "27260",
+          "areaName": "Wyndham",
+          "value": 6553.797048924,
+          "statistics": {
+            "offences": 23923,
+            "rate": 6553.797048924,
+            "assault": 2012,
+            "burglary": 1803,
+            "theft": 10897,
+            "motor_theft": 1582
+          },
+          "reference": "Year ending 30 June 2026",
+          "comparison": null,
+          "indicator": "rate"
+        }
+      ],
+      "milliseconds": 5392
+    },
+    {
+      "id": "abs-seifa",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "213041359",
+          "sa2_name_2021": "Rockbank - Mount Cottrell",
+          "layerId": "abs-seifa",
+          "areaCode": "213041359",
+          "areaName": "Rockbank - Mount Cottrell",
+          "value": 1029,
+          "statistics": {
+            "irsd": 1035,
+            "irsd_decile": 7,
+            "irsad": 1029,
+            "irsad_decile": 7,
+            "ier": 1076,
+            "ier_decile": 9,
+            "ieo": 1019,
+            "ieo_decile": 7
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        },
+        {
+          "sa2_code_2021": "213041571",
+          "sa2_name_2021": "Brookfield",
+          "layerId": "abs-seifa",
+          "areaCode": "213041571",
+          "areaName": "Brookfield",
+          "value": 937,
+          "statistics": {
+            "irsd": 952,
+            "irsd_decile": 3,
+            "irsad": 937,
+            "irsad_decile": 3,
+            "ier": 1015,
+            "ier_decile": 6,
+            "ieo": 920,
+            "ieo_decile": 3
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        }
+      ],
+      "milliseconds": 5393
+    },
+    {
+      "id": "abs-building-approvals",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 10,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "213041359",
+          "sa2_name_2021": "Rockbank - Mount Cottrell",
+          "layerId": "abs-building-approvals",
+          "areaCode": "213041359",
+          "areaName": "Rockbank - Mount Cottrell",
+          "value": 1682,
+          "statistics": {
+            "houses": 1483,
+            "other_residential": 199,
+            "new_dwellings": 1682,
+            "denominator_erp_30_june_2025": 35856
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        },
+        {
+          "sa2_code_2021": "213041571",
+          "sa2_name_2021": "Brookfield",
+          "layerId": "abs-building-approvals",
+          "areaCode": "213041571",
+          "areaName": "Brookfield",
+          "value": 35,
+          "statistics": {
+            "houses": 33,
+            "other_residential": 2,
+            "new_dwellings": 35,
+            "denominator_erp_30_june_2025": 10665
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        }
+      ],
+      "milliseconds": 5395
+    },
+    {
+      "id": "vic-schools",
+      "location": "Western growth areas",
+      "status": "pass",
+      "features": 19,
+      "partial": false,
+      "sample": [
+        {
+          "School_No": "1780",
+          "School_Name": "St Anthony's School",
+          "School_Type": "Primary",
+          "School_Status": "O",
+          "Education_Sector": "Catholic",
+          "Address_Line_1": "Wilson Road",
+          "Address_Line_2": "",
+          "Address_Town": "MELTON SOUTH",
+          "Address_Postcode": "3338",
+          "LGA_Name": "Melton (C)",
+          "location_id": "1780:Catholic:2:144.572897:-37.709657",
+          "layerId": "vic-schools",
+          "areaCode": "1780:Catholic:2:144.572897:-37.709657",
+          "areaName": "St Anthony's School",
+          "value": null
+        },
+        {
+          "School_No": "2242",
+          "School_Name": "St Lawrence of Brindisi Catholic Primary School",
+          "School_Type": "Primary",
+          "School_Status": "O",
+          "Education_Sector": "Catholic",
+          "Address_Line_1": "31 Waterway Boulevard",
+          "Address_Line_2": "",
+          "Address_Town": "WEIR VIEWS",
+          "Address_Postcode": "3338",
+          "LGA_Name": "Melton (C)",
+          "location_id": "2242:Catholic:2:144.572463:-37.733053",
+          "layerId": "vic-schools",
+          "areaCode": "2242:Catholic:2:144.572463:-37.733053",
+          "areaName": "St Lawrence of Brindisi Catholic Primary School",
+          "value": null
+        }
+      ],
+      "milliseconds": 0
+    },
+    {
+      "id": "abs-population-growth",
+      "location": "Dunoon / Lismore",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "112021246",
+          "sa2_name_2021": "Goonellabah",
+          "layerId": "abs-population-growth",
+          "areaCode": "112021246",
+          "areaName": "Goonellabah",
+          "value": 0.9757834757834649,
+          "statistics": {
+            "population": 14177,
+            "annual_change": 137,
+            "annual_growth": 0.9757834757834649,
+            "five_year_growth": 4.550147492625367,
+            "ten_year_growth": 6.234544773323347
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        },
+        {
+          "sa2_code_2021": "112021248",
+          "sa2_name_2021": "Lismore",
+          "layerId": "abs-population-growth",
+          "areaCode": "112021248",
+          "areaName": "Lismore",
+          "value": -2.0970512453478363,
+          "statistics": {
+            "population": 13679,
+            "annual_change": -293,
+            "annual_growth": -2.0970512453478363,
+            "five_year_growth": -10.891798579897072,
+            "ten_year_growth": -13.237346187999488
+          },
+          "reference": "30 June 2025",
+          "comparison": "30 June 2024",
+          "indicator": "annual_growth"
+        }
+      ],
+      "milliseconds": 5464
+    },
+    {
+      "id": "abs-seifa",
+      "location": "Dunoon / Lismore",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "112021246",
+          "sa2_name_2021": "Goonellabah",
+          "layerId": "abs-seifa",
+          "areaCode": "112021246",
+          "areaName": "Goonellabah",
+          "value": 940,
+          "statistics": {
+            "irsd": 969,
+            "irsd_decile": 3,
+            "irsad": 940,
+            "irsad_decile": 3,
+            "ier": 969,
+            "ier_decile": 4,
+            "ieo": 939,
+            "ieo_decile": 3
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        },
+        {
+          "sa2_code_2021": "112021248",
+          "sa2_name_2021": "Lismore",
+          "layerId": "abs-seifa",
+          "areaCode": "112021248",
+          "areaName": "Lismore",
+          "value": 904,
+          "statistics": {
+            "irsd": 916,
+            "irsd_decile": 2,
+            "irsad": 904,
+            "irsad_decile": 2,
+            "ier": 907,
+            "ier_decile": 1,
+            "ieo": 935,
+            "ieo_decile": 3
+          },
+          "reference": "Census 2021",
+          "comparison": null,
+          "indicator": "irsad"
+        }
+      ],
+      "milliseconds": 5463
+    },
+    {
+      "id": "abs-building-approvals",
+      "location": "Dunoon / Lismore",
+      "status": "pass",
+      "features": 3,
+      "partial": false,
+      "sample": [
+        {
+          "sa2_code_2021": "112021246",
+          "sa2_name_2021": "Goonellabah",
+          "layerId": "abs-building-approvals",
+          "areaCode": "112021246",
+          "areaName": "Goonellabah",
+          "value": 59,
+          "statistics": {
+            "houses": 37,
+            "other_residential": 22,
+            "new_dwellings": 59,
+            "denominator_erp_30_june_2025": 14177
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        },
+        {
+          "sa2_code_2021": "112021248",
+          "sa2_name_2021": "Lismore",
+          "layerId": "abs-building-approvals",
+          "areaCode": "112021248",
+          "areaName": "Lismore",
+          "value": 52,
+          "statistics": {
+            "houses": 2,
+            "other_residential": 50,
+            "new_dwellings": 52,
+            "denominator_erp_30_june_2025": 13679
+          },
+          "reference": "Financial year 2025\u201326",
+          "comparison": null,
+          "indicator": "new_dwellings"
+        }
+      ],
+      "milliseconds": 5463
+    },
+    {
+      "id": "nsw-flood-planning",
+      "location": "Dunoon / Lismore",
+      "status": "pass",
+      "features": 0,
+      "partial": false,
+      "sample": [],
+      "milliseconds": 6035
+    },
+    {
+      "id": "nsw-bushfire-prone",
+      "location": "Dunoon / Lismore",
+      "status": "pass",
+      "features": 250,
+      "partial": true,
+      "sample": [
+        {
+          "OBJECTID": 144922,
+          "StartDate": 1477958400000,
+          "LastUpdate": 1233014400000,
+          "Category": 0,
+          "Guideline": 1,
+          "d_Category": "Vegetation Buffer",
+          "d_Guidelin": "v3",
+          "layerId": "nsw-bushfire-prone",
+          "areaCode": "144922",
+          "areaName": "Vegetation Buffer",
+          "value": null
+        },
+        {
+          "OBJECTID": 144925,
+          "StartDate": 1477958400000,
+          "LastUpdate": 1233014400000,
+          "Category": 0,
+          "Guideline": 1,
+          "d_Category": "Vegetation Buffer",
+          "d_Guidelin": "v3",
+          "layerId": "nsw-bushfire-prone",
+          "areaCode": "144925",
+          "areaName": "Vegetation Buffer",
+          "value": null
+        }
+      ],
+      "milliseconds": 6294
+    },
+    {
+      "id": "population-independent-crosscheck",
+      "status": "pass",
+      "official": {
+        "erp_2024": 31254,
+        "erp_2025": 35856,
+        "sa2_code_2021": "213041359"
+      }
+    }
+  ],
+  "source_commit": "ed2d5b2b9a4001c702e24018e6334aa190d768d2",
+  "note": "Actual government responses via curl; no authentication/browser rendering inferred. Intervening HTTP403 run documented in the release record."
+}

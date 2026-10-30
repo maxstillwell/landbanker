@@ -31,6 +31,7 @@ jobs:
             if curl --fail --silent http://localhost:3000/ >/dev/null; then break; fi
             sleep 1
           done
+          node tests/professional-layers.e2e.mjs
           npm run test:e2e 2>&1 | sed -E 's/(cookie:|authorization:).*/\1 [redacted]/Ig'
       - uses: actions/upload-artifact@v4
         if: always()

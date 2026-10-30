@@ -1,0 +1,88 @@
+{
+  "source_commit": "ed2d5b2b9a4001c702e24018e6334aa190d768d2",
+  "routes": [
+    {
+      "route": "/",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/features",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/layers",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/solutions",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/pricing",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/about",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/contact",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/login",
+      "http": "HTTP/2 200 ",
+      "redirect": null,
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/app/map",
+      "http": "HTTP/2 307 ",
+      "redirect": "/login?next=%2Fapp%2Fmap",
+      "sign_in_required": false,
+      "server_error": false
+    },
+    {
+      "route": "/api/layer-library",
+      "http": "400",
+      "sign_in_required": true,
+      "server_error": false,
+      "verified_via": "Vercel authenticated fetch; Supabase authentication was not bypassed",
+      "response": {
+        "error": "Sign in required"
+      }
+    },
+    {
+      "route": "/api/layer-library/abs-population-growth/features?bbox=145.15,-37.88,145.21,-37.84&zoom=14",
+      "http": "400",
+      "sign_in_required": true,
+      "server_error": false,
+      "verified_via": "Vercel authenticated fetch; Supabase authentication was not bypassed",
+      "response": {
+        "error": "Sign in required"
+      }
+    }
+  ]
+}
