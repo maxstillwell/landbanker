@@ -1,5 +1,11 @@
 # Professional Layers Phase 2
 
+## Current release state
+
+Release A runtime **712baed15f19100fd43c4b60be9e8631d53bdde3** is Production READY; the formal alias points to dpl_4ixje8hqbVAo1VqFDfjV5xcomsBy. CI 41157798358 passed all 17 browser suites, 68 unit checks, database/RLS/concurrency, lint/typecheck/build and four unsigned iOS Simulator builds. [Acceptance](PROFESSIONAL_LAYERS_PHASE2_ACCEPTANCE.json) and [public/protected-route checks](PROFESSIONAL_LAYERS_PHASE2_PRODUCTION.json). The two suburb products were staged disabled through hosted migration 20261031021458, then enabled only in the platform catalogue: 33 rows / 31 available; no user preferences or records changed. The earlier CLI filename 20261030235355 is renamed to actual hosted version 20261031021458 without changing the applied SQL. A real production account remains unavailable, so authenticated production acceptance is not claimed.
+
+NSW candidate details are in [Release B evidence](PROFESSIONAL_LAYERS_NSW.md). Its first complete run passed all 17 prior suites; only the new phone-resize step failed because the existing layout intentionally collapses the Inspector on entering phone width. The candidate reopens the existing Inspector and verifies that LGA 14850, June-2017 period and actual motor-theft count 90 survive the transition. This is a test path correction; no responsive behaviour or statistics change. [Latest VIC rent access evidence](PROFESSIONAL_LAYERS_RENT_ACCESS.json) still records HTTP503 for both reviewed original downloads; no rent data is imported. The investigation checkpoints below are historical.
+
 ## Baseline — 31 October 2026 AEDT
 
 Fetched latest main: `8beeaceed1e056224ead7428276fe89427afc8a4`. Working tree was clean. Phase 1 release/register/status and architecture/security/team instructions reviewed. Existing server-owned registry, per-user/workspace preferences, bounded feature API, import manifests, MapLibre renderer and Inspector are reused. Previous release: 29 available products; two retained disabled NSW products. New products will stage disabled until matching runtime/data and browser checks pass.

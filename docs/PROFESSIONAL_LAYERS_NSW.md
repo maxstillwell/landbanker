@@ -92,8 +92,11 @@ Census controls retain their existing identifiers. No competing layer manager.
   [Recorded evidence](PROFESSIONAL_LAYERS_NSW_VERIFICATION.json).
 - New complete catalogue/Inspector desktop/mobile browser workflow is prepared,
   with real disposable Auth/RLS/preferences, actual imported observations and
-  explicit fixture geometry. It has **not run yet**. Whole-suite acceptance and
-  real production-account acceptance are not claimed.
+  explicit fixture geometry. CI 41157925214 completed **17/18**: all 17 prior
+  workflows passed; the NSW workflow passed prices, rent, incident/year/category
+  values and failed only when phone width intentionally collapsed the Inspector.
+  The corrected path reopens it and verifies the retained code/year/value. Full
+  acceptance and real production-account acceptance are not claimed yet.
 - CLI-generated migration `20261031013927_professional_nsw_statistics.sql`
   stages three disabled catalogue entries only. It has **not been applied**.
   Release B follows Release A acceptance/publication; never bypass the review

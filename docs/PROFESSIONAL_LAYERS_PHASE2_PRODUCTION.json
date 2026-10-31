@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-10-31T02:16:02.630587+00:00",
+  "sha": "712baed15f19100fd43c4b60be9e8631d53bdde3",
+  "deployment": "dpl_4ixje8hqbVAo1VqFDfjV5xcomsBy",
+  "authenticatedProductionAcceptance": false,
+  "checks": [
+    {
+      "path": "/",
+      "exit": 0,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "HTTP/2 200 ",
+        "cache-control: public, max-age=0, must-revalidate",
+        "content-type: text/html; charset=utf-8"
+      ]
+    },
+    {
+      "path": "/login",
+      "exit": 0,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "HTTP/2 200 ",
+        "cache-control: public, max-age=0, must-revalidate",
+        "content-type: text/html; charset=utf-8"
+      ]
+    },
+    {
+      "path": "/app/map",
+      "exit": 0,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "HTTP/2 307 ",
+        "cache-control: public, max-age=0, must-revalidate",
+        "content-type: text/plain",
+        "location: /login?next=%2Fapp%2Fmap"
+      ]
+    },
+    {
+      "path": "/api/layer-library",
+      "exit": 0,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "HTTP/2 400 ",
+        "cache-control: no-store",
+        "content-type: application/json"
+      ]
+    },
+    {
+      "path": "/api/layer-library/vic-suburb-median-prices/features?bbox=145.17,-37.87,145.19,-37.85&zoom=14",
+      "exit": 0,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "HTTP/2 400 ",
+        "cache-control: no-store",
+        "content-type: application/json"
+      ]
+    }
+  ]
+}

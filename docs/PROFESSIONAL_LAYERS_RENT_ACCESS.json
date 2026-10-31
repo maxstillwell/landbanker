@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-31T02:08:08.297652+00:00",
+  "scope": "Access from this execution environment; not evidence of a global provider outage",
+  "ingested": false,
+  "reason": "No valid official Excel original returned; no third-party values substituted",
+  "results": [
+    {
+      "name": "rent-retry-june2026",
+      "url": "https://www.dffh.vic.gov.au/quarterly-median-rents-local-government-area-june-quarter-2026",
+      "response": "503 text/plain",
+      "exit": 0,
+      "bytes": 85,
+      "xlsx_container": false
+    },
+    {
+      "name": "rent-retry-september2025",
+      "url": "https://www.dffh.vic.gov.au/quarterly-median-rents-local-government-area-september-quarter-2025-excel",
+      "response": "503 text/plain",
+      "exit": 0,
+      "bytes": 85,
+      "xlsx_container": false
+    }
+  ]
+}

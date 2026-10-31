@@ -1,0 +1,175 @@
+{
+  "checkedAt": "2026-10-31T02:17:39.887Z",
+  "runtimeSha": "712baed15f19100fd43c4b60be9e8631d53bdde3",
+  "workflowRun": 41157798358,
+  "webJob": 124408350609,
+  "conclusion": "success",
+  "unitChecks": 68,
+  "browser": {
+    "total": 17,
+    "passed": 17,
+    "results": [
+      {
+        "suite": "tests/professional-layers.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 23950,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/suburb-layers.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 31365,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/field.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 38110,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/spatial.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 36558,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/import.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 1932,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/sql-import.e2e.ts",
+        "status": "pass",
+        "milliseconds": 1234,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/photo-batch.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 17481,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/parcel-multiselect.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 36796,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/drawing-recovery.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 37784,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/parcels.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 43602,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/share-hardening.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 16170,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/planning.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 18155,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/change-feed.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 13808,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/maplibre.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 28321,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/map-quality.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 82640,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/workspace-v2.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 35483,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/map-pages.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 50270,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      }
+    ]
+  },
+  "production": {
+    "url": "https://landbanker.vercel.app",
+    "deploymentId": "dpl_4ixje8hqbVAo1VqFDfjV5xcomsBy",
+    "state": "READY",
+    "aliasVerified": true
+  },
+  "database": {
+    "project": "gksyipjxhrolsgztfyer",
+    "migration": "20261031021458_professional_suburb_layers",
+    "catalogueRows": 33,
+    "availableRows": 31,
+    "newSuburbProductsAvailable": 2,
+    "retainedDisabled": 2,
+    "workspaceRecordsChanged": false,
+    "authRlsChanged": false
+  },
+  "liveDataEvidence": [
+    "PROFESSIONAL_LAYERS_SUBURB_VERIFICATION.json",
+    "PROFESSIONAL_LAYERS_PHASE2_SOURCE_VERIFICATION.json"
+  ],
+  "limits": [
+    "Browser workflows use real disposable Auth/RLS/preferences and actual imported statistics, with explicit provider geometry fixtures; live government tests are separate.",
+    "No real production account was available; authenticated production placement/toggles/CRUD and physical-device acceptance are not claimed.",
+    "VIC rent remains unavailable; repeated original downloads returned HTTP503 in this environment."
+  ]
+}
