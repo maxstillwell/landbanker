@@ -322,11 +322,8 @@ try {
   )
     await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(1800);
-  const canvas = await page.locator(".map-canvas").boundingBox();
-  await page.mouse.click(
-    canvas.x + canvas.width / 2,
-    canvas.y + canvas.height / 2,
-  );
+  // Both fixtures share this actual polygon. The camera centre is elsewhere.
+  await clickParcel(lons[0]);
   const chooser = page.getByLabel("Choose a map feature");
   await expect(chooser).toBeVisible();
   await expect(chooser).toContainText("Layer polygon");

@@ -150,20 +150,21 @@ try {
     200,
   );
   await page.reload();
-  if (
-    await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()
-  )
-    if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
-  await page.waitForTimeout(500);
-  await page.mouse.click(185, 220);
+  if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await expect.poll(async()=>{
+    await page.mouse.click(185,220);
+    return page.getByRole("button",{name:"Clear Selection",exact:true}).isVisible();
+  }).toBe(true);
   await expect(
     page.getByRole("button", { name: "Clear Selection" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Clear Selection" }).click();
   await expect(page.getByRole("button", { name: "Edit shape" })).toHaveCount(0);
   if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
-  await page.waitForTimeout(400);
-  await page.mouse.click(185, 220);
+  await expect.poll(async()=>{
+    await page.mouse.click(185,220);
+    return page.getByRole("button",{name:"Delete shape",exact:true}).isVisible();
+  }).toBe(true);
   await expect(
     page.getByRole("button", { name: "Delete shape" }),
   ).toBeVisible();
