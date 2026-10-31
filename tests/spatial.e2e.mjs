@@ -1,6 +1,7 @@
 import {
   openTools,
   openCustomLayers,
+  openWorkspaceLibrary,
   openWorkspaceSettings,
   prepareDrawingSave,
   confirmDrawingSave,
@@ -224,19 +225,15 @@ try {
     data.layers.find((l) => l.id === layer.id).geojson.features[0].id,
     featureId,
   );
-  if (
-    (await page
-      .getByRole("button", { name: "Layers", exact: true })
-      .getAttribute("aria-pressed")) !== "true"
-  )
-    await page.getByRole("button", { name: "Layers", exact: true }).click();
-  await page.getByRole("button", { name: "Add Layer", exact: true }).click();
+  await openWorkspaceLibrary(page, "Layers");
+  await page.getByRole("tab", { name: "Catalogue", exact: true }).click();
   await page.getByLabel("Search layers").fill("flood");
   await page
     .locator(".catalog-result")
     .filter({ hasText: "Victoria flood planning overlays" })
     .getByRole("button", { name: "Add", exact: true })
     .click();
+  await page.getByRole("tab", { name: /^Added to Map/ }).click();
   await page
     .getByLabel("Victoria flood planning overlays", { exact: true })
     .waitFor();
