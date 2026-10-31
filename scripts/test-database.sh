@@ -14,4 +14,5 @@ if [[ $ready != true ]]; then docker logs "$container"; exit 1; fi
 docker exec -i "$container" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 < tests/database-bootstrap.sql
 for migration in supabase/migrations/*.sql; do docker exec -i "$container" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 < "$migration"; done
 docker exec -i "$container" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 < tests/rls.sql
+docker exec -i "$container" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 < tests/markers-rls.sql
 python3 tests/sync-concurrency.py "$container"

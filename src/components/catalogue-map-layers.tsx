@@ -303,7 +303,7 @@ export function useCatalogueMapLayers({
       );
     }
     function pick(e: MapMouseEvent) {
-      if (blocked || workspaceHit(e)) return;
+      if (e.defaultPrevented || blocked || workspaceHit(e)) return;
       const hits = m!.queryRenderedFeatures(e.point, {
         layers: owned.flatMap((id) => [`${id}-fill`, `${id}-point`]),
       });

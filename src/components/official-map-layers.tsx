@@ -158,6 +158,7 @@ export function useOfficialMapLayers({
       timer = setTimeout(load, 300);
     }
     function select(event: MapMouseEvent) {
+      if(event.defaultPrevented)return;
       const workspace = m!.queryRenderedFeatures([[event.point.x - 10, event.point.y - 10], [event.point.x + 10, event.point.y + 10]], {
         layers: [
           "landos-parcels-fill",
