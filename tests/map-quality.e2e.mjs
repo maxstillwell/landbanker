@@ -260,6 +260,18 @@ try {
       ).status(),
       200,
     );
+    // Hold the real tenant-checked full-geometry response until after navigation.
+    // Hydrating the selected record must not close a newly opened Layers library.
+    let releaseGeometry;
+    const geometryGate = new Promise(resolve => {releaseGeometry=resolve;});
+    const geometryTimer = setTimeout(()=>releaseGeometry(),30000);
+    const geometryPattern=`**/api/layers?id=${overlayId}&feature=**`;
+    const heldGeometry=async route=>{
+      const response=await route.fetch();
+      await geometryGate;
+      await route.fulfill({response});
+    };
+    await page.route(geometryPattern,heldGeometry);
     await page.reload();
     await openWorkspaceLibrary(page, "Saved Views");
     await page.getByRole("button", { name: view.name, exact: true }).click();
@@ -271,12 +283,14 @@ try {
           .count();
       })
       .toBe(1);
-    if (
-      (await page
-        .getByRole("button", { name: "Layers", exact: true })
-        .getAttribute("aria-pressed")) !== "true"
-    )
-      await page.getByRole("button", { name: "Layers", exact: true }).click();
+    const geometrySummary=page.getByLabel("Parcel Selection Summary");
+    await expect(geometrySummary).toContainText("Incomplete");
+    await openWorkspaceLibrary(page,"Layers");
+    clearTimeout(geometryTimer);
+    releaseGeometry();
+    await expect(geometrySummary).not.toContainText("Incomplete");
+    await expect(page.getByRole("complementary",{name:"Workspace library",exact:true})).toBeInViewport();
+    await page.unroute(geometryPattern,heldGeometry);
     await enableReferenceLayer(page, point.state === "VIC" ? "Victoria planning zones" : "NSW land zoning");
     await page
       .getByRole("button", { name: "Inspect zoning", exact: true })

@@ -431,6 +431,12 @@ export default function MapWorkspace({
     setSelectedAreas(next);
     setSelection(additive && present ? null : item.detail);
     setSelectionDetails(next.length > 1);
+    // A deliberate pick may reopen the same selection after the user closed it.
+    if (!(additive && present)) {
+      const phone = window.matchMedia("(max-width: 767px)").matches;
+      if (!multiSelectRef.current || !phone) { setRightOpen(true); if (phone) setSheet("medium"); }
+      setLeftOpen(false);
+    }
   }, []);
   const areaSummary = useMemo(() => summarizeAreas(selectedAreas), [selectedAreas]);
   const clearAreas = useCallback(() => { selectedAreasRef.current = []; setSelectedAreas([]); setSelectedResearch(null); setSelection(null); setSelectionDetails(false); }, []);
@@ -470,9 +476,12 @@ export default function MapWorkspace({
   const savedEdgePreference=selectedDrawing?.properties?.measurement_edges;
   useEffect(()=>{if(typeof savedAreaPreference==="boolean")setShowDrawingArea(savedAreaPreference);if(typeof savedEdgePreference==="boolean")setShowDrawingEdges(savedEdgePreference);},[savedAreaPreference,savedEdgePreference,selectedDrawing?.id]);
   const selectedPropertyId = selectedParcel?.id;
+  const selectionKey = selection?.kind === "drawing" ? `drawing:${selection.record.id}:${selection.featureId}` : selection?.kind === "official-parcel" ? `official:${selection.record.state}:${selection.record.sourceId}` : selection ? `${selection.kind}:${selection.record.id}` : null;
   useEffect(() => {
-    if (selection || draft) { if (draft || !multiSelectRef.current || !window.matchMedia("(max-width: 767px)").matches) { setRightOpen(true); if (window.matchMedia("(max-width: 767px)").matches) setSheet(draft ? "expanded" : "medium"); } setLeftOpen(false); }
-  }, [selection, draft]);
+    // Full-geometry and change-feed refreshes retain identity. They must not
+    // close a library the user opened while the response was in flight.
+    if (selectionKey || draft) { if (draft || !multiSelectRef.current || !window.matchMedia("(max-width: 767px)").matches) { setRightOpen(true); if (window.matchMedia("(max-width: 767px)").matches) setSheet(draft ? "expanded" : "medium"); } setLeftOpen(false); }
+  }, [selectionKey, draft]);
   useEffect(() => {
     function changed(event: Event) {
       const detail = (
@@ -1288,6 +1297,7 @@ export default function MapWorkspace({
         );
         if (record) {
           setSelection({ kind: "observation", record });
+          if (!multiSelectRef.current || !window.matchMedia("(max-width: 767px)").matches) setRightOpen(true); setLeftOpen(false);
           setTab("observations");
           setSheet("expanded");
         }
@@ -1317,7 +1327,7 @@ export default function MapWorkspace({
               selectedAreasRef.current = next; setSelectedAreas(next);
               setSelection((current) => current?.kind === "drawing" && current.record.id === full.id && current.featureId === selectedDetail.featureId ? { ...current, record: full } : current);
             }).catch(() => setNotice("Full feature geometry is unavailable; the area total is incomplete."));
-          } else { if (!detail.shift && !multiSelectRef.current) clearAreas(); setSelection(selectedDetail); }
+          } else { if (!detail.shift && !multiSelectRef.current) clearAreas(); setSelection(selectedDetail); if (!multiSelectRef.current || !window.matchMedia("(max-width: 767px)").matches) setRightOpen(true); setLeftOpen(false); }
           setTab("layers");
           setSheet("medium");
         }
