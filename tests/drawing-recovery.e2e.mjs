@@ -77,7 +77,7 @@ try {
   await page.reload();
   await page.getByText("Unfinished drawing found", { exact: true }).waitFor();
   assert.equal(await controls.count(), 0);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Resume drawing", exact: true }).click();
   assert.deepEqual(await points(), initial);
   const move = page.getByRole("img", { name: "Move entire shape" });
   const b = await move.boundingBox();
@@ -162,7 +162,7 @@ try {
   );
   await page.reload();
   await page.getByText("Unfinished drawing found", { exact: true }).waitFor();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Resume drawing", exact: true }).click();
   await page.getByRole("img", { name: "Vertex 1", exact: true }).click();
   await controls
     .getByRole("button", { name: "Delete vertex", exact: true })
@@ -286,7 +286,7 @@ try {
   await waitPoints(2);
   await page.reload();
   await page.getByText("Unfinished drawing found", { exact: true }).waitFor();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Resume drawing", exact: true }).click();
   const rectangleBefore = await points(),
     rb = await page
       .getByRole("img", { name: "Move entire shape" })

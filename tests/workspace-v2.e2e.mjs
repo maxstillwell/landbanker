@@ -65,7 +65,8 @@ try {
     page.getByRole("link", { name: "Account and settings" }),
   ).toHaveAttribute("href", "/app/settings");
   await page.getByRole("button", { name: "3D view" }).click();
-  await page.getByRole("button", { name: "2D edit" }).click();
+  await expect(page.getByText("3D terrain is unavailable: no reviewed elevation source is configured.",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"3D view",exact:true})).toHaveAttribute("aria-pressed","false");
   assert.equal(
     await page.evaluate(
       () =>
@@ -214,7 +215,7 @@ try {
   await openTools(page);
   await page.getByRole("button", { name: "Radius", exact: true }).click();
   await page.getByLabel("Radius kilometres").fill("2");
-  await page.getByRole("button", { name: "Create at map centre" }).click();
+  await page.getByRole("button", { name: "Use map centre" }).click();
   await prepareDrawingSave(page);
   await expect(page.getByLabel("Shape name")).toHaveValue("2 km radius");
   await expect(page.locator(".local-layer")).toHaveCSS(

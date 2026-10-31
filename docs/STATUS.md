@@ -1,5 +1,14 @@
 # LandOS status
 
+## Professional Layers Phase 2 candidate — 31 October 2026 UTC
+
+Continuation from 8beeace. Runtime 166750b is Production READY (dpl_FgfnhtuwZ7QAT9fygwyzo7YnWtxy), with two suburb candidates behind absent/disabled server catalogue entries. VGV original house/unit/land annual medians 2015–2025 and CSA finer published subgroup observations 2017–2026 use explicit Vicmap PFI crosswalks/current locality geometry. Existing LGA products remain. See [Phase 2 evidence](PROFESSIONAL_LAYERS_PHASE2.md) and updated source register.
+
+Local lint/typecheck/68 tests/build pass. Real providers: 48/48 viewport/source checks; dedicated suburb verification 14/14 including explicit-CRS WFS point lookup. CI 41149373813 passed database/RLS/concurrency/build and 6/17 browser suites, including both professional/statistical suites, the original Field blocker and real cross-device change feed. Eleven legacy paths still need acceptance; current fixes update hydration waits, actual controls, pagination and provider gating without relaxing geometry/isolation/performance assertions. Full E2E and authenticated production acceptance are not claimed.
+
+Automatic approval review rejected the production catalogue-only migration because complete browser acceptance was still pending. No production database change or activation occurred: catalogue remains 31 rows / 29 enabled. Finish browser acceptance before retrying; do not route around the rejection. DFFH report/current/archived workbook and Housing Victoria access produce HTTP503 upstream resets in this execution environment; no rent observations or substitutes are imported. NSW DCJ originals and licensed BOCSAR data are acquired/researched, not integrated. Release B waits for stable Release A. No Auth/RLS/workspace data or MaxQI changes.
+
+
 ## Professional GIS layers expansion — 31 October 2026 AEDT
 
 Based on current main `a379819`, preserving the marketing and authenticated UI releases. Adds 19 official catalogue products, enriches existing BMO/heritage IDs, and extends the existing catalogue with statistical indicators/years/legends and feature details. Includes five statistical products, VIC 2026 school points, VIC overlay/UGB/BPA/VPA and NSW flood/BFPL references. See [release evidence and remaining backlog](PROFESSIONAL_LAYERS_RELEASE.md) and [complete source register](PROFESSIONAL_LAYERS_REGISTRY.md). VIC median rent is **not implemented**, blocked by official download failures. This is a first expansion, not completion of the full roadmap.

@@ -36,7 +36,9 @@ jobs:
         if: always()
         with:
           name: field-browser-screenshots
-          path: artifacts/*.png
+          path: |
+            artifacts/*.png
+            artifacts/e2e-report.json
   ios:
     runs-on: macos-15
     strategy:

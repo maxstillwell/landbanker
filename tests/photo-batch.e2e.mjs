@@ -1,4 +1,4 @@
-import { addObservation } from "./workspace-browser.mjs";
+import { addObservation, resumeObservation } from "./workspace-browser.mjs";
 import { chromium } from "./map-browser.mjs";
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -96,7 +96,7 @@ try {
     db.close();
   });
   await page.reload();
-  await page.getByRole("button", { name: "Resume", exact: true }).click();
+  await resumeObservation(page, "Interrupted selection");
   await page
     .getByText("Photo selection is incomplete.", { exact: false })
     .waitFor();

@@ -3,6 +3,7 @@ import {
   openCustomLayers,
   confirmDrawingSave,
   prepareDrawingSave,
+  selectListedLayerFeature,
 } from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
@@ -351,9 +352,7 @@ try {
     .filter({ hasText: "Scale features" })
     .click();
   await page.locator(".drawer-layer-features > summary").filter({hasText:"Scale features"}).click();
-  await page
-    .getByRole("button", { name: "Synthetic feature 0", exact: true })
-    .click();
+  await selectListedLayerFeature(page,"Synthetic feature 0");
   await page.getByRole("button", { name: "Edit shape", exact: true }).click();
   await page
     .getByLabel("Drawing controls")

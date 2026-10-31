@@ -61,7 +61,11 @@ export function featureQueryUrl(product: LayerProduct, input: LayerViewport) {
       propertyName: [...product.query.fields, "geom"].join(","),
       count: "250",
       ...(point
-        ? { cql_filter: `INTERSECTS(geom,POINT(${point[0]} ${point[1]}))` }
+        ? {
+            // The service stores projected geometry. srsName controls output,
+            // not an unqualified ECQL literal; give the filter its own CRS.
+            filter: `<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0" xmlns:gml="http://www.opengis.net/gml/3.2"><fes:Intersects><fes:ValueReference>geom</fes:ValueReference><gml:Point srsName="urn:ogc:def:crs:OGC:1.3:CRS84"><gml:pos>${point[0]} ${point[1]}</gml:pos></gml:Point></fes:Intersects></fes:Filter>`,
+          }
         : {
             bbox: `${input.bbox.map((x) => x.toFixed(5)).join(",")},urn:ogc:def:crs:OGC:1.3:CRS84`,
           }),

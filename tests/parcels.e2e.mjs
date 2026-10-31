@@ -255,7 +255,7 @@ try {
   if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
     await page.getByRole("button", { name: "Open Inspector" }).click();
   await openWorkspaceLibrary(page, "Properties");
-  await page.getByLabel("Search saved properties").fill("TEST-42");
+  await page.getByLabel("Search Properties", {exact:true}).fill("TEST-42");
   await page
     .getByRole("button")
     .filter({ hasText: "Synthetic saved property" })
@@ -297,7 +297,7 @@ try {
   if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
     await page.getByRole("button", { name: "Open Inspector" }).click();
   await openWorkspaceLibrary(page, "Properties");
-  await page.getByLabel("Search saved properties").fill("LINKED-42");
+  await page.getByLabel("Search Properties", {exact:true}).fill("LINKED-42");
   await page
     .getByRole("button")
     .filter({ hasText: "Tenant A property" })
@@ -328,7 +328,7 @@ try {
   if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
     await page.getByRole("button", { name: "Open Inspector" }).click();
   await openWorkspaceLibrary(page, "Properties");
-  await page.getByLabel("Search saved properties").fill("LINKED-42");
+  await page.getByLabel("Search Properties", {exact:true}).fill("LINKED-42");
   await page
     .getByRole("button")
     .filter({ hasText: "Tenant A property" })

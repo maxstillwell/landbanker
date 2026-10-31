@@ -101,7 +101,7 @@ try {
   );
   await page.reload();
   // The geometry itself is clickable, and editing loads the complete layer.
-  await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(400);
   await page.mouse.click(185, 220);
   await expect(page.getByRole("button", { name: "Edit shape" })).toBeVisible();
@@ -149,7 +149,7 @@ try {
   if (
     await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()
   )
-    await page.getByRole("button", { name: "Collapse Inspector" }).click();
+    if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(500);
   await page.mouse.click(185, 220);
   await expect(
@@ -157,7 +157,7 @@ try {
   ).toBeVisible();
   await page.getByRole("button", { name: "Clear Selection" }).click();
   await expect(page.getByRole("button", { name: "Edit shape" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(400);
   await page.mouse.click(185, 220);
   await expect(

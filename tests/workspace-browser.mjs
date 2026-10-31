@@ -13,7 +13,9 @@ export async function openWorkspaceLibrary(page, name) {
   )
     return;
   const rail = page.getByRole("navigation", { name: "Map tools", exact: true });
-  if (await rail.isVisible()) {
+  const desktop = (page.viewportSize()?.width ?? 1440) >= 768;
+  await expect(desktop ? rail : page.getByRole("navigation", {name:"Mobile map navigation"})).toBeVisible();
+  if (desktop) {
     if (name === "Saved Views") {
       const settings = page.locator(".desktop-workspace-settings");
       if ((await settings.getAttribute("open")) === null)
@@ -45,7 +47,9 @@ export async function openTools(page) {
     return;
   }
   const rail = page.getByRole("navigation", { name: "Map tools", exact: true });
-  if (await rail.isVisible())
+  const desktop = (page.viewportSize()?.width ?? 1440) >= 768;
+  await expect(desktop ? rail : page.getByRole("navigation", {name:"Mobile map navigation"})).toBeVisible();
+  if (desktop)
     await rail.getByRole("button", { name: "Tools", exact: true }).click();
   else {
     await page
@@ -87,10 +91,9 @@ export async function openWorkspaceSettings(page) {
 }
 export async function enableReferenceLayer(page, name) {
   await openWorkspaceLibrary(page, "Layers");
-  await page
-    .locator(".workspace-library .maplibre-official-layers")
-    .getByLabel(name, { exact: true })
-    .check();
+  await page.locator(".workspace-library .maplibre-official-row")
+    .filter({has:page.getByText(name,{exact:true})})
+    .getByRole("checkbox").check();
 }
 export async function prepareDrawingSave(page) {
   const drawing = page.getByLabel("Completed drawing", { exact: true });
@@ -145,4 +148,19 @@ export async function resumeObservation(page, title) {
     .getByRole("button", { name: "Resume", exact: true })
     .click();
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue(title);
+}
+
+export async function selectListedLayerFeature(page, name) {
+  const details=page.locator(".drawer-layer-features");
+  await expect(details).toBeVisible();
+  if(await details.getAttribute("open")===null) await details.locator(":scope > summary").click();
+  const target=details.getByRole("button",{name,exact:true});
+  for(let pageIndex=0;pageIndex<100;pageIndex++) {
+    await expect(details.getByRole("button",{name:"Loading…",exact:true})).toHaveCount(0);
+    if(await target.isVisible()) {await target.click();return;}
+    const more=details.getByRole("button",{name:"Load more features",exact:true});
+    await expect(more).toBeVisible();
+    await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==="/api/layers"&&new URL(r.url()).searchParams.get("list")==="1"),more.click()]);
+  }
+  throw new Error(`Feature not found after all supported pages: ${name}`);
 }

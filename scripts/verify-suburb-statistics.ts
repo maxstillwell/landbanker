@@ -111,6 +111,22 @@ for (const area of areas) {
     }
   }
 }
+
+// Exercise the actual point filter too: bounding-box success alone can hide
+// an unprojected filter literal that silently returns no locality.
+for (const id of ["vic-suburb-median-prices", "vic-suburb-recorded-offences"]) {
+  const started = performance.now();
+  try {
+    const r = await queryProduct(layerProduct(id)!, {bbox:[145.17,-37.87,145.19,-37.85],zoom:14,point:[145.183,-37.858]}, request);
+    const f = r.collection.features.find(f=>f.properties?.areaCode === "205410022");
+    assert(f,"Vermont South must be returned by the explicit-CRS point filter");
+    assert.equal(f.properties?.value,id.includes("median") ? 1525000 : 693);
+    assert(f.geometry);
+    results.push({id,area:"VERMONT SOUTH",queryMode:"point",pfi:"205410022",status:"pass",reference:f.properties?.reference,value:f.properties?.value,milliseconds:Math.round(performance.now()-started)});
+  } catch(e) {
+    results.push({id,area:"VERMONT SOUTH",queryMode:"point",status:"fail",error:String(e)});
+  }
+}
 await mkdir("artifacts/professional-layers", { recursive: true });
 await writeFile(
   "artifacts/professional-layers/suburb-live-verification.json",

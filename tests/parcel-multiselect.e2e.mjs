@@ -1,3 +1,4 @@
+import {openTools} from "./workspace-browser.mjs";
 import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { expect } from "@playwright/test";
@@ -196,7 +197,8 @@ try {
   )
     await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(500);
-  await page.getByRole("button", { name: "Multi-select", exact: true }).click();
+  await openTools(page);
+  await page.getByRole("button", { name: "Toggle multi-select", exact: true }).click();
   await clickParcel(lons[0], false, true);
   await expect(summary).toContainText("1 parcel selected");
   await clickParcel(lons[1], false, true);

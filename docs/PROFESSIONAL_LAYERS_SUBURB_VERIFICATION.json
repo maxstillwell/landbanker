@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-30T23:55:11.136Z",
+  "checkedAt": "2026-10-31T00:26:50.435Z",
   "results": [
     {
       "id": "vic-suburb-median-prices",
@@ -8,7 +8,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 1525000,
-      "milliseconds": 7951
+      "milliseconds": 6258
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -26,7 +26,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 1722000,
-      "milliseconds": 6880
+      "milliseconds": 6322
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -44,7 +44,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 1618000,
-      "milliseconds": 5435
+      "milliseconds": 6112
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -62,7 +62,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 1699000,
-      "milliseconds": 6741
+      "milliseconds": 6105
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -71,7 +71,7 @@
       "status": "pass",
       "reference": "Year ending 30 June 2026",
       "value": 2530,
-      "milliseconds": 1
+      "milliseconds": 0
     },
     {
       "id": "vic-suburb-median-prices",
@@ -80,7 +80,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 825000,
-      "milliseconds": 6598
+      "milliseconds": 6138
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -89,7 +89,7 @@
       "status": "pass",
       "reference": "Year ending 30 June 2026",
       "value": 2706,
-      "milliseconds": 2
+      "milliseconds": 4
     },
     {
       "id": "vic-suburb-median-prices",
@@ -98,7 +98,7 @@
       "status": "pass",
       "reference": "Calendar year 2025",
       "value": 525000,
-      "milliseconds": 6688
+      "milliseconds": 6242
     },
     {
       "id": "vic-suburb-recorded-offences",
@@ -108,6 +108,26 @@
       "reference": "Year ending 30 June 2026",
       "value": 2082,
       "milliseconds": 1
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "VERMONT SOUTH",
+      "queryMode": "point",
+      "pfi": "205410022",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 1525000,
+      "milliseconds": 6251
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "VERMONT SOUTH",
+      "queryMode": "point",
+      "pfi": "205410022",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 693,
+      "milliseconds": 0
     }
   ]
 }

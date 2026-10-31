@@ -85,6 +85,12 @@ test("fixed WFS adapter uses longitude/latitude CRS84 and official code properti
     "urn:ogc:def:crs:OGC:1.3:CRS84",
   );
   assert(url.searchParams.get("bbox")!.startsWith("145.15000,-37.88000"));
+  const pointUrl = new URL(featureQueryUrl(product, {...input,point:[145.183,-37.858]}));
+  assert.equal(pointUrl.searchParams.has("cql_filter"), false);
+  assert.equal(pointUrl.searchParams.has("bbox"), false);
+  assert.match(pointUrl.searchParams.get("filter")!, /gml:Point srsName="urn:ogc:def:crs:OGC:1.3:CRS84"/);
+  assert.match(pointUrl.searchParams.get("filter")!, /<gml:pos>145.183 -37.858<\/gml:pos>/);
+
   const result = await queryProduct(product, input, async () =>
     Response.json({
       type: "FeatureCollection",

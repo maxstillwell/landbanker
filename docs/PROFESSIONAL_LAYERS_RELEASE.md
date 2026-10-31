@@ -1,5 +1,8 @@
 # Professional layers expansion — release record
 
+Phase 2 continuation: [current implementation, QA and access evidence](PROFESSIONAL_LAYERS_PHASE2.md). The Phase 1 findings below are a historical release checkpoint. Suburb-price and finer crime candidates now exist in runtime 166750b, with production catalogue staging/activation still pending; rent and NSW products are not marked complete.
+
+
 31 October 2026 AEDT. Base: main `a3798192598779fdebbead4a70f1c0121c02c0fe`. This delivers a coherent first expansion, **not the complete requested roadmap**. VIC median rent remains blocked by source downloads; the remaining backlog below is not implemented.
 
 ## Existing architecture and audit
