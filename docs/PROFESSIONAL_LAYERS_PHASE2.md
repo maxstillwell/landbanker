@@ -1,5 +1,9 @@
 # Professional Layers Phase 2
 
+## Current Release B
+
+Runtime **11f6537dbf1cb59e762f2b6fa0a55020eb4cc889** is on main / Production READY, alias verified at dpl_BSNNtqEfbJBbgawhvJhFnrU6goyM. CI 41159657368 passed **18/18** browser suites, 74 units, lint/typecheck/database/RLS/concurrency/build and four unsigned Simulator jobs. Main run 41160734952 also succeeded. All five continuation products are available beta and opt-in: **36 catalogue entries / 34 available**, original FSR/height disabled. Hosted migrations 20261031021458 (VIC) and 20261031023910 (NSW) staged disabled entries after acceptance/READY, then only availability was enabled. Applied SQL bytes are unchanged; filenames match hosted history. No private records/preferences or Auth/RLS changes. [Delivery](PROFESSIONAL_LAYERS_DELIVERY.md), [B acceptance](PROFESSIONAL_LAYERS_NSW_ACCEPTANCE.json), [routes](PROFESSIONAL_LAYERS_NSW_PRODUCTION.json). VIC rent remains blocked; real production-account/device acceptance is not claimed. Earlier checkpoints are historical.
+
 ## Current release state
 
 Release A runtime **712baed15f19100fd43c4b60be9e8631d53bdde3** is Production READY; the formal alias points to dpl_4ixje8hqbVAo1VqFDfjV5xcomsBy. CI 41157798358 passed all 17 browser suites, 68 unit checks, database/RLS/concurrency, lint/typecheck/build and four unsigned iOS Simulator builds. [Acceptance](PROFESSIONAL_LAYERS_PHASE2_ACCEPTANCE.json) and [public/protected-route checks](PROFESSIONAL_LAYERS_PHASE2_PRODUCTION.json). The two suburb products were staged disabled through hosted migration 20261031021458, then enabled only in the platform catalogue: 33 rows / 31 available; no user preferences or records changed. The earlier CLI filename 20261030235355 is renamed to actual hosted version 20261031021458 without changing the applied SQL. A real production account remains unavailable, so authenticated production acceptance is not claimed.

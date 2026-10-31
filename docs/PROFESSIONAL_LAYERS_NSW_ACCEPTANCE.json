@@ -1,0 +1,198 @@
+{
+  "recordedAt": "2026-10-31T02:59:38.026Z",
+  "runtimeSha": "11f6537dbf1cb59e762f2b6fa0a55020eb4cc889",
+  "workflowRun": 41159657368,
+  "mainWorkflowRun": 41160734952,
+  "webJob": 124414155120,
+  "conclusion": "success",
+  "unitChecks": 74,
+  "browser": {
+    "total": 18,
+    "passed": 18,
+    "results": [
+      {
+        "suite": "tests/professional-layers.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 22402,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/suburb-layers.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 32059,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/nsw-layers.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 52064,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/field.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 37821,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/spatial.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 37149,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/import.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 1933,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/sql-import.e2e.ts",
+        "status": "pass",
+        "milliseconds": 1279,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/photo-batch.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 17909,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/parcel-multiselect.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 37134,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/drawing-recovery.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 38199,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/parcels.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 42874,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/share-hardening.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 16392,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/planning.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 16427,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/change-feed.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 13402,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/maplibre.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 28146,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/map-quality.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 79034,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/workspace-v2.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 35721,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      {
+        "suite": "tests/map-pages.e2e.mjs",
+        "status": "pass",
+        "milliseconds": 51853,
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      }
+    ]
+  },
+  "simulatorBuilds": "Four unsigned iPhone/iPad Debug/Release jobs passed; physical acceptance not inferred",
+  "production": {
+    "url": "https://landbanker.vercel.app",
+    "deploymentId": "dpl_BSNNtqEfbJBbgawhvJhFnrU6goyM",
+    "state": "READY",
+    "aliasVerified": true
+  },
+  "database": {
+    "project": "gksyipjxhrolsgztfyer",
+    "migrations": [
+      {
+        "version": "20261031021458",
+        "name": "professional_suburb_layers"
+      },
+      {
+        "version": "20261031023910",
+        "name": "professional_nsw_statistics"
+      }
+    ],
+    "verification": {
+      "catalogue_rls": true,
+      "available_rows": 34,
+      "catalogue_rows": 36,
+      "new_nsw_available": 3,
+      "retained_disabled": [
+        "nsw-fsr",
+        "nsw-height"
+      ],
+      "newest_catalogue_update": "2026-10-31T02:40:06.294891+00:00",
+      "new_vic_suburb_available": 2
+    },
+    "workspaceRecordsChanged": false,
+    "authRlsChanged": false
+  },
+  "limits": [
+    "Provider geometry in browser workflows is an explicit fixture; imported observations and disposable Auth/RLS are real. Separate live geometry checks passed.",
+    "Authenticated production account and physical-device acceptance unavailable.",
+    "VIC rent originals inaccessible from this environment; no substitute statistics."
+  ]
+}

@@ -1,7 +1,9 @@
-# NSW aggregate statistical products — Release B candidate
+# NSW aggregate statistical products — Release B
 
-Prepared in a detached worktree while Release A completes browser acceptance.
-Not published, migrated or activated. Reuses the existing registry, authenticated
+Runtime **11f6537dbf1cb59e762f2b6fa0a55020eb4cc889** is on main / Production READY,
+formal alias landbanker.vercel.app verified at dpl_BSNNtqEfbJBbgawhvJhFnrU6goyM.
+All three products are available beta and opt-in. Catalogue verified: 36 entries /
+34 available after disabled staging and guarded catalogue-only activation. Reuses the existing registry, authenticated
 bounded feature API, ABS ArcGIS adapter, catalogue, choropleth and area Inspector.
 No new table, Auth/RLS policy, user record or paid infrastructure.
 
@@ -92,12 +94,15 @@ Census controls retain their existing identifiers. No competing layer manager.
   [Recorded evidence](PROFESSIONAL_LAYERS_NSW_VERIFICATION.json).
 - New complete catalogue/Inspector desktop/mobile browser workflow is prepared,
   with real disposable Auth/RLS/preferences, actual imported observations and
-  explicit fixture geometry. CI 41157925214 completed **17/18**: all 17 prior
-  workflows passed; the NSW workflow passed prices, rent, incident/year/category
-  values and failed only when phone width intentionally collapsed the Inspector.
-  The corrected path reopens it and verifies the retained code/year/value. Full
-  acceptance and real production-account acceptance are not claimed yet.
-- CLI-generated migration `20261031013927_professional_nsw_statistics.sql`
-  stages three disabled catalogue entries only. It has **not been applied**.
-  Release B follows Release A acceptance/publication; never bypass the review
-  gate or touch private production workspaces to obtain test data.
+  explicit fixture geometry. CI **41159657368** completed **18/18**, retaining all 17 prior workflows.
+  The NSW path validates actual prices/rent/incidents, quarters, category/year
+  changes, a genuine zero and retained code/year/value after using the existing
+  phone sheet handle. Desktop/mobile evidence was reviewed. Real production-
+  account acceptance remains unavailable and is not claimed.
+- CLI created the migration at version 20261031013927; hosted version
+  **20261031023910_professional_nsw_statistics** was applied after full acceptance
+  and matching READY. The repository filename matches hosted history with
+  unchanged SQL bytes. Three disabled entries were verified before guarded
+  catalogue-only activation. No private records or Auth/RLS changes.
+  [Acceptance](PROFESSIONAL_LAYERS_NSW_ACCEPTANCE.json),
+  [production checks](PROFESSIONAL_LAYERS_NSW_PRODUCTION.json).

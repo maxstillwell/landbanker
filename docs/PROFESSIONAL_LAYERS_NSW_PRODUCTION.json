@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-10-31T02:59:38.026Z",
+  "observedBeforeExecutorDisconnect": true,
+  "runtimeSha": "11f6537dbf1cb59e762f2b6fa0a55020eb4cc889",
+  "deployment": "dpl_BSNNtqEfbJBbgawhvJhFnrU6goyM",
+  "aliasVerified": true,
+  "authenticatedProductionAcceptance": false,
+  "checks": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "path": "/app/map",
+      "status": 307,
+      "location": "/login?next=%2Fapp%2Fmap"
+    },
+    {
+      "path": "/api/layer-library",
+      "status": 400,
+      "cacheControl": "no-store",
+      "errorBodyVerified": "Sign in required"
+    },
+    {
+      "path": "/api/layer-library/nsw-median-sales/features?bbox=153.27,-28.82,153.29,-28.8&zoom=14",
+      "status": 400,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/api/layer-library/nsw-median-rent/features?bbox=153.27,-28.82,153.29,-28.8&zoom=14",
+      "status": 400,
+      "cacheControl": "no-store",
+      "errorBodyVerified": "Sign in required"
+    },
+    {
+      "path": "/api/layer-library/nsw-recorded-incidents/features?bbox=153.27,-28.82,153.29,-28.8&zoom=14",
+      "status": 400,
+      "cacheControl": "no-store"
+    }
+  ]
+}

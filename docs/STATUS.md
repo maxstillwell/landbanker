@@ -1,5 +1,17 @@
 # LandOS status
 
+## Professional Layers Phase 2 Release B — 31 October 2026 AEDT
+
+Runtime **11f6537dbf1cb59e762f2b6fa0a55020eb4cc889** is on main and Vercel Production READY at landbanker.vercel.app, deployment **dpl_BSNNtqEfbJBbgawhvJhFnrU6goyM**, with the formal alias verified. CI [41159657368](https://github.com/maxstillwell/landbanker/actions/runs/41159657368) passed lint/typecheck/**74 unit checks**/database/RLS/concurrency/build, **18/18 browser suites** and four unsigned Simulator builds. Main run **41160734952** on the same runtime also succeeded. Real source checks: 48/48 common, 14/14 VIC suburb, 21/21 NSW joins.
+
+Both VIC suburb products and all three NSW aggregate products are available beta and opt-in. Catalogue verified **36 entries / 34 available**; original NSW FSR/height remain disabled. Hosted migrations **20261031021458_professional_suburb_layers** and **20261031023910_professional_nsw_statistics** staged disabled entries after matching READY and full acceptance; only catalogue availability was then enabled. SQL bytes are unchanged while filenames align with hosted history. No private workspace records/preferences, Auth, RLS, MaxQI or paid-infrastructure change.
+
+[Delivery report](PROFESSIONAL_LAYERS_DELIVERY.md), [NSW acceptance](PROFESSIONAL_LAYERS_NSW_ACCEPTANCE.json), [production routes](PROFESSIONAL_LAYERS_NSW_PRODUCTION.json), [complete source register](PROFESSIONAL_LAYERS_REGISTRY.md). Public/login return 200, map redirects to login, private APIs reject anonymous reads with Sign in required / no-store. No real production account was available; authenticated production and physical-device acceptance are not claimed. The same two inherited Supabase warnings remain.
+
+The full roadmap is not finished. VIC rent originals still return HTTP503 from this environment; no substitute values. Projections, NSW schools, GTFS stops, additional histories and statistical share/Saved View manifests remain explicit backlog. Next data priority: obtain the valid licensed VIC rent original and verify its geography/period before importing.
+
+The local execution environment disconnected after production deployment and verification. Final documentation was synchronized through the GitHub connector; remote main is authoritative. Local checkout refresh was unavailable at handoff. Earlier checkpoints below are historical.
+
 ## Professional Layers Phase 2 Release A — 31 October 2026 AEDT
 
 Runtime **712baed15f19100fd43c4b60be9e8631d53bdde3** is on main and Vercel Production READY at landbanker.vercel.app, deployment dpl_4ixje8hqbVAo1VqFDfjV5xcomsBy. Complete CI 41157798358 passed lint/typecheck/68 units/database/RLS/concurrency/build, all **17/17 browser suites** and four unsigned Simulator builds. Real source evidence remains 48/48 plus 14/14 dedicated suburb checks. See [acceptance record](PROFESSIONAL_LAYERS_PHASE2_ACCEPTANCE.json), [production routes](PROFESSIONAL_LAYERS_PHASE2_PRODUCTION.json) and [implementation evidence](PROFESSIONAL_LAYERS_PHASE2.md).
