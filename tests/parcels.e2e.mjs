@@ -1,3 +1,4 @@
+import { openWorkspaceLibrary, openMapSearch } from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
@@ -101,7 +102,7 @@ try {
       },
     });
   });
-  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
+  await openMapSearch(page);
   await page
     .getByRole("button", { name: "Identify parcel on map", exact: true })
     .click();
@@ -119,11 +120,17 @@ try {
   await expect(
     page.getByRole("button", { name: "Save to Workspace", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Collapse Inspector", exact: true }).click();
-  await page.getByRole("button", { name: "Open Inspector", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Save to Workspace", exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Collapse Inspector", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Open Inspector", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save to Workspace", exact: true }),
+  ).toBeVisible();
   await page.reload();
-  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
+  await openMapSearch(page);
   await page
     .getByLabel("Search address", { exact: true })
     .fill("Recent local search");
@@ -141,7 +148,7 @@ try {
     page.getByRole("button", { name: "Save to Workspace", exact: true }),
   ).toHaveCount(0);
   await page.reload();
-  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
+  await openMapSearch(page);
   await page.getByText("Recent searches", { exact: true }).click();
   await page
     .getByRole("button", {
@@ -245,8 +252,9 @@ try {
   });
   assert.ifError(seeded.error);
   await page.reload();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
+  await openWorkspaceLibrary(page, "Properties");
   await page.getByLabel("Search saved properties").fill("TEST-42");
   await page
     .getByRole("button")
@@ -286,8 +294,9 @@ try {
     ).error,
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
+  await openWorkspaceLibrary(page, "Properties");
   await page.getByLabel("Search saved properties").fill("LINKED-42");
   await page
     .getByRole("button")
@@ -316,8 +325,9 @@ try {
   ).observations.find((o) => o.title === "Linked field inspection");
   assert.equal(fieldRecord.linked_parcel_id, protectedId);
   await page.reload();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
+  await openWorkspaceLibrary(page, "Properties");
   await page.getByLabel("Search saved properties").fill("LINKED-42");
   await page
     .getByRole("button")
@@ -343,7 +353,7 @@ try {
   await page.goto(origin + "/app/settings");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await signup("Parcel Other Test");
-  if (await page.getByRole("button", { name: "Search", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Search", exact: true }).click();
+  await openMapSearch(page);
   await expect(page.getByText("Recent searches", { exact: true })).toHaveCount(
     0,
   );

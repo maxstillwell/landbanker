@@ -50,6 +50,24 @@ export function featureQueryUrl(product: LayerProduct, input: LayerViewport) {
       point[1] > input.bbox[3])
   )
     throw new Error("Point is outside the viewport");
+  if (product.query.protocol === "wfs") {
+    const params = new URLSearchParams({
+      service: "WFS",
+      version: "2.0.0",
+      request: "GetFeature",
+      typeNames: "open-data-platform:locality_polygon",
+      outputFormat: "application/json",
+      srsName: "urn:ogc:def:crs:OGC:1.3:CRS84",
+      propertyName: [...product.query.fields, "geom"].join(","),
+      count: "250",
+      ...(point
+        ? { cql_filter: `INTERSECTS(geom,POINT(${point[0]} ${point[1]}))` }
+        : {
+            bbox: `${input.bbox.map((x) => x.toFixed(5)).join(",")},urn:ogc:def:crs:OGC:1.3:CRS84`,
+          }),
+    });
+    return `${product.query.url}?${params}`;
+  }
   const params = new URLSearchParams({
     f: "geojson",
     where: product.query.where || "1=1",
@@ -125,21 +143,19 @@ export async function queryProduct(
     return {
       collection: {
         type: "FeatureCollection" as const,
-        features: matches
-          .slice(0, 250)
-          .map((f) => ({
-            ...f,
-            type: "Feature" as const,
-            id: `${product.id}:${f.properties.location_id}`,
-            geometry: { ...f.geometry, type: "Point" as const },
-            properties: {
-              ...f.properties,
-              layerId: product.id,
-              areaCode: f.properties.location_id,
-              areaName: f.properties.School_Name,
-              value: null,
-            },
-          })),
+        features: matches.slice(0, 250).map((f) => ({
+          ...f,
+          type: "Feature" as const,
+          id: `${product.id}:${f.properties.location_id}`,
+          geometry: { ...f.geometry, type: "Point" as const },
+          properties: {
+            ...f.properties,
+            layerId: product.id,
+            areaCode: f.properties.location_id,
+            areaName: f.properties.School_Name,
+            value: null,
+          },
+        })),
       },
       partial: matches.length > 250,
       ...options,

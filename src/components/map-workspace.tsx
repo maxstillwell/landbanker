@@ -2605,9 +2605,9 @@ export default function MapWorkspace({
       ) : null}
       <nav className="mobile-map-nav" aria-label="Mobile map navigation">
         <button onClick={async()=>{if(await pauseObservation())setSearchOpen(v=>!v);}} aria-label="Search" title="Search" data-map-search-trigger="" aria-pressed={searchOpen}><MapIcon name="search"/><span>Search</span></button>
-        <button onClick={async () => { if (!(await pauseObservation())) return; setSearchOpen(false);setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}><MapIcon name="layers"/><span>Layers</span></button>
-        <button onClick={async () => { if (!(await pauseObservation())) return; setSearchOpen(false);setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}><MapIcon name="properties"/><span>Properties</span></button>
-        <button aria-expanded={mobileMore} onClick={async () => { if (!(await pauseObservation())) return; setLeftOpen(false); setMobileMore((value) => !value); }}><MapIcon name="more"/><span>More</span></button>
+        <button onClick={async () => { if (!(await pauseObservation())) return; setRightOpen(false);setSheet("collapsed");setSearchOpen(false);setDrawer("layers"); setLeftOpen(true); setPaletteOpen(false); }}><MapIcon name="layers"/><span>Layers</span></button>
+        <button onClick={async () => { if (!(await pauseObservation())) return; setRightOpen(false);setSheet("collapsed");setSearchOpen(false);setDrawer("properties"); setLeftOpen(true); setPaletteOpen(false); setMobileMore(false); }}><MapIcon name="properties"/><span>Properties</span></button>
+        <button aria-expanded={mobileMore} onClick={async () => { if (!(await pauseObservation())) return; setRightOpen(false);setSheet("collapsed");setLeftOpen(false); setMobileMore((value) => !value); }}><MapIcon name="more"/><span>More</span></button>
       </nav>
       {mobileMore && <div className="mobile-more-menu"><button onClick={() => { setMobileMore(false); setPaletteOpen(true); }}>Tools</button><button onClick={() => { setMobileMore(false); setDrawer("research"); setLeftOpen(true); }}>Research Areas</button><button onClick={() => { setMobileMore(false); setDrawer("observations"); setLeftOpen(true); }}>Observations</button><button onClick={() => { setMobileMore(false); setDrawer("views"); setLeftOpen(true); }}>Saved Views</button><WorkspaceSelector name={workspaceName} /><Link href="/app/settings">Account and settings</Link></div>}
       <nav className="workspace-dock" aria-label="Map tools">
@@ -2643,6 +2643,7 @@ export default function MapWorkspace({
         initiallyExpanded
       >
         <div className="spatial-widget-tools">
+          <button onClick={async()=>{if(!(await pauseObservation()))return;setSearchOpen(false);setPaletteOpen(false);setRightOpen(false);setSheet("collapsed");setDrawer("search");setLeftOpen(true);}}>Parcel search and identify</button>
           {(
             [
               ["LineString", "Line / distance", "line"],
@@ -2726,10 +2727,10 @@ export default function MapWorkspace({
         </div>
       ) : null}
       <aside
-        inert={!rightOpen && !isMobile}
+        inert={(!rightOpen && !isMobile) || (isMobile && leftOpen)}
         className={`inspector ${sheet} ${officialParcel && !selectionDetails ? "has-mobile-parcel" : ""}`}
         style={isMobile && sheetDrag ? { transform: `translateY(${sheetDrag}px)` } : undefined}
-        aria-hidden={!rightOpen && !isMobile}
+        aria-hidden={(!rightOpen && !isMobile) || (isMobile && leftOpen)}
       >
         <div className="sheet-handle" onPointerDown={(event) => { if (!isMobile) return; dragStart.current = event.clientY; dragged.current = false; }} onPointerMove={(event) => { if (dragStart.current === null) return; const delta = event.clientY - dragStart.current; if (Math.abs(delta) > 8 && !dragged.current) { dragged.current = true; event.currentTarget.setPointerCapture(event.pointerId); } setSheetDrag(Math.max(-180, Math.min(180, delta))); }} onPointerUp={(event) => { if (dragStart.current === null) return; const delta = event.clientY - dragStart.current; dragStart.current = null; setSheetDrag(0); if (Math.abs(delta) > 45) { setRightOpen(true); setSheet((current) => delta < 0 ? (current === "collapsed" ? "medium" : "expanded") : (current === "expanded" ? "medium" : "collapsed")); } }} onPointerCancel={() => { dragStart.current = null; setSheetDrag(0); }}>
           <span className="mobile-sheet-label">Workspace</span>
@@ -2780,7 +2781,7 @@ export default function MapWorkspace({
           </button>
         </div>
         <div className="inspector-content">
-          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3>{canWrite && selectedResearch.layer.layer_kind === "research_area" && <details><summary>Edit Research Area</summary><form onSubmit={async event=>{event.preventDefault();const values=new FormData(event.currentTarget);const name=String(values.get("name")||"").trim(),description=String(values.get("description")||""),subtype=String(values.get("subtype")||"general");try{await apiRequest(`/api/research-areas/${selectedResearch.layer.id}`,{name,description,subtype},"PATCH");setSelectedResearch(current=>current?{...current,layer:{...current.layer,name,metadata:{...current.layer.metadata,description,research_subtype:subtype}}}:current);await reload();setNotice("Research Area updated.");}catch(e){setNotice(e instanceof Error?e.message:"Update failed");}}}><label>Name<input name="name" defaultValue={selectedResearch.layer.name} required maxLength={160}/></label><label>Type<select name="subtype" defaultValue={String(selectedResearch.layer.metadata?.research_subtype||"general")}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label><label>Notes<textarea name="description" maxLength={2000} defaultValue={String(selectedResearch.layer.metadata?.description||"")}/></label><button>Save details</button></form></details>}{selectedResearch.layer.layer_kind === "research_area" && <ResearchRelations key={selectedResearch.layer.id} id={selectedResearch.layer.id} properties={data.parcels} editable={canWrite} />}<p>Type: {String(selectedResearch.layer.metadata?.research_subtype || selectedResearch.layer.layer_kind)} · Source: {String(selectedResearch.layer.metadata?.source_file || "Workspace geometry")}</p><p>{String(selectedResearch.layer.metadata?.description || "")}</p><LayerFeatureBrowser layer={selectedResearch.layer} opacity={layerOpacity[selectedResearch.layer.id] ?? 1} onOpacityChange={value=>setLayerOpacity(v=>({...v,[selectedResearch.layer.id]:value}))} onSelect={feature=>{const record=selectedResearch.layer;setSelectedResearch(null);setSelection({kind:"drawing",record,featureId:String(feature.id)});setTab("layers");setRightOpen(true);setSheet("medium");}} /><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><ExportMenu onExport={format=>exportFeatures(selectedResearch.features,format,selectedResearch.layer.name)} /><button onClick={clearAreas}>Clear selection</button></div></section>}
+          {selectedResearch && !draft && <section aria-label="Selected Research Area"><h3>{selectedResearch.layer.name}</h3>{canWrite && selectedResearch.layer.layer_kind === "research_area" && <details><summary>Edit Research Area</summary><form onSubmit={async event=>{event.preventDefault();const values=new FormData(event.currentTarget);const name=String(values.get("name")||"").trim(),description=String(values.get("description")||""),subtype=String(values.get("subtype")||"general");try{await apiRequest(`/api/research-areas/${selectedResearch.layer.id}`,{name,description,subtype},"PATCH");setSelectedResearch(current=>current?{...current,layer:{...current.layer,name,metadata:{...current.layer.metadata,description,research_subtype:subtype}}}:current);await reload();setNotice("Research Area updated.");}catch(e){setNotice(e instanceof Error?e.message:"Update failed");}}}><label>Name<input name="name" defaultValue={selectedResearch.layer.name} required maxLength={160}/></label><label>Type<select name="subtype" defaultValue={String(selectedResearch.layer.metadata?.research_subtype||"general")}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label><label>Notes<textarea name="description" maxLength={2000} defaultValue={String(selectedResearch.layer.metadata?.description||"")}/></label><button>Save details</button></form></details>}{selectedResearch.layer.layer_kind === "research_area" && <ResearchRelations key={selectedResearch.layer.id} id={selectedResearch.layer.id} properties={data.parcels} editable={canWrite} />}<p>Type: {String(selectedResearch.layer.metadata?.research_subtype || selectedResearch.layer.layer_kind)} · Source: {String(selectedResearch.layer.metadata?.source_file || "Workspace geometry")}</p><p>{String(selectedResearch.layer.metadata?.description || "")}</p><LayerFeatureBrowser scope={`${userId}:${workspaceId}`} layer={selectedResearch.layer} opacity={layerOpacity[selectedResearch.layer.id] ?? 1} onOpacityChange={value=>setLayerOpacity(v=>({...v,[selectedResearch.layer.id]:value}))} onSelect={feature=>{const record=selectedResearch.layer;setSelectedResearch(null);setSelection({kind:"drawing",record,featureId:String(feature.id)});setTab("layers");setRightOpen(true);setSheet("medium");}} /><p>{selectedResearch.features.length} features · Approximate area {formatArea(selectedResearch.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}</p><small>User-defined geometry, not an official planning precinct. Overlapping features may be counted more than once.</small><div className="actions"><ExportMenu onExport={format=>exportFeatures(selectedResearch.features,format,selectedResearch.layer.name)} /><button onClick={clearAreas}>Clear selection</button></div></section>}
           {spatialImport && <section className="local-layer" aria-label="Spatial import preview"><h3>Import spatial data</h3><p>Preview only · not saved yet</p><p>{spatialImport.geojson.features.length} features · {[...new Set(spatialImport.geojson.features.map((feature) => feature.geometry.type))].join(", ")}</p><p>Estimated bounds: {geometryBounds(spatialImport.geojson).getSouthWest().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getSouthWest().lng.toFixed(4)} to {geometryBounds(spatialImport.geojson).getNorthEast().lat.toFixed(4)}, {geometryBounds(spatialImport.geojson).getNorthEast().lng.toFixed(4)}</p><p>Approximate area: {formatArea(spatialImport.geojson.features.reduce((sum, feature) => sum + geometryMeasurement(feature.geometry).areaM2, 0))}. Imported geometry is user supplied, not official cadastre.</p><details><summary>Feature names</summary>{spatialImport.geojson.features.slice(0, 50).map((feature, index) => <p key={String(feature.id)}>{String(feature.properties?.name || `Feature ${index + 1}`)}</p>)}</details><label>Destination<select aria-label="Import destination" value={spatialImport.destination} onChange={(event) => setSpatialImport({ ...spatialImport, destination: event.target.value as typeof spatialImport.destination })}><option value="property">Property</option><option value="research">Research Area</option><option value="layer">Custom Layer</option></select></label>{spatialImport.destination === "research" && <label>Research Area type<select value={spatialImport.subtype || "general"} onChange={(event) => setSpatialImport({ ...spatialImport, subtype: event.target.value as NonNullable<SpatialImportDraft["subtype"]> })}><option value="general">General Study Area</option><option value="investigation">Investigation Area</option><option value="precinct">Precinct</option><option value="growth">Growth Area</option><option value="other">Other</option></select></label>}<label>Name<input aria-label="Import name" value={spatialImport.name} maxLength={160} onChange={(event) => setSpatialImport({ ...spatialImport, name: event.target.value })} /></label><label>Description<textarea value={spatialImport.description} maxLength={2000} onChange={(event) => setSpatialImport({ ...spatialImport, description: event.target.value })} /></label><div className="actions"><button disabled={importSaving || !spatialImport.name.trim()} onClick={() => void saveSpatialImport()}>{importSaving ? "Saving…" : "Save import"}</button><button disabled={importSaving} onClick={() => { if (window.confirm("Discard this unsaved import preview?")) setSpatialImport(null); }}>Discard preview</button></div></section>}
           {isMobile && !draft && officialParcel && !selectionDetails && <section className="mobile-parcel-summary" aria-label="Selected parcel summary">
             <strong>{[officialParcel.lot, officialParcel.plan].filter(Boolean).join(" / ") || officialParcel.sourceId}</strong>
@@ -3360,13 +3361,34 @@ function DraftPhoto({ photo }: { photo: QueuePhoto }) {
     </figure>
   );
 }
-function LayerFeatureBrowser({ layer, onSelect, opacity, onOpacityChange }: { layer: SpatialLayer; onSelect: (feature: Feature) => void; opacity: number; onOpacityChange: (value: number) => void }) {
+function LayerFeatureBrowser({ scope, layer, onSelect, opacity, onOpacityChange }: { scope: string; layer: SpatialLayer; onSelect: (feature: Feature) => void; opacity: number; onOpacityChange: (value: number) => void }) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [metadata, setMetadata] = useState<Record<string, unknown>>(layer.metadata || {});
+  useEffect(() => {
+    if (!loaded) return;
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent<{scope: string; changes: MapChange[]}>).detail;
+      if (detail?.scope !== scope) return;
+      setFeatures(current => {
+        const rows = new Map(current.map(feature => [String(feature.id), feature]));
+        for (const change of detail.changes) {
+          if (change.kind !== "features" || change.viewport_only) continue;
+          if (change.operation === "delete") rows.delete(change.id);
+          else {
+            const row = change.row as {layer_id: string; feature: Feature} | undefined;
+            if (row?.layer_id === layer.id && (rows.has(change.id) || !hasMore)) rows.set(change.id, row.feature);
+          }
+        }
+        return [...rows.values()];
+      });
+    };
+    window.addEventListener("landos:map-data-changed", changed);
+    return () => window.removeEventListener("landos:map-data-changed", changed);
+  }, [scope, layer.id, loaded, hasMore]);
   async function load() {
     if (busy) return;
     if (layer.layer_kind === "radius") {

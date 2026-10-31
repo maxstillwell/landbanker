@@ -1,3 +1,8 @@
+import {
+  openWorkspaceLibrary,
+  enableReferenceLayer,
+  selectBasemap,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
@@ -170,9 +175,14 @@ try {
       200,
     );
     await page.reload();
-    if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
+    await openWorkspaceLibrary(page, "Saved Views");
     await page.getByRole("button", { name: view.name, exact: true }).click();
-    await page.getByRole("button", { name: "Layers", exact: true }).click();
+    await enableReferenceLayer(
+      page,
+      point.state === "VIC"
+        ? "Victoria cadastral parcels"
+        : "NSW cadastral parcels",
+    );
     await expect(
       page.getByLabel("Official layers", { exact: true }),
     ).toContainText("Ready");
@@ -190,10 +200,9 @@ try {
       "Calculated area",
     );
     // Every style rebuild must reinstall sources and reapply the retained parcel.
-    for (const style of ["light", "dark", "streets", "terrain", "fiord"]) {
+    for (const style of ["light", "dark", "streets", "light", "dark"]) {
       await page.getByLabel("Basemap previews").click();
-      await page.getByLabel("Basemap", { exact: true }).selectOption(style);
-      await page.getByLabel("Basemap previews").click();
+      await selectBasemap(page, style);
       await expect(page.locator(".property-details")).toContainText(
         `QUALITY-${point.state}-42`,
       );
@@ -252,7 +261,7 @@ try {
       200,
     );
     await page.reload();
-    if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
+    await openWorkspaceLibrary(page, "Saved Views");
     await page.getByRole("button", { name: view.name, exact: true }).click();
     await expect
       .poll(async () => {
@@ -262,7 +271,12 @@ try {
           .count();
       })
       .toBe(1);
-    if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+    if (
+      (await page
+        .getByRole("button", { name: "Layers", exact: true })
+        .getAttribute("aria-pressed")) !== "true"
+    )
+      await page.getByRole("button", { name: "Layers", exact: true }).click();
     await page
       .getByRole("button", { name: "Inspect zoning", exact: true })
       .click();

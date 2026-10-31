@@ -20,7 +20,12 @@ export type LayerOptions = Record<
   string,
   { period: string; indicator: string }
 >;
-export type CatalogueSelection = { layer: CatalogLayer; feature: Feature };
+export type CatalogueSelection = {
+  layer: CatalogLayer;
+  feature: Feature;
+  loading?: boolean;
+  error?: string;
+};
 const empty = (): FeatureCollection => ({
   type: "FeatureCollection",
   features: [],
@@ -68,7 +73,11 @@ export function useCatalogueMapLayers({
       clickController = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     let live = true;
-    setSelected(null);
+    setSelected((current) =>
+      current && layers.some((x) => x.layer.id === current.layer.id)
+        ? { ...current, loading: false, error: undefined }
+        : null,
+    );
     for (const { layer, active: item } of vector) {
       const id = `catalogue-${layer.id}`;
       const meta = layer.dataset_metadata!;
@@ -198,11 +207,32 @@ export function useCatalogueMapLayers({
           continue;
         }
         setStatus((s) => ({ ...s, [layer.id]: "Loading…" }));
+        setSelected((current) =>
+          current?.layer.id === layer.id
+            ? { ...current, loading: true, error: undefined }
+            : current,
+        );
         void request(layer, signal)
           .then((result) => {
             if (signal.aborted || !live) return;
             source?.setData(result.collection);
             collections.set(layer.id, result.collection);
+            setSelected((current) => {
+              if (current?.layer.id !== layer.id) return current;
+              const feature = result.collection.features.find(
+                (f) =>
+                  String(f.properties?.areaCode) ===
+                  String(current.feature.properties?.areaCode),
+              );
+              return feature
+                ? { layer, feature }
+                : {
+                    ...current,
+                    loading: false,
+                    error:
+                      "Selected area is outside the loaded coverage. Showing the last verified period; return to the area to refresh.",
+                  };
+            });
             const count = result.collection.features.length,
               missing = result.collection.features.filter(
                 (f) => f.properties?.value == null,
@@ -219,12 +249,23 @@ export function useCatalogueMapLayers({
             }));
           })
           .catch((e) => {
-            if (!signal.aborted && live)
+            if (!signal.aborted && live) {
+              setSelected((current) =>
+                current?.layer.id === layer.id
+                  ? {
+                      ...current,
+                      loading: false,
+                      error:
+                        "Area update unavailable. Showing the last verified period.",
+                    }
+                  : current,
+              );
               setStatus((s) => ({
                 ...s,
                 [layer.id]:
                   e instanceof Error ? e.message : "Service unavailable",
               }));
+            }
           });
       }
     }
@@ -471,6 +512,11 @@ export function CatalogueFeatureInspector({
     <section aria-label="Official area statistics">
       <button onClick={onClose}>Close official area</button>
       <h3>{String(p.areaName)}</h3>
+      {selection.loading ? (
+        <p role="status">Updating selected area…</p>
+      ) : selection.error ? (
+        <p role="status">{selection.error}</p>
+      ) : null}
       <p>
         {meta.geography} · {String(p.areaCode)} · {meta.boundary_version}
       </p>
@@ -486,26 +532,27 @@ export function CatalogueFeatureInspector({
         </>
       ) : null}
       <dl>
-        {(values
-          ? Object.entries(values)
-          : meta.fields.map((k) => [k, p[k]])
-        ).map(([key, value]) => {
-          const metric = meta.indicators?.find((i) => i.id === key);
-          return (
-            <div key={key}>
-              <dt>{metric?.label || key}</dt>
-              <dd>
-                {metric
-                  ? formatIndicator(value, metric.unit)
-                  : value == null
-                    ? "Not supplied"
-                    : /DATE/.test(key) && typeof value === "number"
-                      ? new Date(value).toISOString().slice(0, 10)
-                      : String(value)}
-              </dd>
-            </div>
-          );
-        })}
+        {(values ? Object.entries(values) : meta.fields.map((k) => [k, p[k]]))
+          .filter(
+            ([key, value]) => !key.endsWith("_source_marker") || value != null,
+          )
+          .map(([key, value]) => {
+            const metric = meta.indicators?.find((i) => i.id === key);
+            return (
+              <div key={key}>
+                <dt>{metric?.label || key.replaceAll("_", " ")}</dt>
+                <dd>
+                  {metric
+                    ? formatIndicator(value, metric.unit)
+                    : value == null
+                      ? "Not supplied"
+                      : /DATE/.test(key) && typeof value === "number"
+                        ? new Date(value).toISOString().slice(0, 10)
+                        : String(value)}
+                </dd>
+              </div>
+            );
+          })}
       </dl>
       <p>
         {layer.provider} · Updated: {meta.updated}

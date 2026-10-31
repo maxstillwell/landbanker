@@ -1,3 +1,10 @@
+import {
+  openTools,
+  openCustomLayers,
+  openWorkspaceSettings,
+  prepareDrawingSave,
+  confirmDrawingSave,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
@@ -34,8 +41,10 @@ try {
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await page.waitForURL("**/app/map");
-  await page.getByRole("button", { name: "Spatial Tools", exact: true }).click();
-  await page.getByRole("button", { name: "Polygon / area", exact: true }).click();
+  await openTools(page);
+  await page
+    .getByRole("button", { name: "Polygon / area", exact: true })
+    .click();
   await page.mouse.click(100, 180);
   await page.mouse.click(260, 180);
   await page.mouse.click(200, 310);
@@ -43,20 +52,20 @@ try {
     .getByRole("button", { name: "Finish polygon", exact: true })
     .filter({ visible: true })
     .click();
+  await prepareDrawingSave(page);
   await page.getByLabel("Shape name").fill("Potential development area");
   await page.getByLabel("New layer name").fill("Acquisition Analysis");
   await page
-    .getByLabel("Note", { exact: true })
+    .getByLabel("Notes", { exact: true })
     .fill("Synthetic local spatial test");
-  await page
-    .getByRole("button", { name: "Save to Workspace", exact: true })
-    .click();
+  await confirmDrawingSave(page);
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   await page.reload();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
+  await openCustomLayers(page);
   await page
-    .locator(".saved-layer summary")
+    .locator(".workspace-library details[open] > div > button:first-child")
     .filter({ hasText: "Acquisition Analysis" })
     .waitFor();
   let data = await (await page.request.get(origin + "/api/map")).json();
@@ -68,8 +77,28 @@ try {
   );
   const featureId = layer.geojson.features[0].id;
   const offscreenId = crypto.randomUUID();
-  const offscreen = { type: "Feature", id: offscreenId, properties: { name: "Off-screen fixture" }, geometry: { type: "Point", coordinates: [150, -34] } };
-  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: { ...layer.geojson, features: [...layer.geojson.features, offscreen] } } })).status(), 200);
+  const offscreen = {
+    type: "Feature",
+    id: offscreenId,
+    properties: { name: "Off-screen fixture" },
+    geometry: { type: "Point", coordinates: [150, -34] },
+  };
+  assert.equal(
+    (
+      await page.request.post(origin + "/api/layers", {
+        headers: { Origin: origin },
+        data: {
+          id: layer.id,
+          name: layer.name,
+          geojson: {
+            ...layer.geojson,
+            features: [...layer.geojson.features, offscreen],
+          },
+        },
+      })
+    ).status(),
+    200,
+  );
   await page.reload();
   // The geometry itself is clickable, and editing loads the complete layer.
   await page.getByRole("button", { name: "Collapse Inspector" }).click();
@@ -78,35 +107,83 @@ try {
   await expect(page.getByRole("button", { name: "Edit shape" })).toBeVisible();
   await page.getByRole("button", { name: "Edit shape" }).click();
   await expect(page.getByLabel("Drawing controls")).toBeVisible();
-  const moveHandle = await page.getByRole("img", { name: "Move entire shape" }).boundingBox();
-  await page.mouse.move(moveHandle.x + moveHandle.width / 2, moveHandle.y + moveHandle.height / 2);
+  const moveHandle = await page
+    .getByRole("img", { name: "Move entire shape" })
+    .boundingBox();
+  await page.mouse.move(
+    moveHandle.x + moveHandle.width / 2,
+    moveHandle.y + moveHandle.height / 2,
+  );
   await page.mouse.down();
-  await page.mouse.move(moveHandle.x + moveHandle.width / 2 + 12, moveHandle.y + moveHandle.height / 2 + 12, { steps: 5 });
+  await page.mouse.move(
+    moveHandle.x + moveHandle.width / 2 + 12,
+    moveHandle.y + moveHandle.height / 2 + 12,
+    { steps: 5 },
+  );
   await page.mouse.up();
-  await page.getByLabel("Drawing controls").getByRole("button", { name: "Finish polygon" }).click();
-  await page.getByRole("button", { name: "Save to Workspace", exact: true }).click();
-  await expect(page.getByText("Shape saved to Workspace.", { exact: true })).toBeVisible();
-  const completeAfterEdit = (await (await page.request.get(origin + "/api/layers?id=" + layer.id)).json()).layer.geojson.features;
+  await page
+    .getByLabel("Drawing controls")
+    .getByRole("button", { name: "Finish polygon" })
+    .click();
+  await confirmDrawingSave(page);
+  await expect(
+    page.getByText("Shape saved to Workspace.", { exact: true }),
+  ).toBeVisible();
+  const completeAfterEdit = (
+    await (await page.request.get(origin + "/api/layers?id=" + layer.id)).json()
+  ).layer.geojson.features;
   const edited = completeAfterEdit.find((f) => f.id === featureId);
   assert.ok(completeAfterEdit.some((f) => f.id === offscreenId));
   assert.equal(edited.id, featureId);
   assert.notDeepEqual(edited.geometry, layer.geojson.features[0].geometry);
-  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: layer.geojson } })).status(), 200);
+  assert.equal(
+    (
+      await page.request.post(origin + "/api/layers", {
+        headers: { Origin: origin },
+        data: { id: layer.id, name: layer.name, geojson: layer.geojson },
+      })
+    ).status(),
+    200,
+  );
   await page.reload();
-  if (await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  if (
+    await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()
+  )
+    await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(500);
   await page.mouse.click(185, 220);
-  await expect(page.getByRole("button", { name: "Clear Selection" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Clear Selection" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Clear Selection" }).click();
   await expect(page.getByRole("button", { name: "Edit shape" })).toHaveCount(0);
   await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(400);
   await page.mouse.click(185, 220);
-  await expect(page.getByRole("button", { name: "Delete shape" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Delete shape" }),
+  ).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete shape" }).click();
-  await expect.poll(async () => (await (await page.request.get(origin + "/api/layers?id=" + layer.id)).json()).layer.geojson.features.length).toBe(0);
-  assert.equal((await page.request.post(origin + "/api/layers", { headers: { Origin: origin }, data: { id: layer.id, name: layer.name, geojson: layer.geojson } })).status(), 200);
+  await expect
+    .poll(
+      async () =>
+        (
+          await (
+            await page.request.get(origin + "/api/layers?id=" + layer.id)
+          ).json()
+        ).layer.geojson.features.length,
+    )
+    .toBe(0);
+  assert.equal(
+    (
+      await page.request.post(origin + "/api/layers", {
+        headers: { Origin: origin },
+        data: { id: layer.id, name: layer.name, geojson: layer.geojson },
+      })
+    ).status(),
+    200,
+  );
   // Server rejects malformed coordinates; repeat writes preserve feature identity.
   assert.equal(
     (
@@ -144,7 +221,12 @@ try {
     data.layers.find((l) => l.id === layer.id).geojson.features[0].id,
     featureId,
   );
-  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "Layers", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page.getByRole("button", { name: "Add Layer", exact: true }).click();
   await page.getByLabel("Search layers").fill("flood");
   await page
@@ -184,7 +266,12 @@ try {
     200,
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "Layers", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page
     .getByRole("button", { name: `${secondSource.name} move up`, exact: true })
     .click();
@@ -196,7 +283,12 @@ try {
     )
     .toBe(secondSource.id);
   await page.reload();
-  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "Layers", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
   assert.equal(
     await page
       .getByLabel(`${secondSource.name} opacity`, { exact: true })
@@ -217,7 +309,12 @@ try {
     400,
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "Layers", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
   assert.equal(
     await page
       .getByLabel("Victoria flood planning overlays", { exact: true })
@@ -234,9 +331,17 @@ try {
     ).visible,
     false,
   );
-  await page.getByRole("button", { name: "Choose workspace" }).click();
+  await openWorkspaceSettings(page);
+  await page
+    .getByRole("button", { name: "Choose workspace" })
+    .filter({ visible: true })
+    .click();
   await page.locator(".workspace-menu button").waitFor();
-  await page.getByRole("button", { name: "Choose workspace" }).click();
+  await openWorkspaceSettings(page);
+  await page
+    .getByRole("button", { name: "Choose workspace" })
+    .filter({ visible: true })
+    .click();
   await page.setViewportSize({ width: 1280, height: 800 });
   const rects = await page.evaluate(() => ({
     map: document.querySelector(".map-canvas").getBoundingClientRect().width,

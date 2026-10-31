@@ -1,3 +1,4 @@
+import { openCustomLayers } from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
@@ -92,22 +93,24 @@ try {
     ),
   );
   // Device B also applies the real incremental feed automatically, without reload/Refresh.
-  if (await b.getByRole("button", { name: "Open Inspector" }).isVisible()) await b.getByRole("button", { name: "Open Inspector" }).click();
-  await b.getByRole("button", { name: "layers", exact: true }).click();
+  if (await b.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await b.getByRole("button", { name: "Open Inspector" }).click();
+  await openCustomLayers(b);
   await expect
     .poll(
       async () =>
         b
-          .locator(".saved-layer summary")
+          .locator(".workspace-library details[open] > div > button:first-child")
           .filter({ hasText: "Sync analysis" })
           .count(),
       { timeout: 25000 },
     )
     .toBe(1);
   await b
-    .locator(".saved-layer summary")
+    .locator(".workspace-library details[open] > div > button:first-child")
     .filter({ hasText: "Sync analysis" })
     .click();
+  await b.locator(".drawer-layer-features > summary").filter({hasText:"Sync analysis"}).click();
   await b
     .getByRole("button", { name: "Created on Device A", exact: true })
     .waitFor();

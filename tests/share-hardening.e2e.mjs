@@ -1,3 +1,4 @@
+import { openWorkspaceLibrary } from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
@@ -99,7 +100,7 @@ try {
   );
   assert.equal(rejectedDiagnostic.status(), 400);
   assert(!(await rejectedDiagnostic.text()).includes("PRIVATE PHOTO URL"));
-  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
+  await openWorkspaceLibrary(page, "Saved Views");
   const viewScope = {
     latitude: -33,
     longitude: 151,
@@ -294,7 +295,7 @@ try {
     "direct gateway invocation requires the server capability",
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
+  await openWorkspaceLibrary(page, "Saved Views");
   assert.equal(
     await page
       .getByRole("link", { name: "Open shared view", exact: true })

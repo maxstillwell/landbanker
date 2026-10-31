@@ -1,3 +1,9 @@
+import {
+  openWorkspaceLibrary,
+  openCustomLayers,
+  confirmDrawingSave,
+  prepareDrawingSave,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
@@ -208,7 +214,12 @@ try {
     );
   }
   await page.reload();
-  if (await page.getByRole("button", { name: "Layers", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Layers", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "Layers", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    await page.getByRole("button", { name: "Layers", exact: true }).click();
   await page.locator(".active-layer").last().waitFor();
   assert.equal(await page.locator(".active-layer").count(), 10);
   assert.equal(
@@ -217,7 +228,8 @@ try {
     10,
   );
   await page.getByRole("button", { name: "Close library" }).click();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
   const parcelIds = new Set(),
     observationIds = new Set(),
     timings = [];
@@ -269,12 +281,12 @@ try {
   await page
     .getByRole("button", { name: "Load more Workspace data", exact: true })
     .waitFor({ state: "hidden" });
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  await openWorkspaceLibrary(page, "Properties");
   const propertyDetails = page.waitForResponse((r) =>
     /\/api\/properties\/[^/]+$/.test(new URL(r.url()).pathname),
   );
   await page
-    .locator(".record-row")
+    .locator(".workspace-library .drawer-record")
     .filter({ hasText: "Synthetic property 1" })
     .first()
     .click();
@@ -283,7 +295,9 @@ try {
     .locator(".property-workspace dd")
     .filter({ hasText: /144\./ })
     .waitFor();
-  await page.getByRole("button", { name: "Fit to Parcel", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Fit to Parcel", exact: true })
+    .click();
   // Property now fits its actual small boundary (up to zoom 18), not its stored
   // point at zoom 15. Zoom out to the same large-workspace test extent.
   for (let i = 0; i < 6; i++) {
@@ -331,25 +345,23 @@ try {
         requestAnimationFrame(frame);
       }),
   );
-  await page.getByRole("button", { name: "layers", exact: true }).click();
+  await openCustomLayers(page);
   await page
-    .locator(".saved-layer summary")
+    .locator(".workspace-library details[open] > div > button:first-child")
     .filter({ hasText: "Scale features" })
     .click();
+  await page.locator(".drawer-layer-features > summary").filter({hasText:"Scale features"}).click();
   await page
     .getByRole("button", { name: "Synthetic feature 0", exact: true })
     .click();
   await page.getByRole("button", { name: "Edit shape", exact: true }).click();
   await page
-    .getByLabel("Drawing name", { exact: true })
-    .fill("Edited viewport shape");
-  await page
     .getByLabel("Drawing controls")
     .getByRole("button", { name: "Finish polygon", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Save to Workspace", exact: true })
-    .click();
+  await prepareDrawingSave(page);
+  await page.getByLabel("Shape name", { exact: true }).fill("Edited viewport shape");
+  await confirmDrawingSave(page);
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   const complete = (
     await // Playwright can reuse a loopback keep-alive socket closed during the UI
@@ -453,7 +465,10 @@ try {
   );
   // Keep the original performance threshold, but only report it after the
   // independent functional checks have run.
-  assert(frameMs < 2000, `ten frames remain responsive during scale pan (measured ${frameMs.toFixed(0)} ms)`);
+  assert(
+    frameMs < 2000,
+    `ten frames remain responsive during scale pan (measured ${frameMs.toFixed(0)} ms)`,
+  );
 } finally {
   await browser.close();
 }

@@ -1,3 +1,8 @@
+import {
+  openWorkspaceLibrary,
+  enableReferenceLayer,
+  selectBasemap,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
@@ -78,7 +83,7 @@ try {
     box.width > 900 && box.y === 0 && box.height === 1000,
     "MapLibre fills the map surface",
   );
-  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  await enableReferenceLayer(page, "Victoria planning zones");
   const sources = page
     .getByRole("region", { name: "Official layers" })
     .or(page.getByLabel("Official layers", { exact: true }));
@@ -86,7 +91,7 @@ try {
   // Official layers remain live while another Inspector tab is open.
   await page.getByRole("button", { name: "Close library" }).click();
   await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "observations", exact: true }).click();
+  await openWorkspaceLibrary(page, "Observations");
   await expect
     .poll(async () => {
       await page.mouse.click(450, 350);
@@ -103,8 +108,7 @@ try {
   await expect(page.locator(".maplibregl-canvas")).toHaveCount(1);
   await page.getByRole("button", { name: "2D edit", exact: true }).click();
   await page.getByLabel("Basemap previews").click();
-  await page.getByLabel("Basemap", { exact: true }).selectOption("dark");
-  await page.getByLabel("Basemap previews").click();
+  await selectBasemap(page, "dark");
   await page.mouse.move(450, 400);
   await page.mouse.down();
   await page.mouse.move(520, 440, { steps: 12 });
@@ -121,7 +125,10 @@ try {
   const savedCamera = await camera();
   await page.reload();
   await page.getByLabel("Basemap previews").click();
-  await expect(page.getByLabel("Basemap", { exact: true })).toHaveValue("dark");
+  await expect(page.locator(".map-canvas")).toHaveAttribute(
+    "data-basemap",
+    "dark",
+  );
   await page.getByLabel("Basemap previews").click();
   await expect
     .poll(async () => (await camera())?.center)
@@ -155,7 +162,7 @@ try {
     200,
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Saved Views", exact: true }).getAttribute("aria-pressed") !== "true") await page.getByRole("button", { name: "Saved Views", exact: true }).click();
+  await openWorkspaceLibrary(page, "Saved Views");
   await page
     .getByRole("button", { name: "Restored official view", exact: true })
     .click();

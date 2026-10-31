@@ -1,3 +1,8 @@
+import {
+  openTools,
+  prepareDrawingSave,
+  confirmDrawingSave,
+} from "./workspace-browser.mjs";
 import { expect } from "@playwright/test";
 import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
@@ -32,8 +37,13 @@ try {
   await page.waitForURL("**/app/map");
   const controls = page.getByLabel("Drawing controls");
   async function start(name) {
-    await page.getByRole("button", { name: "Spatial Tools", exact: true }).click();
-    const tools = { "Draw polygon": "Polygon / area", "Draw line": "Line / distance", "Add point": "Point", "Draw rectangle": "Rectangle" };
+    await openTools(page);
+    const tools = {
+      "Draw polygon": "Polygon / area",
+      "Draw line": "Line / distance",
+      "Add point": "Point",
+      "Draw rectangle": "Rectangle",
+    };
     await page.getByRole("button", { name: tools[name], exact: true }).click();
   }
   async function points() {
@@ -121,11 +131,10 @@ try {
   await controls
     .getByRole("button", { name: "Finish polygon", exact: true })
     .click();
+  await prepareDrawingSave(page);
   await page.getByLabel("Shape name").fill("Alpha 2 polygon");
   await page.getByLabel("New layer name").fill("Hardening geometry");
-  await page
-    .getByRole("button", { name: "Save to Workspace", exact: true })
-    .click();
+  await confirmDrawingSave(page);
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   const saved = await (await page.request.get(origin + "/api/map")).json();
   const layer = saved.layers.find((l) => l.name === "Hardening geometry");
@@ -294,11 +303,10 @@ try {
   await controls
     .getByRole("button", { name: "Finish shape", exact: true })
     .click();
+  await prepareDrawingSave(page);
   await page.getByLabel("Shape name").fill("Rectangle moved");
   await page.getByLabel("New layer name").fill("Rectangle alpha");
-  await page
-    .getByRole("button", { name: "Save to Workspace", exact: true })
-    .click();
+  await confirmDrawingSave(page);
   await page.getByText("Shape saved to Workspace.", { exact: true }).waitFor();
   const rectData = await (await page.request.get(origin + "/api/map")).json(),
     rect = rectData.layers.find((l) => l.name === "Rectangle alpha");

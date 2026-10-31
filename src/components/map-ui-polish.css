@@ -15,3 +15,5 @@
 .statistical-legend i { display: inline-block; width: 20px; height: 12px; border: 1px solid #ffffff33; margin-right: 8px; }
 .layer-library select { max-width: 100%; }
 .maplibregl-popup-content { color: #192b27; max-width: 280px; font-size: 12px; }
+
+@media(max-width:767px){.map-app.workspace-left-open .inspector{visibility:hidden;pointer-events:none}}

@@ -6,43 +6,126 @@ import { mkdir, readFile } from "node:fs/promises";
 
 const origin = process.env.E2E_APP_URL || "http://localhost:3000";
 assert.match(origin, /^http:\/\/(localhost|127\.0\.0\.1):\d+$/);
-const env = Object.fromEntries((await readFile(".env.local", "utf8")).trim().split("\n").map((line) => { const i = line.indexOf("="); return [line.slice(0, i), line.slice(i + 1)]; }));
+const env = Object.fromEntries(
+  (await readFile(".env.local", "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("=");
+      return [line.slice(0, i), line.slice(i + 1)];
+    }),
+);
 assert.equal(env.NEXT_PUBLIC_SUPABASE_URL, "http://127.0.0.1:54321");
-const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined, args: ["--no-sandbox"] });
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
+  args: ["--no-sandbox"],
+});
 try {
   await mkdir("artifacts", { recursive: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, hasTouch: true });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    hasTouch: true,
+  });
   const page = await context.newPage();
-  const errors = []; page.on("pageerror", (error) => errors.push(error.message));
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(origin + "/signup");
   await page.getByLabel("Your name").fill("Multi-selection fixture");
-  await page.getByLabel("Email", { exact: true }).fill(`multi-${Date.now()}@landbanker.test`);
-  await page.getByLabel("Password", { exact: true }).fill("MultiSelectionTest!42");
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await page
+    .getByLabel("Email", { exact: true })
+    .fill(`multi-${Date.now()}@landbanker.test`);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("MultiSelectionTest!42");
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
   await page.waitForURL("**/app/map");
-  await expect(page.getByRole("button", { name: "Search address or parcel" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Spatial Tools" })).not.toContainText("Draw");
+  await expect(
+    page.getByRole("button", { name: "Search address or parcel" }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Map tools" })
+      .getByRole("button", { name: "Tools", exact: true }),
+  ).not.toContainText("Draw");
   await page.keyboard.press("Control+k");
-  await expect(page.getByLabel("Search address", { exact: true })).toBeFocused();
-  await page.getByRole("button", { name: "Close library" }).click();
-  const workspace = (await (await page.request.get(origin + "/api/workspaces")).json()).current;
-  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.LAND_BANKER_SUPABASE_SECRET_KEY);
+  await expect(
+    page.getByRole("dialog",{name:"Search the map"}).getByRole("textbox"),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Close search" }).click();
+  const workspace = (
+    await (await page.request.get(origin + "/api/workspaces")).json()
+  ).current;
+  const admin = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.LAND_BANKER_SUPABASE_SECRET_KEY,
+  );
   const center = [143.8503, -37.5222];
   const lons = [center[0] - 0.04, center[0], center[0] + 0.04];
-  const fixtures = lons.map((lon, i) => ({ id: crypto.randomUUID(), workspace_id: workspace, title: `Synthetic parcel ${i + 1}`, state: "VIC", source: "Synthetic test", source_parcel_id: `SYNTHETIC-${i}`, latitude: center[1], longitude: lon, geometry: { type: "Polygon", coordinates: [[[lon - 0.008, center[1] - 0.006], [lon + 0.008, center[1] - 0.006], [lon + 0.008, center[1] + 0.006], [lon - 0.008, center[1] + 0.006], [lon - 0.008, center[1] - 0.006]]] } }));
+  const fixtures = lons.map((lon, i) => ({
+    id: crypto.randomUUID(),
+    workspace_id: workspace,
+    title: `Synthetic parcel ${i + 1}`,
+    state: "VIC",
+    source: "Synthetic test",
+    source_parcel_id: `SYNTHETIC-${i}`,
+    latitude: center[1],
+    longitude: lon,
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [lon - 0.008, center[1] - 0.006],
+          [lon + 0.008, center[1] - 0.006],
+          [lon + 0.008, center[1] + 0.006],
+          [lon - 0.008, center[1] + 0.006],
+          [lon - 0.008, center[1] - 0.006],
+        ],
+      ],
+    },
+  }));
   assert.equal((await admin.from("land_parcels").insert(fixtures)).error, null);
-  await page.reload(); await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
-  await expect.poll(async () => (await (await page.request.get(`${origin}/api/map/viewport?kind=parcels&bbox=143.7,-37.7,144,-37.4&zoom=11`)).json()).rows?.length).toBeGreaterThanOrEqual(3);
+  await page.reload();
+  await page.locator(".maplibregl-canvas").waitFor({ state: "visible" });
+  await expect
+    .poll(
+      async () =>
+        (
+          await (
+            await page.request.get(
+              `${origin}/api/map/viewport?kind=parcels&bbox=143.7,-37.7,144,-37.4&zoom=11`,
+            )
+          ).json()
+        ).rows?.length,
+    )
+    .toBeGreaterThanOrEqual(3);
   await page.waitForTimeout(1800);
   async function clickParcel(lon, shift = false, touch = false) {
     const box = await page.locator(".map-canvas").boundingBox();
-    const view = await page.evaluate(() => { const key = Object.keys(localStorage).find((k) => k.startsWith("landos:map-camera:")); return key ? JSON.parse(localStorage.getItem(key)) : { center: [143.8503, -37.5622], zoom: 11 }; });
+    const view = await page.evaluate(() => {
+      const key = Object.keys(localStorage).find((k) =>
+        k.startsWith("landos:map-camera:"),
+      );
+      return key
+        ? JSON.parse(localStorage.getItem(key))
+        : { center: [143.8503, -37.5622], zoom: 11 };
+    });
     const world = 512 * 2 ** view.zoom;
-    const y = (lat) => (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
-    const x = box.x + box.width / 2 + (lon - view.center[0]) / 360 * world;
-    const py = box.y + box.height / 2 + (y(center[1]) - y(view.center[1])) * world;
+    const y = (lat) =>
+      (1 -
+        Math.log(
+          Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180),
+        ) /
+          Math.PI) /
+      2;
+    const x = box.x + box.width / 2 + ((lon - view.center[0]) / 360) * world;
+    const py =
+      box.y + box.height / 2 + (y(center[1]) - y(view.center[1])) * world;
     if (shift) await page.keyboard.down("Shift");
-    if (touch) await page.touchscreen.tap(x, py); else await page.mouse.click(x, py);
+    if (touch) await page.touchscreen.tap(x, py);
+    else await page.mouse.click(x, py);
     if (shift) await page.keyboard.up("Shift");
   }
   await clickParcel(lons[0]);
@@ -53,12 +136,14 @@ try {
   await expect(chip).not.toContainText("Incomplete");
   const firstTotal = await chip.textContent();
   await page.waitForTimeout(600);
-  await clickParcel(lons[1], true); await expect(summary).toContainText("2 parcels selected");
+  await clickParcel(lons[1], true);
+  await expect(summary).toContainText("2 parcels selected");
   await page.getByLabel("Basemap previews").click();
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   await expect(summary).toContainText("2 parcels selected");
   await page.waitForTimeout(800);
-  await clickParcel(lons[2], true); await expect(summary).toContainText("3 parcels selected");
+  await clickParcel(lons[2], true);
+  await expect(summary).toContainText("3 parcels selected");
   assert.equal((await summary.boundingBox()).height, chipHeight);
   await expect(summary.locator("li")).toHaveCount(0);
   await expect(chip).not.toContainText("Incomplete");
@@ -71,71 +156,182 @@ try {
   await expect(details).toContainText("Selection · 3");
   await expect(details.locator("li")).toHaveCount(3);
   await page.screenshot({ path: "artifacts/v21-selection-inspector.png" });
-  await details.getByRole("button", { name: "1. Synthetic parcel 1", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Back to Selection" })).toBeVisible();
+  await details
+    .getByRole("button", { name: "1. Synthetic parcel 1", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Back to Selection" }),
+  ).toBeVisible();
   await expect(summary).toContainText("3 parcels selected");
   await page.getByRole("button", { name: "Back to Selection" }).click();
   await expect(details).toContainText("Selection · 3");
   await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(400);
-  await clickParcel(lons[1], true); await expect(summary).toContainText("2 parcels selected");
-  const beforeFit = await page.evaluate(() => { const key = Object.keys(localStorage).find((k) => k.startsWith("landos:map-camera:")); return key ? localStorage.getItem(key) : null; });
+  await clickParcel(lons[1], true);
+  await expect(summary).toContainText("2 parcels selected");
+  const beforeFit = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) =>
+      k.startsWith("landos:map-camera:"),
+    );
+    return key ? localStorage.getItem(key) : null;
+  });
   await chip.click();
   await details.getByRole("button", { name: "Fit to All" }).click();
-  await expect.poll(() => page.evaluate(() => { const key = Object.keys(localStorage).find((k) => k.startsWith("landos:map-camera:")); return key ? localStorage.getItem(key) : null; })).not.toBe(beforeFit);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const key = Object.keys(localStorage).find((k) =>
+          k.startsWith("landos:map-camera:"),
+        );
+        return key ? localStorage.getItem(key) : null;
+      }),
+    )
+    .not.toBe(beforeFit);
   await details.getByRole("button", { name: "Clear All" }).click();
   await expect(summary).toHaveCount(0);
   await page.getByRole("button", { name: "Home", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  if (await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  if (
+    await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()
+  )
+    await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(500);
   await page.getByRole("button", { name: "Multi-select", exact: true }).click();
-  await clickParcel(lons[0], false, true); await expect(summary).toContainText("1 parcel selected");
-  await clickParcel(lons[1], false, true); await expect(summary).toContainText("2 parcels selected");
-  await clickParcel(lons[2], false, true); await expect(summary).toContainText("3 parcels selected");
+  await clickParcel(lons[0], false, true);
+  await expect(summary).toContainText("1 parcel selected");
+  await clickParcel(lons[1], false, true);
+  await expect(summary).toContainText("2 parcels selected");
+  await clickParcel(lons[2], false, true);
+  await expect(summary).toContainText("3 parcels selected");
   await page.getByRole("button", { name: "Done selecting" }).click();
   await chip.click();
   await details.getByRole("button", { name: "Clear All" }).click();
-  const layerId = crypto.randomUUID(), featureId = crypto.randomUUID();
-  const response = await page.request.post(`${origin}/api/layers`, { headers: { Origin: origin }, data: { id: layerId, name: "Selection layer", geojson: { type: "FeatureCollection", features: [{ type: "Feature", id: featureId, properties: { name: "Layer polygon" }, geometry: fixtures[0].geometry }] } } });
+  const layerId = crypto.randomUUID(),
+    featureId = crypto.randomUUID();
+  const response = await page.request.post(`${origin}/api/layers`, {
+    headers: { Origin: origin },
+    data: {
+      id: layerId,
+      name: "Selection layer",
+      geojson: {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            id: featureId,
+            properties: { name: "Layer polygon" },
+            geometry: fixtures[0].geometry,
+          },
+        ],
+      },
+    },
+  });
   assert.equal(response.status(), 200, await response.text());
-  assert.equal((await admin.from("spatial_layers").update({ layer_kind: "polygon", metadata: { fixture: "Layer metadata" } }).eq("id", layerId)).error, null);
-  const listed = await page.request.get(`${origin}/api/layers?id=${layerId}&list=1&offset=0`);
-  assert.equal(listed.status(), 200); const listedBody = await listed.json(); assert.equal(listedBody.features[0].id, featureId); assert.equal(listedBody.layer.metadata.fixture, "Layer metadata");
-  const fullFeature = await page.request.get(`${origin}/api/layers?id=${layerId}&feature=${featureId}`);
-  assert.equal(fullFeature.status(), 200); assert.deepEqual((await fullFeature.json()).feature.geometry, fixtures[0].geometry);
+  assert.equal(
+    (
+      await admin
+        .from("spatial_layers")
+        .update({
+          layer_kind: "polygon",
+          metadata: { fixture: "Layer metadata" },
+        })
+        .eq("id", layerId)
+    ).error,
+    null,
+  );
+  const listed = await page.request.get(
+    `${origin}/api/layers?id=${layerId}&list=1&offset=0`,
+  );
+  assert.equal(listed.status(), 200);
+  const listedBody = await listed.json();
+  assert.equal(listedBody.features[0].id, featureId);
+  assert.equal(listedBody.layer.metadata.fixture, "Layer metadata");
+  const fullFeature = await page.request.get(
+    `${origin}/api/layers?id=${layerId}&feature=${featureId}`,
+  );
+  assert.equal(fullFeature.status(), 200);
+  assert.deepEqual(
+    (await fullFeature.json()).feature.geometry,
+    fixtures[0].geometry,
+  );
   const anonymous = await browser.newContext();
-  assert.notEqual((await anonymous.request.get(`${origin}/api/layers?id=${layerId}&list=1`)).status(), 200);
+  assert.notEqual(
+    (
+      await anonymous.request.get(`${origin}/api/layers?id=${layerId}&list=1`)
+    ).status(),
+    200,
+  );
   await anonymous.close();
   const other = await browser.newContext();
   const otherPage = await other.newPage();
   await otherPage.goto(origin + "/signup");
   await otherPage.getByLabel("Your name").fill("Other workspace fixture");
-  await otherPage.getByLabel("Email", { exact: true }).fill(`other-multi-${Date.now()}@landbanker.test`);
-  await otherPage.getByLabel("Password", { exact: true }).fill("MultiSelectionTest!42");
-  await otherPage.getByRole("button", { name: "Create account", exact: true }).click();
+  await otherPage
+    .getByLabel("Email", { exact: true })
+    .fill(`other-multi-${Date.now()}@landbanker.test`);
+  await otherPage
+    .getByLabel("Password", { exact: true })
+    .fill("MultiSelectionTest!42");
+  await otherPage
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
   await otherPage.waitForURL("**/app/map");
-  assert.notEqual((await otherPage.request.get(`${origin}/api/layers?id=${layerId}&list=1`)).status(), 200);
-  assert.notEqual((await otherPage.request.get(`${origin}/api/layers?id=${layerId}&feature=${featureId}`)).status(), 200);
+  assert.notEqual(
+    (
+      await otherPage.request.get(`${origin}/api/layers?id=${layerId}&list=1`)
+    ).status(),
+    200,
+  );
+  assert.notEqual(
+    (
+      await otherPage.request.get(
+        `${origin}/api/layers?id=${layerId}&feature=${featureId}`,
+      )
+    ).status(),
+    200,
+  );
   await other.close();
   await page.reload();
   await page.getByRole("button", { name: "Layers", exact: true }).click();
-  const parent = page.locator(".drawer-layer-features").filter({ hasText: "Selection layer" });
+  const parent = page
+    .locator(".drawer-layer-features")
+    .filter({ hasText: "Selection layer" });
   await parent.locator("summary").first().click();
   await parent.getByLabel("Selection layer opacity").fill("0.5");
   await expect(parent.getByLabel("Selection layer opacity")).toHaveValue("0.5");
-  await expect.poll(() => page.evaluate((id) => { const key = Object.keys(localStorage).find((k) => k.startsWith("landos:layer-opacity:")); return key ? JSON.parse(localStorage.getItem(key))[id] : undefined; }, layerId)).toBe(0.5);
+  await expect
+    .poll(() =>
+      page.evaluate((id) => {
+        const key = Object.keys(localStorage).find((k) =>
+          k.startsWith("landos:layer-opacity:"),
+        );
+        return key ? JSON.parse(localStorage.getItem(key))[id] : undefined;
+      }, layerId),
+    )
+    .toBe(0.5);
   await parent.getByRole("button", { name: "Layer polygon" }).click();
   await expect(summary).toContainText("1 feature selected");
-  await expect(page.getByText("Polygon · Layer: Selection layer · Workspace feature")).toBeVisible();
-  if (await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await expect(
+    page.getByText("Polygon · Layer: Selection layer · Workspace feature"),
+  ).toBeVisible();
+  if (
+    await page.getByRole("button", { name: "Collapse Inspector" }).isVisible()
+  )
+    await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(1800);
   const canvas = await page.locator(".map-canvas").boundingBox();
-  await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await page.mouse.click(
+    canvas.x + canvas.width / 2,
+    canvas.y + canvas.height / 2,
+  );
   const chooser = page.getByLabel("Choose a map feature");
   await expect(chooser).toBeVisible();
   await expect(chooser).toContainText("Layer polygon");
   await expect(chooser).toContainText("Synthetic parcel 1");
   assert.deepEqual(errors, []);
-  console.log("PASS: desktop Shift add/remove, touch multi-select, calculated summary, fit and clear.");
-} finally { await browser.close(); }
+  console.log(
+    "PASS: desktop Shift add/remove, touch multi-select, calculated summary, fit and clear.",
+  );
+} finally {
+  await browser.close();
+}

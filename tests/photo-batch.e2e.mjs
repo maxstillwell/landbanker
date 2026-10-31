@@ -1,3 +1,4 @@
+import { addObservation } from "./workspace-browser.mjs";
 import { chromium } from "./map-browser.mjs";
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -26,7 +27,7 @@ try {
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await page.waitForURL("**/app/map");
-  await page.getByRole("button", { name: "Add observation" }).click();
+  await addObservation(page);
   await page.getByLabel("Title", { exact: true }).fill("Native batch test");
   const id = await page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => {
@@ -75,7 +76,7 @@ try {
   const record = data.observations.find((o) => o.title === "Native batch test");
   assert.equal(record.field_observation_media.length, 2);
   assert.ok(record.field_observation_media.every((m) => m.url));
-  await page.getByRole("button", { name: "Add observation" }).click();
+  await addObservation(page);
   await page.getByLabel("Title", { exact: true }).fill("Interrupted selection");
   await page.evaluate(async () => {
     const r = indexedDB.open("land-banker-field-queue-v1");
@@ -121,14 +122,12 @@ try {
       .field_observation_media.length,
     2,
   );
-  await page.getByRole("button", { name: "Add observation" }).click();
-  await page
-    .locator("input[type=file][multiple]")
-    .setInputFiles({
-      name: "synthetic-unrenderable.heic",
-      mimeType: "image/heic",
-      buffer: Buffer.from("synthetic undecodable HEIC for fallback test"),
-    });
+  await addObservation(page);
+  await page.locator("input[type=file][multiple]").setInputFiles({
+    name: "synthetic-unrenderable.heic",
+    mimeType: "image/heic",
+    buffer: Buffer.from("synthetic undecodable HEIC for fallback test"),
+  });
   await page
     .getByText("HEIC preview unavailable in this browser.", { exact: true })
     .waitFor();

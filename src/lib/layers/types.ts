@@ -42,6 +42,7 @@ export type LayerProduct = {
   release_status: "beta" | "disabled";
   dataset_metadata: DatasetMetadata;
   query: {
+    protocol?: "wfs";
     url: string;
     fields: string[];
     code: string;
@@ -50,7 +51,14 @@ export type LayerProduct = {
     geometry: "polygon" | "line" | "point";
     local_data?: "vic-schools";
     color: string;
-    statistics?: "population" | "sales" | "crime" | "seifa" | "approvals";
+    statistics?:
+      | "population"
+      | "sales"
+      | "crime"
+      | "seifa"
+      | "approvals"
+      | "suburb-sales"
+      | "suburb-crime";
   };
 };
 export const CATALOGUE_CATEGORIES = [

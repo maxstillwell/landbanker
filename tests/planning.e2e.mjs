@@ -1,3 +1,4 @@
+import { openWorkspaceLibrary } from "./workspace-browser.mjs";
 import { chromium } from "./map-browser.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -265,8 +266,9 @@ try {
     }),
   );
   await page.reload();
-  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible()) await page.getByRole("button", { name: "Open Inspector" }).click();
-  await page.getByRole("button", { name: "parcels", exact: true }).click();
+  if (await page.getByRole("button", { name: "Open Inspector" }).isVisible())
+    await page.getByRole("button", { name: "Open Inspector" }).click();
+  await openWorkspaceLibrary(page, "Properties");
   await page
     .getByRole("button")
     .filter({ hasText: "Planning sample property" })
@@ -308,7 +310,10 @@ try {
   await page.getByRole("button", { name: "My Analysis", exact: true }).click();
   await page.getByText("Linked distant analysis", { exact: true }).waitFor();
   await page.getByText("Intersecting analysis", { exact: true }).waitFor();
-  await page.getByLabel("Property relationships").getByText("Property review view", { exact: true }).waitFor();
+  await page
+    .getByLabel("Property relationships")
+    .getByText("Property review view", { exact: true })
+    .waitFor();
   await page.goto(origin + "/app/settings");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await page.goto(origin + "/signup");

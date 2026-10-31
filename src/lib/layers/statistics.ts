@@ -3,6 +3,8 @@ import salesData from "./data/vic-sales.json";
 import crimeData from "./data/vic-crime.json";
 import seifaData from "./data/seifa.json";
 import approvalsData from "./data/building-approvals.json";
+import suburbPrices from "./data/vic-suburb-prices.json";
+import suburbCrime from "./data/vic-suburb-crime.json";
 import type { LayerProduct } from "./types";
 
 const population = populationData as Record<
@@ -27,8 +29,67 @@ export function statistic(
   code: string,
   period: string,
   indicator: string,
-) {
+): {
+  value: number | null;
+  fields: Record<string, unknown>;
+  reference: string;
+  comparison: string | null;
+} {
   const year = Number(period);
+  if (product.query.statistics === "suburb-sales") {
+    const data = suburbPrices as Record<
+      string,
+      Record<string, Record<string, number | string | null>>
+    >;
+    const published = data[code]?.[period] || {};
+    const fields = { ...published };
+    for (const kind of ["house", "unit", "land"]) {
+      if (published[kind + "_source_marker"] === "*") {
+        fields[kind + "_published_carried_forward"] = published[kind];
+        fields[kind] = null;
+      }
+    }
+    const observed = (row: typeof fields, kind: string) =>
+      row[kind + "_source_marker"] === "*"
+        ? null
+        : typeof row[kind] === "number"
+          ? (row[kind] as number)
+          : null;
+    const value =
+      indicator === "house_growth"
+        ? percentage(
+            observed(fields, "house"),
+            observed(data[code]?.[String(year - 1)] || {}, "house"),
+          )
+        : observed(fields, indicator);
+    return {
+      value,
+      fields,
+      reference: `Calendar year ${period}`,
+      comparison:
+        indicator === "house_growth" ? `Calendar year ${year - 1}` : null,
+    };
+  }
+  if (product.query.statistics === "suburb-crime") {
+    const data = suburbCrime as Record<
+      string,
+      Record<string, Record<string, number | string[]>>
+    >;
+    const raw = data[code]?.[period] || {};
+    const fields = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [
+        k,
+        Array.isArray(v) ? v.join(", ") : v,
+      ]),
+    );
+    return {
+      value:
+        typeof raw[indicator] === "number" ? (raw[indicator] as number) : null,
+      fields,
+      reference: `Year ending 30 June ${period}`,
+      comparison: null,
+    };
+  }
   if (product.query.statistics === "seifa") {
     const fields =
       (seifaData as Record<string, Record<string, number | null>>)[code] || {};

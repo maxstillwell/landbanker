@@ -770,6 +770,163 @@ LAYER_PRODUCTS.push({
     local_data: "vic-schools",
   },
 });
+// Phase 2 reuses the same statistical products and fixed-source query adapter.
+const localityQuery = {
+  protocol: "wfs" as const,
+  url: "https://opendata.maps.vic.gov.au/geoserver/wfs",
+  fields: ["pfi", "locality_name", "gazetted_locality_name", "vicnames_id"],
+  code: "pfi",
+  name: "locality_name",
+  geometry: "polygon" as const,
+  color: "#548f87",
+};
+for (const [id, original, overrides] of [
+  [
+    "vic-suburb-median-prices",
+    "vic-median-prices",
+    {
+      name: "Victoria suburb median property prices",
+      source_url:
+        "https://www.land.vic.gov.au/valuations/resources-and-reports/property-sales-statistics",
+      description:
+        "Original annual suburb/locality house, unit and vacant-land medians. Exact uniquely matched Vicmap bounded localities only; neighbourhoods without a defensible boundary stay unmapped.",
+      usage_notes:
+        "Area medians are not property valuations. Publisher cautions and carried-forward values are preserved; sales volume is not supplied in this time-series workbook.",
+      attribution:
+        "© State of Victoria, Valuer-General Victoria and Department of Transport and Planning. CC BY 4.0. Boundaries: Vicmap Admin. LandOS code crosswalk and growth calculation.",
+      dataset_metadata: {
+        licence_evidence:
+          "https://discover.data.vic.gov.au/dataset/victorian-property-sales-report-median-house-by-suburb-time-series",
+        version:
+          "VGV annual suburb workbooks 2015–2025 · Vicmap snapshot 31 October 2026",
+        reference_period: "Calendar years 2015–2025; preliminary 2026 excluded",
+        updated: "2026-09-29",
+        fields: [
+          ...localityQuery.fields,
+          "house",
+          "unit",
+          "land",
+          "house_source_marker",
+          "unit_source_marker",
+          "land_source_marker",
+        ],
+        indicators: [
+          metric(
+            "house",
+            "Median house price",
+            "aud",
+            [400000, 600000, 800000, 1200000, 1800000],
+          ),
+          metric(
+            "unit",
+            "Median unit price",
+            "aud",
+            [300000, 450000, 600000, 800000, 1100000],
+          ),
+          metric(
+            "land",
+            "Median vacant land price",
+            "aud",
+            [200000, 350000, 500000, 750000, 1200000],
+          ),
+          metric(
+            "house_growth",
+            "Annual house median change",
+            "percent",
+            [-5, 0, 5, 10, 20],
+          ),
+        ],
+        methodology:
+          "VGV gazetted neighbourhood/locality sales geography uses LASSI boundaries. A versioned crosswalk maps only exact unique names to Vicmap PFI/VICNAMES IDs; unmatched neighbourhoods are not merged into parent suburbs. Current reference boundaries do not reconstruct historical changes. ^ means fewer than ten sales; * is a previous-year median carried forward because there were zero sales, retained in published fields but treated as missing for the choropleth and growth calculation. Growth compares observed annual medians, not a quality-adjusted index. Sales volume is not supplied. House/unit categories follow VGV classifications and are not universal detached-house/apartment definitions.",
+      },
+      statistics: "suburb-sales",
+    },
+  ],
+  [
+    "vic-suburb-recorded-offences",
+    "vic-recorded-offences",
+    {
+      name: "Victoria suburb recorded offences",
+      source_url:
+        "https://discover.data.vic.gov.au/dataset/data-tables-recorded-offences",
+      description:
+        "CSA Table 03 published offence subgroup counts by suburb/town, postcode and LGA. Suburb counts only; no incompatible population denominator or synthetic crime rate.",
+      usage_notes:
+        "Counts depend on population, visitors and reporting. Category sums are derived from published subgroups, not adjusted to reconcile with LGA totals.",
+      attribution:
+        "© Crime Statistics Agency Victoria and State of Victoria (Vicmap Admin). CC BY 4.0. LandOS sums of published subgroup counts and explicit locality crosswalk.",
+      dataset_metadata: {
+        version:
+          "CSA LGA workbook Table 03 · year ending June 2026 · Vicmap snapshot 31 October 2026",
+        fields: [
+          ...localityQuery.fields,
+          "offences",
+          "burglary",
+          "theft",
+          "motor_theft",
+          "assault",
+          "source_lgas",
+          "source_postcodes",
+        ],
+        default_indicator: "offences",
+        indicators: [
+          metric(
+            "offences",
+            "Recorded offences · published subgroup sum",
+            "count",
+            [100, 500, 1000, 2500, 5000],
+          ),
+          metric(
+            "burglary",
+            "Burglary / break and enter · all locations",
+            "count",
+            [10, 50, 100, 250, 500],
+          ),
+          metric("theft", "Theft", "count", [50, 100, 250, 500, 1000]),
+          metric(
+            "motor_theft",
+            "Motor vehicle theft",
+            "count",
+            [10, 25, 50, 100, 200],
+          ),
+          metric(
+            "assault",
+            "Assault and related offences",
+            "count",
+            [10, 25, 50, 100, 250],
+          ),
+        ],
+        methodology:
+          "Original Table 03 year/suburb/postcode/LGA/subgroup records are checked for duplicate keys, matched through the explicit unique Vicmap PFI crosswalk and summed across the publisher's LGA/postcode subdivisions. Counts are sums of published subgroups. CSA confidentiality replaces sensitive homicide/sexual-offence counts of three or less with two when calculating totals. Do not reconcile these derived sums with published LGA totals. Unlisted categories remain missing, not zero. Suburb population rates and residential-only burglary are unavailable at this geography. Current reference boundaries do not reconstruct historical suburb boundaries. Source LGA/postcode labels are retained. NSW crime definitions are separate.",
+      },
+      statistics: "suburb-crime",
+    },
+  ],
+] as const) {
+  const existing = LAYER_PRODUCTS.find((p) => p.id === original)!;
+  const { statistics, dataset_metadata: details, ...fields } = overrides;
+  LAYER_PRODUCTS.push({
+    ...existing,
+    ...fields,
+    id,
+    min_zoom: 10,
+    renderer: "geojson",
+    service_url: localityQuery.url,
+    layer_ids: "0",
+    dataset_metadata: {
+      ...existing.dataset_metadata,
+      ...details,
+      fields: [...details.fields],
+      indicators: [...details.indicators],
+      geography: "Gazetted suburb / bounded locality (Vicmap PFI)",
+      boundary_version:
+        "Vicmap Admin live locality polygons; PFI identity snapshot 31 October 2026",
+      coverage:
+        "Victoria; uniquely matched official bounded localities only. Unmatched market neighbourhoods remain unavailable.",
+    },
+    query: { ...localityQuery, statistics },
+  } as LayerProduct);
+}
 export function layerProduct(id: string) {
   return LAYER_PRODUCTS.find((p) => p.id === id);
 }
