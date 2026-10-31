@@ -181,7 +181,8 @@ try {
       await expect(region.locator("strong")).toContainText("90");
       await page.setViewportSize({ width: 390, height: 844 });
       // Entering the phone layout intentionally collapses the existing sheet.
-      await page.getByRole("button", {name:"Open Inspector",exact:true}).click();
+      await expect(page.locator(".inspector.collapsed")).toBeVisible();
+      await page.getByRole("button", {name:"Resize inspector",exact:true}).click();
       await expect(region).toBeVisible();
       await expect(region).toContainText("14850");
       await expect(region).toContainText("Year ending 30 June 2017");
