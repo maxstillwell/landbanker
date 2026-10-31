@@ -88,6 +88,12 @@ export async function openMapSearch(page) {
   await expect(search).toBeVisible();
 }
 export async function openWorkspaceSettings(page) {
+  if ((page.viewportSize()?.width ?? 1440) < 768) {
+    const menu=page.locator(".mobile-more-menu");
+    if(!await menu.isVisible()) await page.getByRole("navigation",{name:"Mobile map navigation"}).getByRole("button",{name:"More",exact:true}).click();
+    await expect(menu.getByRole("button",{name:"Choose workspace"})).toBeVisible();
+    return menu;
+  }
   const settings = page.locator(".map-header .desktop-workspace-settings");
   if ((await settings.getAttribute("open")) === null)
     await settings.locator("summary").click();

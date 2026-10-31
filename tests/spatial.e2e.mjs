@@ -343,6 +343,7 @@ try {
     .getByRole("button", { name: "Choose workspace" })
     .filter({ visible: true })
     .click();
+  await page.getByRole("navigation",{name:"Mobile map navigation"}).getByRole("button",{name:"More",exact:true}).click();
   await page.setViewportSize({ width: 1280, height: 800 });
   const rects = await page.evaluate(() => ({
     map: document.querySelector(".map-canvas").getBoundingClientRect().width,
@@ -437,6 +438,10 @@ try {
   console.log(
     "PASS: phone polygon draw, measurement, name/layer/note save, reopen, stable identity, invalid-coordinate rejection, catalog add/toggle persistence, iPad adaptive layout, explicit shared view, private-note/future-feature exclusion and revoke.",
   );
+} catch (error) {
+  await mkdir("artifacts", {recursive:true});
+  await (browser.contexts()[0]?.pages()[0]?.screenshot({path:"artifacts/spatial-failure.png"}) || Promise.resolve()).catch(()=>{});
+  throw error;
 } finally {
   await browser.close();
 }

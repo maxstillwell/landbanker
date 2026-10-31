@@ -332,6 +332,9 @@ try {
   console.log(
     "PASS: desktop Shift add/remove, touch multi-select, calculated summary, fit and clear.",
   );
+} catch (error) {
+  await (browser.contexts()[0]?.pages()[0]?.screenshot({path:"artifacts/parcel-multiselect-failure.png"}) || Promise.resolve()).catch(()=>{});
+  throw error;
 } finally {
   await browser.close();
 }
