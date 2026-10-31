@@ -48,6 +48,7 @@ try {
   await page.mouse.click(100, 180);
   await page.mouse.click(260, 180);
   await page.mouse.click(200, 310);
+  await expect(page.locator(".drawing-vertex")).toHaveCount(3);
   await page
     .getByRole("button", { name: "Finish polygon", exact: true })
     .filter({ visible: true })

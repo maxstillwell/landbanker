@@ -97,10 +97,12 @@ export async function enableReferenceLayer(page, name) {
 }
 export async function prepareDrawingSave(page) {
   const drawing = page.getByLabel("Completed drawing", { exact: true });
+  await expect(drawing).toBeVisible();
   if (
     await drawing.getByRole("button", { name: "Save", exact: true }).isVisible()
   )
     await drawing.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(drawing.getByLabel("Shape name",{exact:true})).toBeVisible();
   const destination = drawing.getByLabel("Drawing destination", {
     exact: true,
   });

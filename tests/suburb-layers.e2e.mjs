@@ -156,6 +156,12 @@ try {
         .getByRole("button", { name: "Open Inspector", exact: true })
         .click();
       await expect(region).toContainText("Median unit price: $970,000");
+      await expect(region.getByRole("link",{name:"Creative Commons Attribution 4.0 International",exact:true})).toHaveAttribute("href","https://creativecommons.org/licenses/by/4.0/");
+      await region.getByText("Methodology and geographic limits",{exact:true}).click();
+      await expect(region).toContainText("zero sales");
+      await expect(region).toContainText("205410022");
+      await region.getByText("Methodology and geographic limits",{exact:true}).click();
+
       await mkdir("artifacts", { recursive: true });
       await page.screenshot({ path: "artifacts/suburb-inspector.png" });
     }

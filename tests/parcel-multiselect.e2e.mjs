@@ -206,7 +206,7 @@ try {
   await clickParcel(lons[2], false, true);
   await expect(summary).toContainText("3 parcels selected");
   await page.getByRole("button", { name: "Done selecting" }).click();
-  await chip.click();
+  await expect(details).toBeVisible();
   await details.getByRole("button", { name: "Clear All" }).click();
   const layerId = crypto.randomUUID(),
     featureId = crypto.randomUUID();

@@ -106,7 +106,8 @@ try {
   await page.getByRole("button", { name: "Close official feature" }).click();
   await page.getByRole("button", { name: "3D view", exact: true }).click();
   await expect(page.locator(".maplibregl-canvas")).toHaveCount(1);
-  await page.getByRole("button", { name: "2D edit", exact: true }).click();
+  await expect(page.getByText("3D terrain is unavailable: no reviewed elevation source is configured.",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"3D view",exact:true})).toHaveAttribute("aria-pressed","false");
   await page.getByLabel("Basemap previews").click();
   await selectBasemap(page, "dark");
   await page.mouse.move(450, 400);

@@ -293,7 +293,7 @@ try {
   await page.getByRole("button", { name: "Planning", exact: true }).click();
   await page.getByText("Zone: Farming Zone (FZ)", { exact: true }).waitFor();
   await page.unroute("**" + path);
-  await page.getByRole("button", { name: "Field", exact: true }).click();
+  await page.getByRole("navigation",{name:"Property sections"}).getByRole("button", { name: "Observations", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Explicit property visit · 0 photos",
@@ -307,7 +307,7 @@ try {
       exact: true,
     })
     .waitFor();
-  await page.getByRole("button", { name: "My Analysis", exact: true }).click();
+  await page.getByRole("navigation",{name:"Property sections"}).getByRole("button", { name: "Related Areas", exact: true }).click();
   await page.getByText("Linked distant analysis", { exact: true }).waitFor();
   await page.getByText("Intersecting analysis", { exact: true }).waitFor();
   await page

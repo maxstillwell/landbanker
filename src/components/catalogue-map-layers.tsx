@@ -557,8 +557,16 @@ export function CatalogueFeatureInspector({
       <p>
         {layer.provider} · Updated: {meta.updated}
       </p>
-      <p>{meta.methodology}</p>
+      <p>{layer.usage_notes}</p>
+      <details>
+        <summary>Methodology and geographic limits</summary>
+        <p>{meta.methodology}</p>
+      </details>
       <p>{layer.attribution}</p>
+      <p>
+        <a href={meta.licence_url} target="_blank" rel="noreferrer">{meta.licence}</a>
+        {" · "}Source verified: {meta.verified_on}
+      </p>
       <a href={layer.source_url} target="_blank" rel="noreferrer">
         Original official source
       </a>

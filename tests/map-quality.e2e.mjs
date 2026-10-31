@@ -277,6 +277,7 @@ try {
         .getAttribute("aria-pressed")) !== "true"
     )
       await page.getByRole("button", { name: "Layers", exact: true }).click();
+    await enableReferenceLayer(page, point.state === "VIC" ? "Victoria planning zones" : "NSW land zoning");
     await page
       .getByRole("button", { name: "Inspect zoning", exact: true })
       .click();

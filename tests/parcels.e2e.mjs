@@ -302,7 +302,7 @@ try {
     .getByRole("button")
     .filter({ hasText: "Tenant A property" })
     .click();
-  await page.getByRole("button", { name: "Field", exact: true }).click();
+  await page.getByRole("navigation",{name:"Property sections"}).getByRole("button", { name: "Observations", exact: true }).click();
   await page
     .getByRole("button", { name: "Add property observation", exact: true })
     .click();
@@ -333,7 +333,7 @@ try {
     .getByRole("button")
     .filter({ hasText: "Tenant A property" })
     .click();
-  await page.getByRole("button", { name: "Field", exact: true }).click();
+  await page.getByRole("navigation",{name:"Property sections"}).getByRole("button", { name: "Observations", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Linked field inspection · 0 photos",

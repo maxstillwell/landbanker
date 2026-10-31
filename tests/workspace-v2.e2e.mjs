@@ -282,9 +282,12 @@ try {
   );
   assert(
     phoneControls.y + phoneControls.height <= phoneAttribution.y ||
-      phoneAttribution.y + phoneAttribution.height <= phoneControls.y,
+      phoneAttribution.y + phoneAttribution.height <= phoneControls.y ||
+      phoneAttribution.x + phoneAttribution.width <= phoneControls.x ||
+      phoneControls.x + phoneControls.width <= phoneAttribution.x,
+    "phone attribution and controls must occupy disjoint rectangles",
   );
-  await page.getByRole("button", { name: "Collapse Inspector" }).click();
+  await expect(page.getByRole("button", {name:"Resize inspector",exact:true})).toHaveAttribute("title","Sheet: peek");
   await page.waitForTimeout(350);
   await page.screenshot({ path: "artifacts/workspace-v2-phone-clean.png" });
   await openTools(page);

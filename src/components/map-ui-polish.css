@@ -17,3 +17,5 @@
 .maplibregl-popup-content { color: #192b27; max-width: 280px; font-size: 12px; }
 
 @media(max-width:767px){.map-app.workspace-left-open .inspector{visibility:hidden;pointer-events:none}}
+
+@media(max-width:767px){.map-app .maplibre-attribution,.map-app.workspace-right-closed .maplibre-attribution,.map-app.inspector-compact .maplibre-attribution{right:calc(max(10px,env(safe-area-inset-right)) + 62px)}}

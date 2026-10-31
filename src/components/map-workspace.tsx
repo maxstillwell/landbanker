@@ -2529,6 +2529,7 @@ export default function MapWorkspace({
           >
             Delete vertex
           </button>
+          <button disabled={!activeDrawing?.undo} onClick={()=>session.undo()}>Undo edit</button>
           <button disabled={!drawPoints.length} onClick={()=>setDrawPoints(points=>points.slice(0,-1))}>Undo last point</button>
           <button disabled={!drawPoints.length} onClick={()=>setDrawPoints([])}>Clear drawing</button>
           <button
@@ -2680,7 +2681,7 @@ export default function MapWorkspace({
       ) : null}
       <input ref={importInput} type="file" hidden accept=".geojson,.json,.kml,.kmz" onChange={(e) => { if (e.target.files?.[0]) { panelRevision.current += 1; setSelectionDetails(false); setTab("layers"); setRightOpen(true); setPaletteOpen(false); setSheet("medium"); void importLayer(e.target.files[0]); } e.target.value = ""; }} />
       <div className="parcel-multi-control">
-        <button type="button" aria-pressed={multiSelect} disabled={drawMode || Boolean(draft)} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); if (window.matchMedia("(max-width: 767px)").matches) { if (multiSelectRef.current) setRightOpen(false); else if (selection || selectedAreas.length) setRightOpen(true); } }}>{multiSelect ? "Done selecting" : "Multi-select"}</button>
+        <button type="button" aria-pressed={multiSelect} disabled={drawMode || Boolean(draft)} onClick={() => { multiSelectRef.current = !multiSelectRef.current; setMultiSelect(multiSelectRef.current); if (window.matchMedia("(max-width: 767px)").matches) { if (multiSelectRef.current) setRightOpen(false); else if (selectedAreas.length) {setSelection(null);setSelectionDetails(true);setRightOpen(true);setLeftOpen(false);setSheet("expanded");} else if (selection) setRightOpen(true); } }}>{multiSelect ? "Done selecting" : "Multi-select"}</button>
         {multiSelect ? <span aria-live="polite">{selectedAreas.length} selected</span> : null}
         {multiSelect && selectedAreas.length ? <button onClick={clearAreas}>Clear</button> : null}
       </div>

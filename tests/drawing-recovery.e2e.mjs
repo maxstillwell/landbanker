@@ -92,7 +92,7 @@ try {
     .not.toBe(JSON.stringify(initial));
   const moved = await points();
   assert.notDeepEqual(moved, initial);
-  await controls.getByRole("button", { name: "Undo", exact: true }).click();
+  await controls.getByRole("button", { name: "Undo edit", exact: true }).click();
   await expect
     .poll(async () => JSON.stringify(await points()))
     .toBe(JSON.stringify(initial));
@@ -106,7 +106,7 @@ try {
     .getByRole("button", { name: "Delete vertex", exact: true })
     .click();
   await waitPoints(4);
-  await controls.getByRole("button", { name: "Undo", exact: true }).click();
+  await controls.getByRole("button", { name: "Undo edit", exact: true }).click();
   await waitPoints(5);
   const beforeSecondMove = await points();
   const moveAgain = await page
@@ -174,6 +174,7 @@ try {
     .waitFor();
   assert.equal((await points()).length, 2);
   await page.reload();
+  page.once("dialog",dialog=>dialog.accept());
   await page.getByRole("button", { name: "Discard", exact: true }).click();
   await page
     .getByText("Unfinished drawing found", { exact: true })
@@ -276,6 +277,7 @@ try {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("**/app/map");
   await page.getByText("Unfinished drawing found", { exact: true }).waitFor();
+  page.once("dialog",dialog=>dialog.accept());
   await page.getByRole("button", { name: "Discard", exact: true }).click();
   await page
     .getByText("Unfinished drawing found", { exact: true })
