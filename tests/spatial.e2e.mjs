@@ -104,8 +104,10 @@ try {
   // The geometry itself is clickable, and editing loads the complete layer.
   if(await page.getByRole("button", {name:"Collapse Inspector"}).isVisible()) await page.getByRole("button", { name: "Collapse Inspector" }).click();
   await page.waitForTimeout(400);
-  await page.mouse.click(185, 220);
-  await expect(page.getByRole("button", { name: "Edit shape" })).toBeVisible();
+  await expect.poll(async()=>{
+    await page.mouse.click(185,220);
+    return page.getByRole("button",{name:"Edit shape",exact:true}).isVisible();
+  }).toBe(true);
   await page.getByRole("button", { name: "Edit shape" }).click();
   await expect(page.getByLabel("Drawing controls")).toBeVisible();
   const moveHandle = await page

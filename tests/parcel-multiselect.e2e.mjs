@@ -1,4 +1,4 @@
-import {openTools} from "./workspace-browser.mjs";
+import {openTools,openCustomLayers} from "./workspace-browser.mjs";
 import { chromium } from "./map-browser.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { expect } from "@playwright/test";
@@ -294,7 +294,8 @@ try {
   );
   await other.close();
   await page.reload();
-  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  await openCustomLayers(page);
+  await page.locator(".workspace-library details[open] > div > button:first-child").filter({hasText:"Selection layer"}).click();
   const parent = page
     .locator(".drawer-layer-features")
     .filter({ hasText: "Selection layer" });

@@ -76,7 +76,11 @@ export async function openCustomLayers(page) {
 }
 export async function openMapSearch(page) {
   const search = page.getByLabel("Search address", { exact: true });
-  if (await search.isVisible()) return;
+  const library=page.getByRole("complementary",{name:"Workspace library",exact:true});
+  if(await library.isVisible() && await library.locator(".workspace-library-head strong").textContent()==="SEARCH") {
+    await expect(search).toBeVisible();
+    return;
+  }
   await openTools(page);
   await page
     .getByRole("button", { name: "Parcel search and identify", exact: true })
