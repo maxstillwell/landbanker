@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 const suites = [
   ["tests/professional-layers.e2e.mjs"],
   ["--import", "tsx", "tests/suburb-layers.e2e.mjs"],
+  ["--import", "tsx", "tests/nsw-layers.e2e.mjs"],
   ["tests/field.e2e.mjs"],
   ["tests/spatial.e2e.mjs"],
   ["tests/import.e2e.mjs"],

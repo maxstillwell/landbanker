@@ -5,6 +5,7 @@ import seifaData from "./data/seifa.json";
 import approvalsData from "./data/building-approvals.json";
 import suburbPrices from "./data/vic-suburb-prices.json";
 import suburbCrime from "./data/vic-suburb-crime.json";
+import { nswStatistic } from "./nsw-statistics";
 import type { LayerProduct } from "./types";
 
 const population = populationData as Record<
@@ -36,6 +37,13 @@ export function statistic(
   comparison: string | null;
 } {
   const year = Number(period);
+  if (
+    product.query.statistics === "nsw-sales" ||
+    product.query.statistics === "nsw-rent" ||
+    product.query.statistics === "nsw-crime"
+  ) {
+    return nswStatistic(product.query.statistics, code, period, indicator);
+  }
   if (product.query.statistics === "suburb-sales") {
     const data = suburbPrices as Record<
       string,

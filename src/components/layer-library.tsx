@@ -131,9 +131,9 @@ export function LayerLibrary({
                     </select>
                   </label>
                   <label>
-                    Reference year
+                    Reference period
                     <select
-                      aria-label={`${layer.name} year`}
+                      aria-label={`${layer.name} ${layer.dataset_metadata.period_labels ? "period" : "year"}`}
                       value={
                         options[layer.id]?.period ||
                         layer.dataset_metadata.default_period
@@ -149,7 +149,7 @@ export function LayerLibrary({
                     >
                       {layer.dataset_metadata.periods?.map((p) => (
                         <option key={p} value={p}>
-                          {p}
+                          {layer.dataset_metadata?.period_labels?.[p] || p}
                         </option>
                       ))}
                     </select>

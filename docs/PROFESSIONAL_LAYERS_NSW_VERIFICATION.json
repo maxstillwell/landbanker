@@ -1,0 +1,206 @@
+{
+  "checkedAt": "2026-10-31T01:39:23.855Z",
+  "results": [
+    {
+      "id": "nsw-median-sales",
+      "location": "Lismore",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 680000,
+      "milliseconds": 7246
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Lismore",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 550,
+      "milliseconds": 1
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Lismore",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 185,
+      "milliseconds": 1
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 680000,
+      "milliseconds": 7210
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 550,
+      "milliseconds": 1
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 185,
+      "milliseconds": 1
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Sydney",
+      "code": "17200",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 1075000,
+      "milliseconds": 7683
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Sydney",
+      "code": "17200",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 900,
+      "milliseconds": 0
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Sydney",
+      "code": "17200",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 668,
+      "milliseconds": 0
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Blacktown",
+      "code": "10750",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 1056000,
+      "milliseconds": 6775
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Blacktown",
+      "code": "10750",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 670,
+      "milliseconds": 0
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Blacktown",
+      "code": "10750",
+      "queryMode": "viewport",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 711,
+      "milliseconds": 0
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 680000
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 550
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Dunoon",
+      "code": "14850",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 185
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Gundagai",
+      "code": "12160",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 400000
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Gundagai",
+      "code": "12160",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 450
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Gundagai",
+      "code": "12160",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 29
+    },
+    {
+      "id": "nsw-median-sales",
+      "location": "Dubbo",
+      "code": "12390",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "March quarter 2026",
+      "value": 655000
+    },
+    {
+      "id": "nsw-median-rent",
+      "location": "Dubbo",
+      "code": "12390",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "June quarter 2026",
+      "value": 550
+    },
+    {
+      "id": "nsw-recorded-incidents",
+      "location": "Dubbo",
+      "code": "12390",
+      "queryMode": "point",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 341
+    }
+  ]
+}

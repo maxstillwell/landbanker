@@ -19,6 +19,7 @@ export type DatasetMetadata = {
   fields: string[];
   indicators?: Indicator[];
   periods?: string[];
+  period_labels?: Record<string, string>;
   default_indicator?: string;
   default_period?: string;
 };
@@ -58,7 +59,10 @@ export type LayerProduct = {
       | "seifa"
       | "approvals"
       | "suburb-sales"
-      | "suburb-crime";
+      | "suburb-crime"
+      | "nsw-sales"
+      | "nsw-rent"
+      | "nsw-crime";
   };
 };
 export const CATALOGUE_CATEGORIES = [

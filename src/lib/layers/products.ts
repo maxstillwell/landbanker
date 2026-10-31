@@ -927,6 +927,305 @@ for (const [id, original, overrides] of [
     query: { ...localityQuery, statistics },
   } as LayerProduct);
 }
+const nswLgaQuery = {
+  url: `${lgaService}/1`,
+  fields: lgaFields,
+  code: "LGA_CODE_2025",
+  name: "LGA_NAME_2025",
+  where: "STATE_CODE_2021='1'",
+  geometry: "polygon" as const,
+  color: "#548f87",
+};
+const nswMarketSource =
+  "https://dcj.nsw.gov.au/about-us/families-and-communities-statistics/housing-rent-and-sales/rent-and-sales-report.html";
+const nswMarketLicence =
+  "https://dcj.nsw.gov.au/statements/copyright-and-disclaimer.html";
+const nswMarketMethod =
+  "DCJ Report 156 aggregate LGA tables, extracted 31 July 2026. One original statewide LGA scope is selected; repeated regional rollups are not summed. Published labels map through the reviewed ABS code crosswalk to current LGA 2025 reference boundaries. Armidale Regional remains unmapped because its historical code is not the current Armidale code. Source boundary vintage is unspecified; no historical boundary reconstruction. s means a sample of 11–30 with count restrictions/caution; - means ten or fewer or unavailable. Original markers and missing values are retained, never zero-filled. Published quarterly/annual changes compare medians, not a quality-adjusted index. Source procedures changed in September 2017. NSW and Victorian dwelling definitions/methods are distinct.";
+LAYER_PRODUCTS.push(
+  {
+    ...base,
+    id: "nsw-median-sales",
+    name: "NSW median sale prices · LGA",
+    state: "NSW",
+    category: "Property Market",
+    provider: "NSW Department of Communities and Justice",
+    renderer: "geojson",
+    service_url: lgaService,
+    layer_ids: "1",
+    min_zoom: 7,
+    source_url: nswMarketSource,
+    update_frequency: "Quarterly; controlled import",
+    attribution:
+      "© State of New South Wales (DCJ), Report 156; ABS LGA 2025 boundaries. CC BY 4.0. LandOS unit conversion and code crosswalk; simplified display geometry.",
+    description:
+      "Published aggregate sale medians, volumes and median changes. March quarter 2026, by original Total / Non Strata / Strata classifications; no individual property sales records.",
+    usage_notes:
+      "LGA sale medians, not property valuations or suburb estimates. Non Strata / Strata are not universal house / unit definitions.",
+    dataset_metadata: statMetadata({
+      licence_evidence: nswMarketLicence,
+      coverage:
+        "126 matched NSW LGAs; original 127 LGA source labels. Armidale Regional unresolved; Balranald has no source sales row. Other non-spatial areas remain unavailable.",
+      version: "DCJ Rent and Sales Report 156 · Sales March 2026 quarter",
+      reference_period: "March quarter 2026 (contract dates)",
+      updated: "Extracted 31 July 2026 · Report 156",
+      periods: ["2026Q1"],
+      period_labels: { "2026Q1": "March quarter 2026" },
+      default_period: "2026Q1",
+      default_indicator: "median_total",
+      indicators: [
+        metric(
+          "median_total",
+          "Median sale price · all sales",
+          "aud",
+          [400000, 600000, 800000, 1200000, 1800000],
+        ),
+        metric(
+          "median_non_strata",
+          "Median sale price · Non Strata",
+          "aud",
+          [400000, 600000, 800000, 1200000, 1800000],
+        ),
+        metric(
+          "median_strata",
+          "Median sale price · Strata",
+          "aud",
+          [300000, 450000, 600000, 800000, 1100000],
+        ),
+        metric(
+          "sales_total",
+          "Sales volume · all sales",
+          "count",
+          [10, 30, 100, 300, 1000],
+        ),
+        metric(
+          "sales_non_strata",
+          "Sales volume · Non Strata",
+          "count",
+          [10, 30, 100, 300, 1000],
+        ),
+        metric(
+          "sales_strata",
+          "Sales volume · Strata",
+          "count",
+          [10, 30, 100, 300, 1000],
+        ),
+        metric(
+          "annual_change",
+          "Annual median sale price change · all sales",
+          "percent",
+          [-5, 0, 5, 10, 20],
+        ),
+        metric(
+          "quarterly_change",
+          "Quarterly median sale price change · all sales",
+          "percent",
+          [-5, 0, 2, 5, 10],
+        ),
+      ],
+      fields: [
+        ...lgaFields,
+        "source_local_government_area",
+        "published_category",
+        "median_price_aud",
+        "sales_count",
+        "annual_median_change_percent",
+        "quarterly_median_change_percent",
+        "median_price_aud_source_marker",
+        "sales_count_source_marker",
+        "annual_median_change_percent_source_marker",
+        "quarterly_median_change_percent_source_marker",
+      ],
+      methodology: `${nswMarketMethod} Original prices in $000 are converted to AUD. Contract dates, not settlement dates; about 80% of notifications are available after three months. Upper/lower 5% of sales are excluded within each LGA. Only this quarter is imported; published changes do not create an invented historical price series.`,
+    }),
+    query: { ...nswLgaQuery, statistics: "nsw-sales" },
+  },
+  {
+    ...base,
+    id: "nsw-median-rent",
+    name: "NSW median weekly rent · LGA",
+    state: "NSW",
+    category: "Property Market",
+    provider: "NSW Department of Communities and Justice",
+    renderer: "geojson",
+    service_url: lgaService,
+    layer_ids: "1",
+    min_zoom: 7,
+    source_url: nswMarketSource,
+    update_frequency: "Quarterly; controlled import",
+    attribution:
+      "© State of New South Wales (DCJ), Report 156; ABS LGA 2025 boundaries. CC BY 4.0. LandOS code crosswalk and simplified display geometry.",
+    description:
+      "June quarter 2026 new-bond median weekly rents, published dwelling/bedroom categories, bond counts and median changes. Original aggregate LGA statistics.",
+    usage_notes:
+      "Bond-based new tenancy rents, not advertised asking rents or the median of all existing tenancies. Total bonds held is a separate stock measure.",
+    dataset_metadata: statMetadata({
+      licence_evidence: nswMarketLicence,
+      coverage:
+        "127 matched NSW LGAs from 128 source labels. Armidale Regional unresolved; suppressed medians remain missing, including Balranald.",
+      version: "DCJ Rent and Sales Report 156 · Rent June 2026 quarter",
+      reference_period: "June quarter 2026 (new rental bonds)",
+      updated: "Extracted 31 July 2026 · Report 156",
+      periods: ["2026Q2"],
+      period_labels: { "2026Q2": "June quarter 2026" },
+      default_period: "2026Q2",
+      default_indicator: "median_all",
+      indicators: [
+        metric(
+          "median_all",
+          "Median weekly rent · all dwellings / bedrooms",
+          "aud",
+          [300, 450, 600, 750, 1000],
+        ),
+        metric(
+          "median_house",
+          "Median weekly rent · House / all bedrooms",
+          "aud",
+          [300, 450, 600, 750, 1000],
+        ),
+        metric(
+          "median_flat_unit",
+          "Median weekly rent · Flat/Unit / all bedrooms",
+          "aud",
+          [300, 450, 600, 750, 1000],
+        ),
+        metric(
+          "median_house_3",
+          "Median weekly rent · House / 3 bedrooms",
+          "aud",
+          [300, 450, 600, 750, 1000],
+        ),
+        metric(
+          "median_flat_unit_2",
+          "Median weekly rent · Flat/Unit / 2 bedrooms",
+          "aud",
+          [300, 450, 600, 750, 1000],
+        ),
+        metric(
+          "new_bonds",
+          "New bonds · all dwellings / bedrooms",
+          "count",
+          [10, 30, 100, 500, 2000],
+        ),
+        metric(
+          "total_bonds_held",
+          "Total bonds held · all dwellings / bedrooms",
+          "count",
+          [100, 1000, 5000, 20000, 50000],
+        ),
+        metric(
+          "annual_change",
+          "Annual median rent change · all dwellings / bedrooms",
+          "percent",
+          [-5, 0, 5, 10, 20],
+        ),
+        metric(
+          "quarterly_change",
+          "Quarterly median rent change · all dwellings / bedrooms",
+          "percent",
+          [-5, 0, 2, 5, 10],
+        ),
+      ],
+      fields: [
+        ...lgaFields,
+        "source_local_government_area",
+        "published_category",
+        "median_weekly_rent_aud",
+        "new_bonds_count",
+        "total_bonds_held_count",
+        "annual_median_change_percent",
+        "quarterly_median_change_percent",
+        "median_weekly_rent_aud_source_marker",
+        "new_bonds_count_source_marker",
+        "total_bonds_held_count_source_marker",
+        "annual_median_change_percent_source_marker",
+        "quarterly_median_change_percent_source_marker",
+      ],
+      methodology: `${nswMarketMethod} Median weekly rents use private-market new rental bonds, excluding social housing and retaining original dwelling and bedroom combinations; they are not advertised asking rents, occupied-stock rents, or Victoria's moving annual suburb medians. Total bonds held is a stock of lodged bonds, not new lettings or all existing tenancies. Only June quarter 2026 is imported; historical rent levels are not inferred from changes.`,
+    }),
+    query: { ...nswLgaQuery, statistics: "nsw-rent" },
+  },
+  {
+    ...base,
+    id: "nsw-recorded-incidents",
+    name: "NSW recorded criminal incidents · LGA",
+    state: "NSW",
+    category: "Crime & Community Safety",
+    provider: "NSW Bureau of Crime Statistics and Research",
+    renderer: "geojson",
+    service_url: lgaService,
+    layer_ids: "1",
+    min_zoom: 7,
+    source_url:
+      "https://bocsar.nsw.gov.au/statistics-dashboards/open-datasets/criminal-offences-data.html",
+    update_frequency: "Quarterly; controlled import of monthly observations",
+    attribution:
+      "© NSW Bureau of Crime Statistics and Research, Creative Commons Attribution; ABS LGA 2025 boundaries CC BY 4.0. LandOS twelve-month sums and reviewed code mapping; simplified display geometry.",
+    description:
+      "Selected BOCSAR recorded incident categories, summed from original monthly LGA counts into years ending June 2017–2026. No fabricated crime total or incompatible population rate.",
+    usage_notes:
+      "Recorded incidents are not convictions or individual risk. NSW incident categories and Victorian recorded-offence statistics have different definitions.",
+    dataset_metadata: statMetadata({
+      licence:
+        "Creative Commons Attribution (BOCSAR); CC BY 4.0 (ABS boundaries)",
+      licence_url: "https://opendefinition.org/licenses/cc-by/",
+      licence_evidence:
+        "https://data.nsw.gov.au/data/dataset/nsw-crime-and-policing-statistics/resource/1d5b2851-52e9-4327-a81b-19149c63f736",
+      coverage:
+        "128 bounded NSW councils. In Custody, Lord Howe Island and Unincorporated Far West are not mapped to neighbouring LGAs.",
+      version: "BOCSAR RCI offence-by-month workbook · June 2026 release",
+      reference_period: "Years ending 30 June 2017–2026",
+      updated: "2026-09-16",
+      periods: Array.from({ length: 10 }, (_, i) => String(2026 - i)),
+      default_period: "2026",
+      default_indicator: "break_enter_dwelling",
+      indicators: [
+        metric(
+          "break_enter_dwelling",
+          "Break and enter · dwelling incidents",
+          "count",
+          [10, 50, 100, 250, 500],
+        ),
+        metric(
+          "break_enter_non_dwelling",
+          "Break and enter · non-dwelling incidents",
+          "count",
+          [10, 50, 100, 250, 500],
+        ),
+        metric(
+          "motor_vehicle_theft",
+          "Motor vehicle theft incidents",
+          "count",
+          [10, 50, 100, 250, 500],
+        ),
+        metric(
+          "domestic_violence_assault",
+          "Domestic violence related assault incidents",
+          "count",
+          [50, 100, 250, 500, 1000],
+        ),
+        metric(
+          "non_domestic_violence_assault",
+          "Non-domestic violence related assault incidents",
+          "count",
+          [50, 100, 250, 500, 1000],
+        ),
+      ],
+      fields: [
+        ...lgaFields,
+        "source_local_government_area",
+        "break_enter_dwelling",
+        "break_enter_non_dwelling",
+        "motor_vehicle_theft",
+        "domestic_violence_assault",
+        "non_domestic_violence_assault",
+      ],
+      methodology:
+        "Each displayed annual count sums the twelve original numeric monthly observations from July to June for that exact BOCSAR LGA/category. Any missing month remains missing; categories are not combined into a misleading grand total. Original crime categories are preserved, with no new population denominator or cross-state ranking. Current ABS LGA 2025 boundaries and an explicit code crosswalk are display references; source boundary vintage is unspecified and historical boundaries are not reconstructed. Special/non-spatial records remain unmapped. The XLSM is read as data; macros are never executed.",
+    }),
+    query: { ...nswLgaQuery, statistics: "nsw-crime" },
+  },
+);
 export function layerProduct(id: string) {
   return LAYER_PRODUCTS.find((p) => p.id === id);
 }
