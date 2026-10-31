@@ -1,0 +1,113 @@
+{
+  "checkedAt": "2026-10-30T23:55:11.136Z",
+  "results": [
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "VERMONT SOUTH",
+      "pfi": "205410022",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 1525000,
+      "milliseconds": 7951
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "VERMONT SOUTH",
+      "pfi": "205410022",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 693,
+      "milliseconds": 1
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "GLEN WAVERLEY",
+      "pfi": "205409628",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 1722000,
+      "milliseconds": 6880
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "GLEN WAVERLEY",
+      "pfi": "205409628",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 2870,
+      "milliseconds": 1
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "MOUNT WAVERLEY",
+      "pfi": "205409674",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 1618000,
+      "milliseconds": 5435
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "MOUNT WAVERLEY",
+      "pfi": "205409674",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 1847,
+      "milliseconds": 0
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "BOX HILL",
+      "pfi": "205410187",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 1699000,
+      "milliseconds": 6741
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "BOX HILL",
+      "pfi": "205410187",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 2530,
+      "milliseconds": 1
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "POINT COOK",
+      "pfi": "205408993",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 825000,
+      "milliseconds": 6598
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "POINT COOK",
+      "pfi": "205408993",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 2706,
+      "milliseconds": 2
+    },
+    {
+      "id": "vic-suburb-median-prices",
+      "area": "MELTON",
+      "pfi": "205409487",
+      "status": "pass",
+      "reference": "Calendar year 2025",
+      "value": 525000,
+      "milliseconds": 6688
+    },
+    {
+      "id": "vic-suburb-recorded-offences",
+      "area": "MELTON",
+      "pfi": "205409487",
+      "status": "pass",
+      "reference": "Year ending 30 June 2026",
+      "value": 2082,
+      "milliseconds": 1
+    }
+  ]
+}
